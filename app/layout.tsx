@@ -1,9 +1,9 @@
+import "./globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { AppShell } from "@/components/app-shell";
+import { AppProviders } from "@/components/app-providers";
 import { TwaRoot } from "@/components/twa-root";
 import { APP_NAME } from "@/constants";
-import "./globals.css";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -29,10 +29,10 @@ export default function RootLayout({
   return (
     <html lang="ky">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} bg-emerald-50 font-sans text-emerald-950 antialiased`}
       >
         <TwaRoot />
-        <AppShell>{children}</AppShell>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

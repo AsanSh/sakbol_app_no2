@@ -7,7 +7,7 @@ import { getSession } from "@/lib/session";
 export async function activatePremiumStub(method: "MBANK" | "MegaPay") {
   const s = getSession();
   if (!s) return { ok: false as const, error: "Unauthorized" };
-  await new Promise((r) => setTimeout(r, 1200));
+  await new Promise((r) => setTimeout(r, 80));
   await prisma.subscription.upsert({
     where: { familyId: s.familyId },
     update: { tier: SubscriptionTier.PREMIUM },

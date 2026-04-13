@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FamilyWithProfiles } from "@/types/family";
 import { useTelegramSession } from "@/context/telegram-session-context";
+import { useLanguage } from "@/context/language-context";
 import { FamilySwitcher } from "@/components/family-switcher";
 import { AnalysesPreview } from "@/components/analyses-preview";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { PaywallModal } from "@/components/paywall-modal";
 import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
 import { useActiveProfile } from "@/context/active-profile-context";
+import { t } from "@/lib/i18n";
 
 function normalizeFamily(raw: unknown): FamilyWithProfiles {
   const f = raw as FamilyWithProfiles;
@@ -27,6 +29,7 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
 }
 
 export function HomeDashboard() {
+  const { lang } = useLanguage();
   const { authReady, isAuthenticated, state } = useTelegramSession();
   const { activeProfileId } = useActiveProfile();
   const [family, setFamily] = useState<FamilyWithProfiles | null>(null);
@@ -43,7 +46,7 @@ export function HomeDashboard() {
     void fetch("/api/family/default", { credentials: "include" })
       .then(async (r) => {
         if (r.status === 401) {
-          throw new Error("Кирүү талап кылынат. Telegram аркылуу ачыңыз.");
+          throw new Error(t(lang, "dashboard.authRequired"));
         }
         if (!r.ok) {
           const j = (await r.json().catch(() => ({}))) as { error?: string };
@@ -53,11 +56,11 @@ export function HomeDashboard() {
       })
       .then((raw) => setFamily(normalizeFamily(raw)))
       .catch((e: unknown) => {
-        setError(e instanceof Error ? e.message : "Ката");
+        setError(e instanceof Error ? e.message : t(lang, "dashboard.errorPrefix") + " …");
         setFamily(null);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     if (!authReady) return;
@@ -76,37 +79,30 @@ export function HomeDashboard() {
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 pt-6">
-      <header className="space-y-1">
+      <header className="flex flex-col gap-1">
         <p className="text-sm font-medium uppercase tracking-wide text-emerald-800/80">
-          Emerald Kyrgyzstan
+          {t(lang, "dashboard.tagline")}
         </p>
-        <h1 className="text-2xl font-semibold text-emerald-950">Dashboard</h1>
+        <h1 className="text-2xl font-semibold text-emerald-950">{t(lang, "dashboard.title")}</h1>
         {viewerName ? (
-          <p className="text-sm font-medium text-emerald-900">Салам, {viewerName}</p>
+          <p className="text-sm font-medium text-emerald-900">
+            {t(lang, "dashboard.hello")}, {viewerName}
+          </p>
         ) : null}
-        <p className="text-sm text-emerald-900/70">
-          Активдүү профиль боюнча анализдер жана үй-бүлө мүчөлөрү.
-        </p>
+        <p className="text-sm text-emerald-900/70">{t(lang, "dashboard.subtitle")}</p>
       </header>
 
       {authReady && !isAuthenticated ? (
         <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-emerald-950">
-          <p className="font-medium">Кирүү: Telegram Mini App</p>
-          <p className="mt-1 text-emerald-900/80">
-            Колдонмону Telegram ичинен ачыңыз. Серверде{" "}
-            <code className="rounded bg-white/60 px-1">TELEGRAM_BOT_TOKEN</code>{" "}
-            коюлган болушу керек.
-          </p>
+          <p className="font-medium">{t(lang, "dashboard.authTitle")}</p>
+          <p className="mt-1 text-emerald-900/80">{t(lang, "dashboard.authBody")}</p>
           {process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true" ? (
-            <p className="mt-2 text-xs text-emerald-800/90">
-              Dev:{" "}
-              <code className="rounded bg-white/60 px-1">ALLOW_DEV_LOGIN=true</code> жана{" "}
-              <code className="rounded bg-white/60 px-1">NEXT_PUBLIC_ALLOW_DEV_LOGIN=true</code>{" "}
-              — браузерден сынак.
-            </p>
+            <p className="mt-2 text-xs text-emerald-800/90">{t(lang, "dashboard.devHint")}</p>
           ) : null}
           {state.status === "unauthenticated" && state.reason ? (
-            <p className="mt-2 text-xs text-coral">Ката: {state.reason}</p>
+            <p className="mt-2 text-xs text-coral">
+              {t(lang, "dashboard.errorPrefix")} {state.reason}
+            </p>
           ) : null}
         </div>
       ) : null}
@@ -118,7 +114,7 @@ export function HomeDashboard() {
       ) : null}
 
       {!authReady || (isAuthenticated && loading) ? (
-        <p className="text-sm text-emerald-900/70">Жүктөлүүдө…</p>
+        <p className="text-sm text-emerald-900/70">{t(lang, "analyses.loading")}</p>
       ) : null}
 
       {isAuthenticated && !loading && family ? (
@@ -129,7 +125,7 @@ export function HomeDashboard() {
               onClick={() => setPaywallOpen(true)}
               className="w-full rounded-2xl border border-amber-500/60 bg-amber-500/15 px-3 py-2 text-sm font-medium text-emerald-950"
             >
-              Premium: безлимит анализов и семейных профилей
+              {t(lang, "dashboard.premiumCta")}
             </button>
           ) : null}
           <FamilySwitcher
@@ -143,7 +139,7 @@ export function HomeDashboard() {
               onClick={() => setUploadOpen(true)}
               className="w-full rounded-2xl border-2 border-emerald-800/30 bg-emerald-900 py-3 text-center text-sm font-semibold text-mint shadow-md transition-opacity hover:opacity-95"
             >
-              Анализ жүктөө
+              {t(lang, "dashboard.upload")}
             </button>
           ) : null}
           <AnalysesPreview profiles={family.profiles} refreshKey={analysesRefresh} />
@@ -175,9 +171,7 @@ export function HomeDashboard() {
         aria-label="Brand color sample"
       >
         <p className="text-sm font-medium text-amber-500">bg-emerald-900</p>
-        <p className="mt-1 text-xs text-mint/90">
-          Тема түсү конфигден тартылды (#00695C).
-        </p>
+        <p className="mt-1 text-xs text-mint/90">{t(lang, "dashboard.brandSample")}</p>
       </section>
     </div>
   );
