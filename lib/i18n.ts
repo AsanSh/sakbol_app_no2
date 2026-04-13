@@ -61,15 +61,22 @@ const ru: Dict = {
   "share.biomarkers": "Показатели",
   "share.expires": "Ссылка действует 15 минут.",
   "share.home": "На главную",
-  "tests.title": "Тесты",
-  "tests.subtitle": "Страница в разработке.",
+  "tests.title": "Анализы",
+  "tests.subtitle": "Загрузка файлов, демо без файла и динамика показателей.",
+  "tests.uploadBig": "Анализ жүктөө",
+  "tests.demoSeed": "Добавить демо-анализ (без файла)",
+  "profile.viewer": "Текущий пользователь",
+  "profile.role": "Роль",
+  "profile.family": "Семья",
+  "profile.addMember": "Добавить члена семьи",
+  "profile.noProfiles": "Нет профилей.",
   "footer.disclaimer":
     "Сервис справочный. Не диагноз. Обратитесь к врачу.",
 };
 
 const kg: Dict = {
   "nav.home": "Башкы",
-  "nav.tests": "Тесттер",
+  "nav.tests": "Анализдер",
   "nav.meds": "Дары",
   "nav.profile": "Профиль",
   "profile.title": "Профиль",
@@ -126,8 +133,15 @@ const kg: Dict = {
   "share.biomarkers": "Көрсөткүчтөр",
   "share.expires": "Шилтеме 15 мүн иштейт.",
   "share.home": "Башкы бетке",
-  "tests.title": "Тесттер",
-  "tests.subtitle": "Баракча даярдалууда.",
+  "tests.title": "Анализдер",
+  "tests.subtitle": "Файл жүктөө, файлсыз демо жана көрсөткүчтөрдүн динамикасы.",
+  "tests.uploadBig": "Анализ жүктөө",
+  "tests.demoSeed": "Демо-анализ кошуу (файлсыз)",
+  "profile.viewer": "Учурдагы колдонуучу",
+  "profile.role": "Ролу",
+  "profile.family": "\u04AE\u0439-\u0431\u04AF\u043B\u04E9",
+  "profile.addMember": "\u041C\u04AF\u0447\u04E9 \u043A\u043E\u0448\u0443\u0443",
+  "profile.noProfiles": "Профилдер жок.",
   "footer.disclaimer":
     "Бул маалыматтык кызмат. Диагноз эмес. Дарыгерге кайрылыңыз",
 };

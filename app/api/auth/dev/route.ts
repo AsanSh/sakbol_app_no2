@@ -10,13 +10,11 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * Development-only: attach session to the first ADMIN profile (e.g. after seed).
- * Enable with ALLOW_DEV_LOGIN=true in .env
+ * Демо / dev: сессия под первым ADMIN (после seed).
+ * Локально: NODE_ENV=development + ALLOW_DEV_LOGIN=true.
+ * Vercel / браузер: ALLOW_DEV_LOGIN=true + NEXT_PUBLIC_ALLOW_DEV_LOGIN=true (только для демо-домена).
  */
 export async function POST() {
-  if (process.env.NODE_ENV !== "development") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
   if (process.env.ALLOW_DEV_LOGIN !== "true") {
     return NextResponse.json({ error: "Dev login disabled" }, { status: 403 });
   }
