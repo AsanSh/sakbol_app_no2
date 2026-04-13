@@ -50,6 +50,11 @@ const ALIASES: Record<string, string> = {
   тромбоциттер: "Тромбоциттер",
   креатинин: "Креатинин",
   creatinine: "Креатинин",
+  холестерин: "Холестерин",
+  cholesterol: "Холестерин",
+  "общий холестерин": "Холестерин",
+  ldl: "ЛПНП",
+  лпнп: "ЛПНП",
 };
 
 export function normalizeBiomarkerKey(raw: string): string | null {

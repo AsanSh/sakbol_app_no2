@@ -8,6 +8,8 @@ import {
   maskFileForPrivacyPreview,
 } from "@/lib/client/mask-sensitive-document";
 import { cn } from "@/lib/utils";
+import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
+import { scrubPlainTextForStorage } from "@/lib/client/scrub-pii-text";
 
 type Phase =
   | "idle"
@@ -103,6 +105,12 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
 
   if (!open) return null;
 
+  const anonymId = formatClinicalAnonymId(profileId);
+  const scrubDemo = scrubPlainTextForStorage(
+    "Пациент: Иванов Иван Иванович, ИНН: 123456789012,15.03.1988",
+    anonymId,
+  );
+
   const showImagePreview = maskedObjectUrl && maskedMime?.startsWith("image/");
 
   return (
@@ -128,7 +136,9 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
               Анализ жүктөө
             </h2>
             <p className="mt-0.5 text-sm text-emerald-900/75">
-              Файл клиентте маскаланып, серверге UUID гана ат менен сакталат; метаданные жок.
+              Клиентте маскалоо + псевдо-ID <span className="font-mono text-emerald-950">{anonymId}</span>.
+              Тексттик демо-скрабинг:{" "}
+              <span className="block break-all text-[11px] text-emerald-800/90">{scrubDemo}</span>
             </p>
           </div>
         </div>

@@ -27,6 +27,7 @@ import {
   type MedicalStatus,
 } from "@/lib/medical-logic";
 import type { ParsedBiomarker } from "@/types/biomarker";
+import { categoryForBiomarkerKey } from "@/constants/biomarker-categories";
 
 function biomarkerCount(data: unknown): number | null {
   if (!data || typeof data !== "object") return null;
@@ -201,12 +202,17 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
                     <ul className="space-y-1">
                       {payload.biomarkers.map((b: ParsedBiomarker, idx: number) => {
                         const st = statusForBiomarker(b, activeDob);
+                        const nk = normalizeBiomarkerKey(b.biomarker);
+                        const catId = nk ? categoryForBiomarkerKey(nk) : "other";
                         return (
                           <li
                             key={`${a.id}-${idx}-${b.biomarker}`}
                             className="flex items-center justify-between gap-2 text-xs"
                           >
                             <span className="text-emerald-950">
+                              <span className="block text-[10px] font-medium uppercase tracking-wide text-emerald-800/60">
+                                {t(lang, `category.${catId}`)}
+                              </span>
                               {b.biomarker}:{" "}
                               <strong>
                                 {b.value} {b.unit}

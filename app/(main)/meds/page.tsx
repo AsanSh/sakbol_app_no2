@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { addMedication, listMedications, markMedicationTaken } from "@/app/actions/medication";
 import { useActiveProfile } from "@/context/active-profile-context";
+import { useLanguage } from "@/context/language-context";
+import { t } from "@/lib/i18n";
 
 type Med = { id: string; name: string; dosage: string; timeOfDay: string; takenToday: boolean };
 
 export default function MedsPage() {
+  const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
   const [rows, setRows] = useState<Med[]>([]);
   const [name, setName] = useState("");
@@ -38,8 +41,8 @@ export default function MedsPage() {
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 pt-6">
-      <h1 className="text-2xl font-semibold text-emerald-950">Дары-дармек</h1>
-      <p className="mt-1 text-sm text-emerald-900/70">Название, дозировка, время + подтверждение приема</p>
+      <h1 className="text-2xl font-semibold text-emerald-950">{t(lang, "meds.title")}</h1>
+      <p className="mt-1 text-sm text-emerald-900/70">{t(lang, "meds.subtitle")}</p>
 
       <form
         className="mt-4 rounded-xl border border-emerald-900/15 bg-white p-3"
@@ -53,11 +56,11 @@ export default function MedsPage() {
         }}
       >
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Название" className="rounded-lg border border-emerald-900/20 px-3 py-2 text-sm" />
-          <input value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="Дозировка" className="rounded-lg border border-emerald-900/20 px-3 py-2 text-sm" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t(lang, "meds.name")} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-sm" />
+          <input value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder={t(lang, "meds.dosage")} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-sm" />
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-sm" />
         </div>
-        <button className="mt-3 rounded-lg bg-emerald-900 px-3 py-2 text-sm text-mint">Добавить</button>
+        <button type="submit" className="mt-3 rounded-lg bg-emerald-900 px-3 py-2 text-sm text-mint">{t(lang, "meds.add")}</button>
       </form>
 
       <ul className="mt-4 space-y-2">
@@ -69,13 +72,13 @@ export default function MedsPage() {
                 <p className="text-xs text-emerald-900/70">{m.dosage} · {m.timeOfDay}</p>
               </div>
               <button onClick={() => void onConfirmTake(m)} className={`rounded-lg px-3 py-1.5 text-xs font-medium ${m.takenToday ? "bg-mint text-emerald-950" : "bg-emerald-900 text-mint"}`}>
-                {m.takenToday ? "Принято" : "Отметить"}
+                {m.takenToday ? t(lang, "meds.taken") : t(lang, "meds.mark")}
               </button>
             </div>
           </li>
         ))}
       </ul>
-      <p className="mt-4 text-xs text-emerald-800/70">Бул маалыматтык кызмат. Диагноз эмес. Дарыгерге кайрылыңыз</p>
+      <p className="mt-4 text-xs text-emerald-800/70">{t(lang, "footer.disclaimer")}</p>
     </div>
   );
 }

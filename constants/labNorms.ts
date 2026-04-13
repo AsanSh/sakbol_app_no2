@@ -62,4 +62,16 @@ export const LAB_NORMS: Record<string, BiomarkerNorms> = {
     child: { min: 35, max: 85 },
     adult: { min: 62, max: 106 },
   },
+  /** Общий холестерин, ммоль/л — ориентир для UI (не целевой LDL). */
+  Холестерин: {
+    infant: { min: 2.5, max: 5.1 },
+    child: { min: 2.9, max: 5.2 },
+    adult: { min: 3.0, max: 5.2 },
+  },
+  /** ЛПНП, ммоль/л — грубый ориентир. */
+  ЛПНП: {
+    infant: { min: 1.2, max: 2.8 },
+    child: { min: 1.5, max: 3.0 },
+    adult: { min: 1.4, max: 3.0 },
+  },
 };

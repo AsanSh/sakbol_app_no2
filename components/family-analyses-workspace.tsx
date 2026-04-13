@@ -6,6 +6,7 @@ import { useTelegramSession } from "@/context/telegram-session-context";
 import { useLanguage } from "@/context/language-context";
 import { FamilySwitcher } from "@/components/family-switcher";
 import { AnalysesPreview } from "@/components/analyses-preview";
+import { HealthHubPanel } from "@/components/health-hub-panel";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { PaywallModal } from "@/components/paywall-modal";
 import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
@@ -127,6 +128,8 @@ export function FamilyAnalysesWorkspace({
         canAddMember={!!admin}
         onAddMember={admin ? () => setAddOpen(true) : undefined}
       />
+
+      <HealthHubPanel profiles={family.profiles} refreshKey={analysesRefresh} />
 
       {activeProfileId ? (
         <div className="flex flex-col gap-2">
