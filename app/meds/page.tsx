@@ -1,0 +1,81 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { addMedication, listMedications, markMedicationTaken } from "@/app/actions/medication";
+import { useActiveProfile } from "@/context/active-profile-context";
+
+type Med = { id: string; name: string; dosage: string; timeOfDay: string; takenToday: boolean };
+
+export default function MedsPage() {
+  const { activeProfileId } = useActiveProfile();
+  const [rows, setRows] = useState<Med[]>([]);
+  const [name, setName] = useState("");
+  const [dosage, setDosage] = useState("");
+  const [time, setTime] = useState("08:00");
+
+  const reload = useCallback(async () => {
+    if (!activeProfileId) return setRows([]);
+    const r = await listMedications(activeProfileId);
+    setRows(r as Med[]);
+  }, [activeProfileId]);
+  useEffect(() => { void reload(); }, [reload]);
+
+  async function onConfirmTake(m: Med) {
+    const ask = () => new Promise<boolean>((resolve) => {
+      try {
+        const tg = (window as Window & { Telegram?: { WebApp?: { showConfirm: (m: string, cb: (ok: boolean) => void) => void } } }).Telegram?.WebApp;
+        if (tg?.showConfirm) tg.showConfirm(`Белгилейбизби: ${m.name}?`, (ok) => resolve(Boolean(ok)));
+        else resolve(window.confirm(`Белгилейбизби: ${m.name}?`));
+      } catch {
+        resolve(window.confirm(`Белгилейбизби: ${m.name}?`));
+      }
+    });
+    const ok = await ask();
+    if (!ok) return;
+    await markMedicationTaken(m.id, !m.takenToday);
+    await reload();
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-lg px-4 pt-6">
+      <h1 className="text-2xl font-semibold text-emerald-950">Дары-дармек</h1>
+      <p className="mt-1 text-sm text-emerald-900/70">Название, дозировка, время + подтверждение приема</p>
+
+      <form
+        className="mt-4 rounded-xl border border-emerald-900/15 bg-white p-3"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!activeProfileId || !name.trim()) return;
+          await addMedication(activeProfileId, name.trim(), dosage.trim() || "-", time);
+          setName("");
+          setDosage("");
+          await reload();
+        }}
+      >
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Название" className="rounded-lg border border-emerald-900/20 px-3 py-2 text-sm" />
+          <input value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="Дозировка" className="rounded-lg border border-emerald-900/20 px-3 py-2 text-sm" />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-lg border border-emerald-900/20 px-3 py-2 text-sm" />
+        </div>
+        <button className="mt-3 rounded-lg bg-emerald-900 px-3 py-2 text-sm text-mint">Добавить</button>
+      </form>
+
+      <ul className="mt-4 space-y-2">
+        {rows.map((m) => (
+          <li key={m.id} className="rounded-xl border border-emerald-900/15 bg-white p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-emerald-950">{m.name}</p>
+                <p className="text-xs text-emerald-900/70">{m.dosage} · {m.timeOfDay}</p>
+              </div>
+              <button onClick={() => void onConfirmTake(m)} className={`rounded-lg px-3 py-1.5 text-xs font-medium ${m.takenToday ? "bg-mint text-emerald-950" : "bg-emerald-900 text-mint"}`}>
+                {m.takenToday ? "Принято" : "Отметить"}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-xs text-emerald-800/70">Бул маалыматтык кызмат. Диагноз эмес. Дарыгерге кайрылыңыз</p>
+    </div>
+  );
+}

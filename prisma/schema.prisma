@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Household / access boundary for Family RBAC.
+model Family {
+  id        String    @id @default(cuid())
+  name      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  profiles  Profile[]
+  plan      Subscription?
+}
+
+/// Identity & family role only — no medical payload (PII kept minimal, separate from HealthRecord).
+model Profile {
+  id             String     @id @default(cuid())
+  familyId       String
+  family         Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  displayName    String
+  /// Set when the person uses the Telegram Mini App; null for managed relatives.
+  telegramUserId String?    @unique
+  avatarUrl      String?
+
+  isManaged      Boolean    @default(false)
+  familyRole     FamilyRole @default(MEMBER)
+
+  /// For managed profiles: semantic role (child, elder, etc.).
+  managedRole    ManagedRelationRole?
+  dateOfBirth DateTime?
+
+  healthRecords  HealthRecord[]
+  medications   Medication[]
+
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([familyId])
+  @@index([familyId, familyRole])
+}
+
+model HealthRecord {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  /// Arbitrary structured payload (PostgreSQL JSONB).
+  data      Json
+  isPrivate Boolean  @default(false)
+
+  /// Discriminator for API routes (e.g. lab analyses).
+  kind      HealthRecordKind @default(OTHER)
+
+  title     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shares    ShareToken[]
+
+  @@index([profileId])
+  @@index([profileId, kind])
+}
+
+model ShareToken {
+  id             String      @id @default(cuid())
+  token          String      @unique
+  healthRecordId String
+  healthRecord   HealthRecord @relation(fields: [healthRecordId], references: [id], onDelete: Cascade)
+  expiresAt      DateTime
+  createdAt      DateTime    @default(now())
+
+  @@index([token, expiresAt])
+}
+
+model Medication {
+  id         String   @id @default(cuid())
+  profileId  String
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name       String
+  dosage     String
+  timeOfDay  String
+  takenToday Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([profileId, timeOfDay])
+}
+
+model Subscription {
+  id        String           @id @default(cuid())
+  familyId  String           @unique
+  family    Family           @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  tier      SubscriptionTier @default(FREE)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+enum FamilyRole {
+  ADMIN
+  MEMBER
+}
+
+enum ManagedRelationRole {
+  CHILD
+  ELDER
+  OTHER
+}
+
+enum HealthRecordKind {
+  LAB_ANALYSIS
+  NOTE
+  OTHER
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+}
