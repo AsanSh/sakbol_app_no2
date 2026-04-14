@@ -50,7 +50,9 @@ const ru: Dict = {
   "dashboard.authRequired": "Требуется вход. Откройте приложение через Telegram.",
   "dashboard.authTitle": "Вход через Telegram Mini App",
   "dashboard.authBody":
-    "Откройте приложение внутри Telegram. На сервере должен быть TELEGRAM_BOT_TOKEN.",
+    "В Mini App внутри Telegram вход выполняется автоматически. В обычном браузере включите ALLOW_DEV_LOGIN и NEXT_PUBLIC_ALLOW_DEV_LOGIN (демо) или задайте TELEGRAM_BOT_TOKEN и Vercel Environment Variables для прода.",
+  "dashboard.authBodyNoTg":
+    "Вы в обычном браузере: данных Telegram нет. Включён демо-вход — обновите страницу; либо откройте приложение в Telegram.",
   "dashboard.devHint":
     "Dev: ALLOW_DEV_LOGIN и NEXT_PUBLIC_ALLOW_DEV_LOGIN — тест из браузера.",
   "dashboard.errorPrefix": "Ошибка:",
@@ -167,7 +169,9 @@ const kg: Dict = {
   "dashboard.authRequired": "Кирүү керек. Telegram аркылуу ачыңыз.",
   "dashboard.authTitle": "Кирүү: Telegram Mini App",
   "dashboard.authBody":
-    "Колдонмону Telegram ичинен ачыңыз. Серверде TELEGRAM_BOT_TOKEN коюлган болушу керек.",
+    "Telegram ичиндеги Mini App өзү киргизет. Браузерде ALLOW_DEV_LOGIN жана NEXT_PUBLIC_ALLOW_DEV_LOGIN (демо) же Vercelде TELEGRAM_BOT_TOKEN.",
+  "dashboard.authBodyNoTg":
+    "Браузер: Telegram маалыматы жок. Демо-кирүү күйгүзүлгөн болсо, бетти жаңылаңыз же Telegramдан ачыңыз.",
   "dashboard.devHint":
     "Dev: ALLOW_DEV_LOGIN жана NEXT_PUBLIC_ALLOW_DEV_LOGIN — браузерден сынак.",
   "dashboard.errorPrefix": "Ката:",

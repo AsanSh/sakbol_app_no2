@@ -63,6 +63,15 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
           setAuthReady(true);
           return;
         }
+        const errBody = (await devRes.json().catch(() => ({}))) as { error?: string };
+        if (!cancelled) {
+          setState({
+            status: "unauthenticated",
+            reason: errBody.error ?? `dev_login_${devRes.status}`,
+          });
+          setAuthReady(true);
+        }
+        return;
       }
 
       if (!initData) {

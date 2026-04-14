@@ -76,7 +76,11 @@ export default function ProfilePage() {
       {authReady && !isAuthenticated ? (
         <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-emerald-950">
           <p className="font-medium">{t(lang, "dashboard.authTitle")}</p>
-          <p className="mt-1 text-emerald-900/80">{t(lang, "dashboard.authBody")}</p>
+          <p className="mt-1 text-emerald-900/80">
+            {state.status === "unauthenticated" && state.reason === "no_init_data"
+              ? t(lang, "dashboard.authBodyNoTg")
+              : t(lang, "dashboard.authBody")}
+          </p>
           {process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true" ? (
             <p className="mt-2 text-xs text-emerald-800/90">{t(lang, "dashboard.devHint")}</p>
           ) : null}
