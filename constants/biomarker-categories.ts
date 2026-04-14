@@ -16,6 +16,7 @@ const KEY_TO_CAT: Record<string, BiomarkerCategoryId> = {
   Глюкоза: "metabolic",
   Холестерин: "lipids",
   ЛПНП: "lipids",
+  ЛПВП: "lipids",
   Креатинин: "liver_kidney",
   ТТГ: "thyroid_vitamins",
   "Витамин D": "thyroid_vitamins",

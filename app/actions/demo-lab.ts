@@ -6,7 +6,6 @@ import { FREE_MAX_ANALYSES, getFamilyTier } from "@/lib/premium";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { mockBiomarkers } from "@/lib/services/process-medical-document";
-import type { HealthRecordAnalysisPayload } from "@/types/biomarker";
 
 /** Запись анализа без файла — мок с гемоглобином (удобно для Vercel без persistent uploads). */
 export async function seedDemoLabRecord(profileId: string) {
@@ -35,14 +34,13 @@ export async function seedDemoLabRecord(profileId: string) {
 
   const biomarkers = mockBiomarkers();
   const now = new Date().toISOString();
-  const data: HealthRecordAnalysisPayload = {
-    biomarkers,
+  const meta = {
     sourceFileId: "demo-local",
     sourceOriginalFileId: "demo-local",
     mimeType: "application/x-sakbol-demo",
     anonymizedAt: now,
     parsedAt: now,
-    parser: "mock",
+    parser: "mock" as const,
   };
 
   await prisma.healthRecord.create({
@@ -51,7 +49,12 @@ export async function seedDemoLabRecord(profileId: string) {
       kind: HealthRecordKind.LAB_ANALYSIS,
       isPrivate: true,
       title: `Демо-анализ · ${new Date().toLocaleDateString("ru-RU")}`,
-      data: data as Prisma.InputJsonValue,
+      data: meta as Prisma.InputJsonValue,
+      metrics: {
+        create: {
+          payload: { biomarkers } as Prisma.InputJsonValue,
+        },
+      },
     },
   });
 

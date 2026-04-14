@@ -14,6 +14,8 @@ const ru: Dict = {
   "analyses.title": "Анализы (активный профиль)",
   "analyses.subtitle":
     "Загрузите новый анализ кнопкой «Загрузить анализ». Цвета — относительно нормы.",
+  "analyses.labsBrands":
+    "Популярные сети в КР: Bonetsky, AquaLab — единицы и референсы могут отличаться; сверяйте с бланком.",
   "analyses.loading": "Загрузка…",
   "analyses.empty": "Для этого профиля анализов нет.",
   "analyses.errorLoad": "Ошибка загрузки",
@@ -70,12 +72,19 @@ const ru: Dict = {
   "profile.family": "Семья",
   "profile.addMember": "Добавить члена семьи",
   "profile.noProfiles": "Нет профилей.",
+  "profile.biologicalSex": "Биологический пол (для расчёта рисков)",
+  "profile.sexUnknown": "Не указан",
+  "profile.sexMale": "Мужской",
+  "profile.sexFemale": "Женский",
   "footer.disclaimer":
     "Информационный сервис. Не является диагнозом. Обратитесь к врачу в КР.",
   "hub.healthScore": "Индекс здоровья",
   "hub.healthScoreHint": "Образовательная шкала по анализам и моделям риска (не диагноз).",
   "hub.risk.cardio": "Сердце и сосуды",
-  "hub.risk.cardioSub": "Оценка 10-летнего риска (демо, SCORE-подобная)",
+  "hub.risk.cardioSub": "SCORE-подобная (EUR) + ASCVD PCE (white, US), 10 лет",
+  "hub.risk.euroDemo": "SCORE-подобно",
+  "hub.formulasToggle": "Формулы (LaTeX)",
+  "hub.formulasTitle": "Образовательные записи (не для самодиагностики)",
   "hub.risk.diabetes": "Диабет (FINDRISC)",
   "hub.risk.diabetesSub": "Сумма баллов опросника + глюкоза из анализов",
   "hub.risk.oncology": "Онкология / скрининг",
@@ -88,7 +97,7 @@ const ru: Dict = {
   "hub.onc.info": "Профилактика обсуждается с участковым врачом.",
   "hub.onc.40": "40+: обсудите скрининг по протоколам МЗ КР.",
   "hub.onc.50": "50+: мамография / колоноскопия и др. — по назначению врача в КР.",
-  "hub.demoSexNote": "Пол для формул по умолчанию: женский (можно расширить в профиле позже).",
+  "hub.demoSexNote": "Укажите пол в «Профиль» — иначе для формул используется женская модель.",
   "hub.noAnalyses": "Загрузите анализ — появятся оценки.",
   "category.hema": "Кровь",
   "category.metabolic": "Углеводы",
@@ -104,6 +113,10 @@ const ru: Dict = {
   "meds.add": "Добавить",
   "meds.taken": "Принято",
   "meds.mark": "Отметить",
+  "meds.remindTelegram": "Напоминание в Telegram",
+  "meds.remindSending": "Отправка…",
+  "meds.remindFail": "Не удалось отправить",
+  "meds.remindNoTg": "Нет привязанного Telegram у этого профиля",
 };
 
 const kg: Dict = {
@@ -118,6 +131,8 @@ const kg: Dict = {
   "analyses.title": "Анализдер (активдүү профиль)",
   "analyses.subtitle":
     "Жаңы жүктөө үчүн «Анализ жүктөө» баскычын басыңыз. Түстөр — нормага карата.",
+  "analyses.labsBrands":
+    "КРдагы популярдуу тармактар: Bonetsky, AquaLab — бирдиктер бланктагыдан айырмаланышы мүмкүн.",
   "analyses.loading": "Жүктөлүүдө…",
   "analyses.empty": "Бул профиль үчүн анализ жок.",
   "analyses.errorLoad": "Жүктөө катасы",
@@ -174,12 +189,19 @@ const kg: Dict = {
   "profile.family": "\u04AE\u0439-\u0431\u04AF\u043B\u04E9",
   "profile.addMember": "\u041C\u04AF\u0447\u04E9 \u043A\u043E\u0448\u0443\u0443",
   "profile.noProfiles": "Профилдер жок.",
+  "profile.biologicalSex": "Биологиялык жыныс (тобокелдик үчүн)",
+  "profile.sexUnknown": "Көрсөтүлгөн эмес",
+  "profile.sexMale": "Эркек",
+  "profile.sexFemale": "Аял",
   "footer.disclaimer":
     "Маалыматтык кызмат. Диагноз эмес. КРдагы дарыерге кайрылыңыз.",
   "hub.healthScore": "Ден соолук индекси",
   "hub.healthScoreHint": "Анализ жана тобокелдик моделдери боюнча (диагноз эмес).",
   "hub.risk.cardio": "Жүрөк жана тамырлар",
-  "hub.risk.cardioSub": "10 жылдык тобокелдик (демо, SCORE-суктуу)",
+  "hub.risk.cardioSub": "SCORE-суктуу (EUR) + ASCVD PCE (white, US), 10 жыл",
+  "hub.risk.euroDemo": "SCORE-суктуу",
+  "hub.formulasToggle": "Формулалар (LaTeX)",
+  "hub.formulasTitle": "Билим берүүчү жазуулар (өзүңүздү диагноз койбоңуз)",
   "hub.risk.diabetes": "Диабет (FINDRISC)",
   "hub.risk.diabetesSub": "Сурамжылоо + анализдеги глюкоза",
   "hub.risk.oncology": "Онкология / скрининг",
@@ -192,7 +214,7 @@ const kg: Dict = {
   "hub.onc.info": "Профилактиканы участкалык дарыер менен талкуулаңыз.",
   "hub.onc.40": "40+: КР протоколдору боюнча скрининг.",
   "hub.onc.50": "50+: маммография / колоноскопия — дарыердин көрсөмөсү боюнча.",
-  "hub.demoSexNote": "Формулалар үчүн жыныс: аял (кийин профилде кеңейтилет).",
+  "hub.demoSexNote": "«Профиль» бөлүмүндө жынысты көрсөтүңүз — болбосо аял модели колдонулат.",
   "hub.noAnalyses": "Анализ жүктөңүз — баалоо пайда болот.",
   "category.hema": "Кан",
   "category.metabolic": "Глюкоза",
@@ -208,6 +230,10 @@ const kg: Dict = {
   "meds.add": "Кошуу",
   "meds.taken": "Кабыл алынды",
   "meds.mark": "Белгилөө",
+  "meds.remindTelegram": "Telegram эскертүү",
+  "meds.remindSending": "Жөнөтүлүүдө…",
+  "meds.remindFail": "Жөнөтүү иштебеди",
+  "meds.remindNoTg": "Бул профилде Telegram жок",
 };
 
 const dicts: Record<Lang, Dict> = { ru, kg };

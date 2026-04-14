@@ -1,3 +1,5 @@
+import type { BiologicalSex } from "@prisma/client";
+
 /**
  * Образовательные оценки риска (не клиническое решение).
  *
@@ -16,6 +18,11 @@ import type { HealthRecordAnalysisPayload } from "@/types/biomarker";
 import { normalizeBiomarkerKey } from "@/lib/medical-logic";
 
 export type Sex = "male" | "female";
+
+export function biologicalSexToRiskSex(s: BiologicalSex): Sex {
+  if (s === "MALE") return "male";
+  return "female";
+}
 
 export type FindriscBand = "low" | "slight" | "moderate" | "high" | "very_high";
 

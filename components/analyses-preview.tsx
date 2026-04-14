@@ -116,6 +116,7 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
     <section className="rounded-2xl border border-emerald-900/15 bg-white/80 p-4 shadow-sm backdrop-blur">
       <h2 className="text-sm font-semibold text-emerald-950">{t(lang, "analyses.title")}</h2>
       <p className="mt-0.5 text-xs text-emerald-900/65">{t(lang, "analyses.subtitle")}</p>
+      <p className="mt-1 text-[10px] leading-snug text-emerald-800/70">{t(lang, "analyses.labsBrands")}</p>
 
       {showNearLabs ? (
         <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">

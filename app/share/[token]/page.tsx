@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import type { HealthRecordAnalysisPayload } from "@/types/biomarker";
+import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +9,16 @@ export const dynamic = "force-dynamic";
 export default async function SharePage({ params }: { params: { token: string } }) {
   const row = await prisma.shareToken.findUnique({
     where: { token: params.token },
-    include: { healthRecord: { include: { profile: true } } },
+    include: {
+      healthRecord: { include: { profile: true, metrics: { select: { payload: true } } } },
+    },
   });
   if (!row || row.expiresAt.getTime() < Date.now()) notFound();
 
-  const data = row.healthRecord.data as HealthRecordAnalysisPayload;
+  const data = resolveLabAnalysisPayload(
+    row.healthRecord.data,
+    row.healthRecord.metrics?.payload ?? null,
+  );
   const profileName = row.healthRecord.profile.displayName;
 
   return (

@@ -1,32 +1,35 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Activity, HeartPulse, Stethoscope } from "lucide-react";
 import { useLanguage } from "@/context/language-context";
 import { useActiveProfile } from "@/context/active-profile-context";
+import { BiologicalSex } from "@prisma/client";
 import type { LabAnalysisRow, ProfileSummary } from "@/types/family";
 import { t } from "@/lib/i18n";
 import {
   ageYearsFromIsoDob,
+  biologicalSexToRiskSex,
   buildCardioDemoFromLabs,
   buildFindriscFromLabsAndProfile,
   oncologyScreeningHint,
   overallHealthIndex,
-  type Sex,
+  toneFromCardioPercent,
 } from "@/lib/risk-scores";
 import {
   analysisWorstStatus,
   worstStatus as mergeMedicalStatus,
   type MedicalStatus,
 } from "@/lib/medical-logic";
+import { buildAscvdPercentFromLabs, type AscvdSex } from "@/lib/ascvd-pce";
+import { MedFormulaBlock } from "@/components/med-formula-block";
 
 type Props = {
   profiles: ProfileSummary[];
   refreshKey?: number;
 };
-
-const DEMO_SEX: Sex = "female";
 
 function medicalStatusToScore(s: MedicalStatus): number {
   if (s === "critical") return 2;
@@ -43,7 +46,7 @@ function RiskCard({
 }: {
   title: string;
   subtitle: string;
-  valueLabel: string;
+  valueLabel: ReactNode;
   tone: "ok" | "warn" | "bad";
   icon: typeof HeartPulse;
 }) {
@@ -66,7 +69,7 @@ function RiskCard({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-emerald-950">{title}</p>
           <p className="text-[11px] text-emerald-900/70">{subtitle}</p>
-          <p className="mt-1.5 text-xs font-medium text-emerald-900">{valueLabel}</p>
+          <div className="mt-1.5 text-xs font-medium text-emerald-900">{valueLabel}</div>
         </div>
       </div>
     </motion.div>
@@ -114,6 +117,18 @@ export function HealthHubPanel({ profiles, refreshKey = 0 }: Props) {
 
   const ageYears = useMemo(() => ageYearsFromIsoDob(activeDob), [activeDob]);
 
+  const activeProfile = useMemo(() => {
+    if (!activeProfileId) return null;
+    return profiles.find((p) => p.id === activeProfileId) ?? null;
+  }, [profiles, activeProfileId]);
+
+  const riskSex = useMemo(
+    () => biologicalSexToRiskSex(activeProfile?.biologicalSex ?? BiologicalSex.UNKNOWN),
+    [activeProfile?.biologicalSex],
+  );
+
+  const ascvdSex: AscvdSex = riskSex;
+
   useEffect(() => {
     if (!activeProfileId) {
       setRows(null);
@@ -147,24 +162,35 @@ export function HealthHubPanel({ profiles, refreshKey = 0 }: Props) {
 
   const findrisc = useMemo(() => {
     if (!rows?.length) return null;
-    return buildFindriscFromLabsAndProfile(rows, ageYears, DEMO_SEX);
-  }, [rows, ageYears]);
+    return buildFindriscFromLabsAndProfile(rows, ageYears, riskSex);
+  }, [rows, ageYears, riskSex]);
 
   const cardio = useMemo(() => {
     if (!rows?.length) return null;
-    return buildCardioDemoFromLabs(rows, ageYears, DEMO_SEX);
-  }, [rows, ageYears]);
+    return buildCardioDemoFromLabs(rows, ageYears, riskSex);
+  }, [rows, ageYears, riskSex]);
+
+  const ascvdPct = useMemo(() => {
+    if (!rows?.length) return null;
+    return buildAscvdPercentFromLabs(rows, ageYears, ascvdSex);
+  }, [rows, ageYears, ascvdSex]);
 
   const onc = useMemo(() => oncologyScreeningHint(ageYears), [ageYears]);
 
   const healthIndex = useMemo(() => {
-    if (!findrisc || !cardio) return null;
+    if (!findrisc || !cardio || ascvdPct == null) return null;
+    const cardioForIndex = Math.max(cardio.percent, ascvdPct);
     return overallHealthIndex(
       findrisc.points,
-      cardio.percent,
+      cardioForIndex,
       medicalStatusToScore(worstLab),
     );
-  }, [findrisc, cardio, worstLab]);
+  }, [findrisc, cardio, ascvdPct, worstLab]);
+
+  const cardioCombinedTone = useMemo(() => {
+    if (!cardio || ascvdPct == null) return "ok" as const;
+    return toneFromCardioPercent(Math.max(cardio.percent, ascvdPct));
+  }, [cardio, ascvdPct]);
 
   const oncText =
     onc === "screening_50"
@@ -197,7 +223,9 @@ export function HealthHubPanel({ profiles, refreshKey = 0 }: Props) {
           <p className="mt-0.5 max-w-xs text-[11px] text-emerald-900/70">
             {t(lang, "hub.healthScoreHint")}
           </p>
-          <p className="mt-1 text-[10px] text-emerald-800/65">{t(lang, "hub.demoSexNote")}</p>
+          {activeProfile?.biologicalSex === "UNKNOWN" ? (
+            <p className="mt-1 text-[10px] text-amber-800/90">{t(lang, "hub.demoSexNote")}</p>
+          ) : null}
         </div>
         {healthIndex != null ? (
           <motion.div initial={{ scale: 0.92 }} animate={{ scale: 1 }} transition={{ type: "spring" }}>
@@ -207,13 +235,23 @@ export function HealthHubPanel({ profiles, refreshKey = 0 }: Props) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        {cardio && findrisc ? (
+               {cardio && findrisc && ascvdPct != null ? (
           <>
             <RiskCard
               title={t(lang, "hub.risk.cardio")}
               subtitle={t(lang, "hub.risk.cardioSub")}
-              valueLabel={`${cardio.percent}% · ${t(lang, "hub.risk.percent10y")} · ${t(lang, `hub.tone.${cardio.tone}`)}`}
-              tone={cardio.tone}
+              valueLabel={
+                <>
+                  <span className="block">
+                    {t(lang, "hub.risk.euroDemo")}: {cardio.percent}% ·{" "}
+                    {t(lang, `hub.tone.${cardio.tone}`)}
+                  </span>
+                  <span className="mt-1 block text-[11px] text-emerald-900/85">
+                    ASCVD (PCE, white): {ascvdPct}% · {t(lang, "hub.risk.percent10y")}
+                  </span>
+                </>
+              }
+              tone={cardioCombinedTone}
               icon={HeartPulse}
             />
             <RiskCard
@@ -233,6 +271,8 @@ export function HealthHubPanel({ profiles, refreshKey = 0 }: Props) {
           </>
         ) : null}
       </div>
+
+      <MedFormulaBlock className="pt-1" />
     </section>
   );
 }

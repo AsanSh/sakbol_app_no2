@@ -55,6 +55,9 @@ const ALIASES: Record<string, string> = {
   "общий холестерин": "Холестерин",
   ldl: "ЛПНП",
   лпнп: "ЛПНП",
+  лпвп: "ЛПВП",
+  hdl: "ЛПВП",
+  "холестерин лпвп": "ЛПВП",
 };
 
 export function normalizeBiomarkerKey(raw: string): string | null {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { HealthRecordKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 
 export const dynamic = "force-dynamic";
 
@@ -35,13 +36,17 @@ export async function GET(req: NextRequest) {
         data: true,
         isPrivate: true,
         createdAt: true,
+        metrics: { select: { payload: true } },
       },
     });
 
     return NextResponse.json({
       profileId,
       analyses: analyses.map((a) => ({
-        ...a,
+        id: a.id,
+        title: a.title,
+        data: resolveLabAnalysisPayload(a.data, a.metrics?.payload ?? null),
+        isPrivate: a.isPrivate,
         createdAt: a.createdAt.toISOString(),
       })),
     });

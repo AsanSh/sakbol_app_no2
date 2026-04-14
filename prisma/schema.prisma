@@ -35,6 +35,7 @@ model Profile {
   /// For managed profiles: semantic role (child, elder, etc.).
   managedRole    ManagedRelationRole?
   dateOfBirth DateTime?
+  biologicalSex  BiologicalSex @default(UNKNOWN)
 
   healthRecords  HealthRecord[]
   medications   Medication[]
@@ -51,7 +52,7 @@ model HealthRecord {
   profileId String
   profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  /// Arbitrary structured payload (PostgreSQL JSONB).
+  /// Технические метаданные (файл, парсер, время). Клинические значения — в metrics.
   data      Json
   isPrivate Boolean  @default(false)
 
@@ -63,9 +64,20 @@ model HealthRecord {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   shares    ShareToken[]
+  metrics   HealthRecordMetrics?
 
   @@index([profileId])
   @@index([profileId, kind])
+}
+
+/// Только лабораторные показатели (JSON), без ФИО и документов — отдельно от identity.
+model HealthRecordMetrics {
+  id             String       @id @default(cuid())
+  healthRecordId String       @unique
+  healthRecord   HealthRecord @relation(fields: [healthRecordId], references: [id], onDelete: Cascade)
+  payload        Json
+
+  @@index([healthRecordId])
 }
 
 model ShareToken {
@@ -122,4 +134,10 @@ enum HealthRecordKind {
 enum SubscriptionTier {
   FREE
   PREMIUM
+}
+
+enum BiologicalSex {
+  UNKNOWN
+  MALE
+  FEMALE
 }

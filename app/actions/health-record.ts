@@ -9,7 +9,6 @@ import { FREE_MAX_ANALYSES, getFamilyTier } from "@/lib/premium";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { processMedicalDocument } from "@/lib/services/process-medical-document";
-import type { HealthRecordAnalysisPayload } from "@/types/biomarker";
 
 const MAX_BYTES = 12 * 1024 * 1024;
 const UPLOAD_ROOT = path.join(process.cwd(), "uploads", "health-records");
@@ -80,8 +79,7 @@ export async function uploadHealthRecord(formData: FormData) {
   const { biomarkers, parser } = await processMedicalDocument(buf, mime);
 
   const now = new Date().toISOString();
-  const data: HealthRecordAnalysisPayload = {
-    biomarkers,
+  const meta = {
     sourceFileId: fileId,
     sourceOriginalFileId: fileId,
     mimeType: mime,
@@ -96,7 +94,12 @@ export async function uploadHealthRecord(formData: FormData) {
       kind: HealthRecordKind.LAB_ANALYSIS,
       isPrivate: true,
       title: `Анализ · ${new Date().toLocaleDateString("ky-KG")}`,
-           data: data as Prisma.InputJsonValue,
+      data: meta as Prisma.InputJsonValue,
+      metrics: {
+        create: {
+          payload: { biomarkers } as Prisma.InputJsonValue,
+        },
+      },
     },
     select: { id: true },
   });

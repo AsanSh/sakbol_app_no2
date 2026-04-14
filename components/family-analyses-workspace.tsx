@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { BiologicalSex } from "@prisma/client";
 import type { FamilyWithProfiles } from "@/types/family";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useLanguage } from "@/context/language-context";
@@ -20,6 +21,7 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
     ...f,
     profiles: f.profiles.map((p) => ({
       ...p,
+      biologicalSex: p.biologicalSex ?? BiologicalSex.UNKNOWN,
       dateOfBirth:
         p.dateOfBirth == null
           ? null

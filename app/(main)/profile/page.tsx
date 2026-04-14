@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { BiologicalSex } from "@prisma/client";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { useLanguage } from "@/context/language-context";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import type { FamilyWithProfiles } from "@/types/family";
 import { t } from "@/lib/i18n";
+import { updateProfileBiologicalSex } from "@/app/actions/profile";
 
 function normalizeFamily(raw: unknown): FamilyWithProfiles {
   const f = raw as FamilyWithProfiles;
@@ -14,6 +16,7 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
     ...f,
     profiles: f.profiles.map((p) => ({
       ...p,
+      biologicalSex: p.biologicalSex ?? BiologicalSex.UNKNOWN,
       dateOfBirth:
         p.dateOfBirth == null
           ? null
@@ -54,6 +57,12 @@ export default function ProfilePage() {
 
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
   const viewer = state.status === "authenticated" ? state.viewer : null;
+
+  const canEditSex = (profileId: string) => {
+    if (!viewer) return false;
+    if (viewer.id === profileId) return true;
+    return viewer.familyRole === "ADMIN";
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 pt-6">
@@ -107,10 +116,29 @@ export default function ProfilePage() {
                   key={p.id}
                   className="rounded-lg border border-emerald-900/10 bg-emerald-900/5 px-3 py-2 text-sm text-emerald-950"
                 >
-                  <span className="font-medium">{p.displayName}</span>
-                  <span className="ml-2 text-xs text-emerald-800/75">{p.familyRole}</span>
-                  {p.isManaged ? (
-                    <span className="ml-2 text-[10px] uppercase text-amber-700">managed</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{p.displayName}</span>
+                    <span className="text-xs text-emerald-800/75">{p.familyRole}</span>
+                    {p.isManaged ? (
+                      <span className="text-[10px] uppercase text-amber-700">managed</span>
+                    ) : null}
+                  </div>
+                  {canEditSex(p.id) ? (
+                    <label className="mt-2 flex flex-col gap-0.5 text-[11px] text-emerald-900/80">
+                      <span>{t(lang, "profile.biologicalSex")}</span>
+                      <select
+                        className="rounded-lg border border-emerald-900/25 bg-white px-2 py-1.5 text-xs text-emerald-950"
+                        value={p.biologicalSex}
+                        onChange={(e) => {
+                          const v = e.target.value as BiologicalSex;
+                          void updateProfileBiologicalSex(p.id, v).then(() => load());
+                        }}
+                      >
+                        <option value={BiologicalSex.UNKNOWN}>{t(lang, "profile.sexUnknown")}</option>
+                        <option value={BiologicalSex.MALE}>{t(lang, "profile.sexMale")}</option>
+                        <option value={BiologicalSex.FEMALE}>{t(lang, "profile.sexFemale")}</option>
+                      </select>
+                    </label>
                   ) : null}
                 </li>
               ))}

@@ -26,6 +26,7 @@ export async function GET() {
             telegramUserId: true,
             managedRole: true,
             dateOfBirth: true,
+            biologicalSex: true,
           },
         },
       },

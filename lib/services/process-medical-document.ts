@@ -46,6 +46,12 @@ export function mockBiomarkers(): ParsedBiomarker[] {
       unit: "ммоль/л",
       reference: "3.0–5.2",
     },
+    {
+      biomarker: "ЛПВП",
+      value: 1.0 + Math.round(Math.random() * 8) / 10,
+      unit: "ммоль/л",
+      reference: "1.0–2.5",
+    },
   ];
   const n = 2 + Math.floor(Math.random() * 3);
   const shuffled = [...pool].sort(() => Math.random() - 0.5);

@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { addMedication, listMedications, markMedicationTaken } from "@/app/actions/medication";
+import {
+  addMedication,
+  listMedications,
+  markMedicationTaken,
+  sendMedicationTelegramReminder,
+} from "@/app/actions/medication";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
@@ -15,6 +20,7 @@ export default function MedsPage() {
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
   const [time, setTime] = useState("08:00");
+  const [remindId, setRemindId] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
     if (!activeProfileId) return setRows([]);
@@ -71,9 +77,30 @@ export default function MedsPage() {
                 <p className="text-sm font-semibold text-emerald-950">{m.name}</p>
                 <p className="text-xs text-emerald-900/70">{m.dosage} · {m.timeOfDay}</p>
               </div>
-              <button onClick={() => void onConfirmTake(m)} className={`rounded-lg px-3 py-1.5 text-xs font-medium ${m.takenToday ? "bg-mint text-emerald-950" : "bg-emerald-900 text-mint"}`}>
-                {m.takenToday ? t(lang, "meds.taken") : t(lang, "meds.mark")}
-              </button>
+              <div className="flex flex-col items-end gap-1">
+                <button type="button" onClick={() => void onConfirmTake(m)} className={`rounded-lg px-3 py-1.5 text-xs font-medium ${m.takenToday ? "bg-mint text-emerald-950" : "bg-emerald-900 text-mint"}`}>
+                  {m.takenToday ? t(lang, "meds.taken") : t(lang, "meds.mark")}
+                </button>
+                <button
+                  type="button"
+                  disabled={remindId === m.id}
+                  onClick={() => {
+                    setRemindId(m.id);
+                    void sendMedicationTelegramReminder(m.id)
+                      .then((r) => {
+                        if (!r.ok && r.error === "profile_no_telegram") {
+                          alert(t(lang, "meds.remindNoTg"));
+                        } else if (!r.ok) {
+                          alert(`${t(lang, "meds.remindFail")}: ${r.error}`);
+                        }
+                      })
+                      .finally(() => setRemindId(null));
+                  }}
+                  className="text-[10px] font-medium text-emerald-800 underline underline-offset-2 disabled:opacity-50"
+                >
+                  {remindId === m.id ? t(lang, "meds.remindSending") : t(lang, "meds.remindTelegram")}
+                </button>
+              </div>
             </div>
           </li>
         ))}

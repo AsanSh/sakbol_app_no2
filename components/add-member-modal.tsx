@@ -1,6 +1,6 @@
 "use client";
 
-import { ManagedRelationRole } from "@prisma/client";
+import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
 import { useState, useTransition, type FormEvent } from "react";
 import { createManagedProfile } from "@/app/actions/family";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ export function AddMemberModal({ open, onClose, onCreated }: Props) {
     ManagedRelationRole.CHILD,
   );
   const [dob, setDob] = useState("");
+  const [biologicalSex, setBiologicalSex] = useState<BiologicalSex>(BiologicalSex.UNKNOWN);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -36,11 +37,13 @@ export function AddMemberModal({ open, onClose, onCreated }: Props) {
         displayName: name,
         managedRole,
         dateOfBirth: dob.trim() || null,
+        biologicalSex,
       });
       if (res.ok) {
         setName("");
         setDob("");
         setManagedRole(ManagedRelationRole.CHILD);
+        setBiologicalSex(BiologicalSex.UNKNOWN);
         onCreated();
         onClose();
       } else {
@@ -105,6 +108,21 @@ export function AddMemberModal({ open, onClose, onCreated }: Props) {
                   {r.label}
                 </option>
               ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-emerald-900/80">
+              Биологиялык жыныс
+            </label>
+            <select
+              className="mt-1 w-full rounded-xl border border-emerald-900/20 bg-white px-3 py-2 text-sm text-emerald-950 outline-none ring-emerald-600 focus-visible:ring-2"
+              value={biologicalSex}
+              onChange={(e) => setBiologicalSex(e.target.value as BiologicalSex)}
+              disabled={pending}
+            >
+              <option value={BiologicalSex.UNKNOWN}>Көрсөтүлгөн эмес</option>
+              <option value={BiologicalSex.MALE}>Эркек</option>
+              <option value={BiologicalSex.FEMALE}>Аял</option>
             </select>
           </div>
           <div>

@@ -1,6 +1,10 @@
 "use server";
 
-import { FamilyRole, type ManagedRelationRole } from "@prisma/client";
+import {
+  BiologicalSex,
+  FamilyRole,
+  type ManagedRelationRole,
+} from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { FREE_MAX_PROFILES, getFamilyTier } from "@/lib/premium";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +16,7 @@ export type CreateManagedProfileInput = {
   /** ISO date string yyyy-mm-dd or empty */
   dateOfBirth?: string | null;
   avatarUrl?: string | null;
+  biologicalSex?: BiologicalSex;
 };
 
 export async function createManagedProfile(input: CreateManagedProfileInput) {
@@ -70,6 +75,7 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
       familyRole: FamilyRole.MEMBER,
       managedRole: input.managedRole,
       dateOfBirth,
+      biologicalSex: input.biologicalSex ?? BiologicalSex.UNKNOWN,
     },
     select: { id: true, displayName: true },
   });
@@ -94,6 +100,7 @@ export async function getFamilyMembers() {
       telegramUserId: true,
       managedRole: true,
       dateOfBirth: true,
+      biologicalSex: true,
     },
   });
 }

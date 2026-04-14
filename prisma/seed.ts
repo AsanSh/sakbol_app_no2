@@ -1,4 +1,5 @@
 import {
+  BiologicalSex,
   FamilyRole,
   HealthRecordKind,
   ManagedRelationRole,
@@ -8,8 +9,12 @@ import {
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.shareToken.deleteMany();
+  await prisma.healthRecordMetrics.deleteMany();
   await prisma.healthRecord.deleteMany();
+  await prisma.medication.deleteMany();
   await prisma.profile.deleteMany();
+  await prisma.subscription.deleteMany();
   await prisma.family.deleteMany();
 
   const family = await prisma.family.create({
@@ -20,10 +25,11 @@ async function main() {
     data: {
       familyId: family.id,
       displayName: "Айгүл (админ)",
-      telegramUserId: "demo-admin-telegram",
+      telegramUserId: "1000000001",
       familyRole: FamilyRole.ADMIN,
       isManaged: false,
       avatarUrl: null,
+      biologicalSex: BiologicalSex.FEMALE,
     },
   });
 
@@ -36,6 +42,7 @@ async function main() {
       isManaged: true,
       managedRole: ManagedRelationRole.CHILD,
       dateOfBirth: new Date("2020-05-15"),
+      biologicalSex: BiologicalSex.MALE,
     },
   });
 
@@ -44,16 +51,39 @@ async function main() {
       profileId: child.id,
       kind: HealthRecordKind.LAB_ANALYSIS,
       isPrivate: false,
-      title: "Общий анализ крови",
+      title: "Общий анализ крови (seed)",
       data: {
-        panel: "CBC",
-        collectedAt: "2026-04-01",
-        results: { hemoglobin: 140, wbc: 6.2 },
+        sourceFileId: "seed",
+        mimeType: "application/x-seed",
+        anonymizedAt: new Date().toISOString(),
+        parsedAt: new Date().toISOString(),
+        parser: "seed",
+      },
+      metrics: {
+        create: {
+          payload: {
+            biomarkers: [
+              {
+                biomarker: "Гемоглобин",
+                value: 128,
+                unit: "г/л",
+                reference: "110–145",
+              },
+              {
+                biomarker: "Глюкоза",
+                value: 4.9,
+                unit: "ммоль/л",
+                reference: "3.3–5.6",
+              },
+            ],
+          },
+        },
       },
     },
   });
 
   console.log("Seed OK. familyId=%s adminId=%s childId=%s", family.id, admin.id, child.id);
+  console.log("Admin telegramUserId=1000000001 (замените на реальный chat_id для теста напоминаний).");
 }
 
 main()
