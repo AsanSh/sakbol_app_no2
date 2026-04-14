@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { ensureFamilySubscription } from "@/lib/premium";
-import { prisma } from "@/lib/prisma";
+import { getOrCreateFirstDevAdmin } from "@/lib/dev-bootstrap";
 import {
   createSessionToken,
   sessionCookieName,
@@ -9,44 +10,63 @@ import {
 
 export const dynamic = "force-dynamic";
 
+function dbErrorMessage(err: unknown): string {
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P1001") {
+      return "База жок же өчүк эмес. Терминалда: docker compose up -d, андан кийин npx prisma migrate deploy";
+    }
+    if (err.code === "P2021" || err.code === "P2010") {
+      return "Схема эски. Иштетиңиз: npx prisma migrate deploy";
+    }
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return "Database error";
+}
+
 /**
- * Демо / dev: сессия под первым ADMIN (после seed).
- * Локально: NODE_ENV=development + ALLOW_DEV_LOGIN=true.
- * Vercel / браузер: ALLOW_DEV_LOGIN=true + NEXT_PUBLIC_ALLOW_DEV_LOGIN=true (только для демо-домена).
+ * Демо / dev: сессия под первым ADMIN (после seed или авто-создания в development).
  */
 export async function POST() {
   if (process.env.ALLOW_DEV_LOGIN !== "true") {
     return NextResponse.json({ error: "Dev login disabled" }, { status: 403 });
   }
 
-  const admin = await prisma.profile.findFirst({
-    where: { familyRole: "ADMIN" },
-    orderBy: { createdAt: "asc" },
-  });
+  try {
+    const admin = await getOrCreateFirstDevAdmin();
 
-  if (!admin) {
-    return NextResponse.json(
-      { error: "No admin profile. Run npm run db:seed" },
-      { status: 404 },
-    );
-  }
+    if (!admin) {
+      return NextResponse.json(
+        {
+          error:
+            "No admin profile. Run: docker compose up -d && npx prisma migrate deploy && npm run db:seed",
+        },
+        { status: 404 },
+      );
+    }
 
-  const token = createSessionToken({
-    profileId: admin.id,
-    familyId: admin.familyId,
-  });
-  await ensureFamilySubscription(admin.familyId);
-
-  const res = NextResponse.json({
-    ok: true,
-    profile: {
-      id: admin.id,
-      displayName: admin.displayName,
-      avatarUrl: admin.avatarUrl,
-      familyRole: admin.familyRole,
+    const token = createSessionToken({
+      profileId: admin.id,
       familyId: admin.familyId,
-    },
-  });
-  res.cookies.set(sessionCookieName(), token, sessionCookieOptions());
-  return res;
+    });
+    await ensureFamilySubscription(admin.familyId);
+
+    const res = NextResponse.json({
+      ok: true,
+      profile: {
+        id: admin.id,
+        displayName: admin.displayName,
+        avatarUrl: admin.avatarUrl,
+        familyRole: admin.familyRole,
+        familyId: admin.familyId,
+      },
+    });
+    res.cookies.set(sessionCookieName(), token, sessionCookieOptions());
+    return res;
+  } catch (e: unknown) {
+    const msg = dbErrorMessage(e);
+    console.error("[/api/auth/dev]", e);
+    return NextResponse.json({ error: msg }, { status: 503 });
+  }
 }
