@@ -9,6 +9,8 @@ import { useTelegramSession } from "@/context/telegram-session-context";
 import type { FamilyWithProfiles } from "@/types/family";
 import { t } from "@/lib/i18n";
 import { updateProfileBiologicalSex } from "@/app/actions/profile";
+import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
+import { CopyIdButton } from "@/components/copy-id-button";
 
 function normalizeFamily(raw: unknown): FamilyWithProfiles {
   const f = raw as FamilyWithProfiles;
@@ -94,6 +96,36 @@ export default function ProfilePage() {
           <p className="mt-1 text-xs text-emerald-800/80">
             {t(lang, "profile.role")}: {viewer.familyRole}
           </p>
+          <div className="mt-3 space-y-2 rounded-xl border border-emerald-900/10 bg-emerald-900/5 p-3 text-[11px] text-emerald-900">
+            <p className="text-emerald-800/80">{t(lang, "profile.idsHint")}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-emerald-950">{t(lang, "profile.clinicalIdShort")}:</span>
+              <code className="rounded bg-white px-1.5 py-0.5 font-mono text-[10px]">
+                {formatClinicalAnonymId(viewer.id)}
+              </code>
+              <CopyIdButton
+                text={formatClinicalAnonymId(viewer.id)}
+                label={t(lang, "profile.copyId")}
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-emerald-950">{t(lang, "profile.internalId")}:</span>
+              <code className="max-w-full break-all rounded bg-white px-1.5 py-0.5 font-mono text-[10px]">
+                {viewer.id}
+              </code>
+              <CopyIdButton text={viewer.id} label={t(lang, "profile.copyId")} />
+            </div>
+            {family?.profiles.find((p) => p.id === viewer.id)?.telegramUserId ? (
+              <p className="text-emerald-800/90">
+                {t(lang, "profile.telegramId")}:{" "}
+                <code className="font-mono text-[10px]">
+                  {family.profiles.find((p) => p.id === viewer.id)?.telegramUserId}
+                </code>
+              </p>
+            ) : (
+              <p className="text-emerald-800/70">{t(lang, "profile.telegramId")}: —</p>
+            )}
+          </div>
         </section>
       ) : null}
 
@@ -126,6 +158,15 @@ export default function ProfilePage() {
                     {p.isManaged ? (
                       <span className="text-[10px] uppercase text-amber-700">managed</span>
                     ) : null}
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 font-mono text-[10px] text-emerald-800/85">
+                    <span>
+                      {t(lang, "profile.clinicalIdShort")}: {formatClinicalAnonymId(p.id)}
+                    </span>
+                    <CopyIdButton
+                      text={formatClinicalAnonymId(p.id)}
+                      label={t(lang, "profile.copyId")}
+                    />
                   </div>
                   {canEditSex(p.id) ? (
                     <label className="mt-2 flex flex-col gap-0.5 text-[11px] text-emerald-900/80">

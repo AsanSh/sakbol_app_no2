@@ -131,21 +131,32 @@ export function FamilyAnalysesWorkspace({
         onAddMember={admin ? () => setAddOpen(true) : undefined}
       />
 
-      <HealthHubPanel profiles={family.profiles} refreshKey={analysesRefresh} />
+      <p className="text-center text-[11px] text-emerald-800/75">{t(lang, "dashboard.quickUploadHint")}</p>
 
       {activeProfileId ? (
         <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => setUploadOpen(true)}
-            className={
-              compactUpload
-                ? "w-full rounded-2xl border-2 border-emerald-800/30 bg-emerald-900 py-3 text-center text-sm font-semibold text-mint shadow-md transition-opacity hover:opacity-95"
-                : "w-full rounded-2xl border-2 border-emerald-800/30 bg-emerald-900 py-4 text-center text-base font-semibold text-mint shadow-md transition-opacity hover:opacity-95"
-            }
-          >
-            {compactUpload ? t(lang, "dashboard.upload") : t(lang, "tests.uploadBig")}
-          </button>
+                   <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+            <button
+              type="button"
+              onClick={() => setUploadOpen(true)}
+              className={
+                compactUpload
+                  ? "w-full rounded-2xl border-2 border-amber-500/50 bg-emerald-900 py-3 text-center text-sm font-semibold text-mint shadow-lg shadow-emerald-900/20 transition-opacity hover:opacity-95 sm:flex-1"
+                  : "w-full rounded-2xl border-2 border-amber-500/50 bg-emerald-900 py-4 text-center text-base font-bold text-mint shadow-lg shadow-emerald-900/25 transition-opacity hover:opacity-95 sm:flex-1"
+              }
+            >
+              {compactUpload ? t(lang, "dashboard.upload") : t(lang, "tests.uploadBig")}
+            </button>
+            {admin ? (
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                className="w-full rounded-2xl border-2 border-emerald-800/40 bg-white py-3 text-center text-sm font-semibold text-emerald-950 shadow-sm transition-colors hover:bg-emerald-900/5 sm:w-44 sm:shrink-0 sm:self-stretch sm:py-4"
+              >
+                {t(lang, "profile.addMember")}
+              </button>
+            ) : null}
+          </div>
           {showDemoSeedButton ? (
             <button
               type="button"
@@ -165,6 +176,8 @@ export function FamilyAnalysesWorkspace({
           ) : null}
         </div>
       ) : null}
+
+      <HealthHubPanel profiles={family.profiles} refreshKey={analysesRefresh} />
 
       <AnalysesPreview profiles={family.profiles} refreshKey={analysesRefresh} />
 

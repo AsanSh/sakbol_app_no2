@@ -52,14 +52,10 @@ export function HomeDashboard() {
 
       {authReady && isAuthenticated ? (
         <>
-          <FamilyAnalysesWorkspace showDemoSeedButton={false} compactUpload />
-          <section
-            className="rounded-2xl bg-emerald-900 p-4 text-mint shadow-lg"
-            aria-label="Brand color sample"
-          >
-            <p className="text-sm font-medium text-amber-500">bg-emerald-900</p>
-            <p className="mt-1 text-xs text-mint/90">{t(lang, "dashboard.brandSample")}</p>
-          </section>
+          <FamilyAnalysesWorkspace showDemoSeedButton compactUpload={false} />
+          <p className="text-center text-xs text-emerald-800/70">
+            {t(lang, "dashboard.profileIdsHint")}
+          </p>
         </>
       ) : null}
     </div>
