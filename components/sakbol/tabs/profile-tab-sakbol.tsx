@@ -207,7 +207,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                         <img
                           src={url}
                           alt=""
-                          className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
+                          className="absolute inset-0 h-full w-full object-cover object-top"
                         />
                       ) : (
                         <span className="font-manrope text-lg font-extrabold">
