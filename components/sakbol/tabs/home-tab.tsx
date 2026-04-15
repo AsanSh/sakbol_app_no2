@@ -50,7 +50,14 @@ export function HomeTab({ family }: Props) {
     state.status === "authenticated" ? formatClinicalAnonymId(state.viewer.id) : "—";
 
   const profiles = family?.profiles ?? [];
-  const healthScore = 78;
+
+  /** Стабильный (детерминированный) скор на профиль — меняется при переключении. */
+  function profileScore(profileId: string | null): number {
+    if (!profileId) return 78;
+    const sum = profileId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    return 60 + (sum % 36); // диапазон 60–95
+  }
+  const healthScore = profileScore(activeProfileId);
 
   const notifications = [
     { icon: "lab_research", title: "Готов расшифровка анализа", time: "09:12" },
@@ -124,8 +131,7 @@ export function HomeTab({ family }: Props) {
                 >
                   <div
                     className={cn(
-                      "flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
-                      p.avatarUrl ? "overflow-hidden" : "",
+                      "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
                       GRADIENTS[i % GRADIENTS.length],
                       active ? "ring-2 ring-[#004253] ring-offset-2 ring-offset-[#f8f9fa]" : "",
                     )}
@@ -135,7 +141,7 @@ export function HomeTab({ family }: Props) {
                       <img
                         src={p.avatarUrl}
                         alt=""
-                        className="h-full w-full rounded-full bg-[#d9e2e7] p-0.5 object-contain"
+                        className="h-full w-full object-cover object-center"
                       />
                     ) : (
                       initials

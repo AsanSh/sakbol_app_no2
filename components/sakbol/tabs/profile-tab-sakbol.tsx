@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { BiologicalSex } from "@prisma/client";
-import { cn } from "@/lib/utils";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -202,16 +201,13 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 {(() => {
                   const url = viewer.avatarUrl ?? selfProfile?.avatarUrl ?? null;
                   return (
-                    <div className={cn(
-                      "flex h-14 w-14 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/40",
-                      url ? "overflow-hidden" : "",
-                    )}>
+                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white/15 ring-2 ring-white/40">
                       {url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={url}
                           alt=""
-                          className="h-full w-full rounded-full bg-[#d9e2e7]/90 p-0.5 object-contain"
+                          className="h-full w-full object-cover object-center"
                         />
                       ) : (
                         <span className="font-manrope text-lg font-extrabold">
