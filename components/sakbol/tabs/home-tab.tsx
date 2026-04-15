@@ -137,7 +137,7 @@ export function HomeTab({ family }: Props) {
                 >
                   <div
                     className={cn(
-                      "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
+                      "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
                       GRADIENTS[i % GRADIENTS.length],
                       active ? "ring-2 ring-[#004253] ring-offset-2 ring-offset-[#f8f9fa]" : "",
                     )}
@@ -147,7 +147,7 @@ export function HomeTab({ family }: Props) {
                       <img
                         src={p.avatarUrl}
                         alt=""
-                        className="h-full w-full object-cover object-center"
+                        className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
                       />
                     ) : (
                       initials

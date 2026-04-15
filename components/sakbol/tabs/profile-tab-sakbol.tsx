@@ -201,13 +201,13 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 {(() => {
                   const url = viewer.avatarUrl ?? selfProfile?.avatarUrl ?? null;
                   return (
-                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white/15 ring-2 ring-white/40">
+                    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/15 ring-2 ring-white/40">
                       {url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={url}
                           alt=""
-                          className="h-full w-full object-cover object-center"
+                          className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
                         />
                       ) : (
                         <span className="font-manrope text-lg font-extrabold">

@@ -74,7 +74,7 @@ export function FamilySwitcher({
               >
                 <span
                   className={cn(
-                    "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 text-sm font-semibold transition-colors",
+                    "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 text-sm font-semibold transition-colors",
                     active
                       ? "border-amber-500 bg-emerald-900 text-mint shadow-md"
                       : "border-emerald-700/40 bg-white text-emerald-900",
@@ -85,7 +85,7 @@ export function FamilySwitcher({
                     <img
                       src={p.avatarUrl}
                       alt=""
-                      className="h-full w-full object-cover object-center"
+                      className="absolute inset-0 h-full w-full object-cover object-[center_20%]"
                     />
                   ) : (
                     initials(p.displayName)
