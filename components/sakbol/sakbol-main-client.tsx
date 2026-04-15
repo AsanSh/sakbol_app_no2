@@ -21,7 +21,7 @@ export function SakbolMainClient() {
   const { refreshKey: analysesTick, bumpAnalyses } = useAnalysesRefresh();
 
   return (
-    <div className="flex min-h-dvh bg-[#f8f9fa]">
+    <div className="flex min-h-dvh">
       {!diaryOpen ? <SakbolDesktopNav /> : null}
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
         <div

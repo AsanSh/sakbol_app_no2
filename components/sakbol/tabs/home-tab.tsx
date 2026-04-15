@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { UserPlus } from "lucide-react";
@@ -71,7 +72,12 @@ export function HomeTab({ family }: Props) {
         bellUnread
         onBell={() => setNotificationsOpen(true)}
       />
-      <div className="mx-auto max-w-2xl space-y-4 px-4 pb-4 pt-2">
+      <motion.div
+        className="mx-auto max-w-2xl space-y-4 px-4 pb-4 pt-2"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
       {authReady && !isAuthenticated ? (
         <div className="rounded-2xl border border-[#ffdcc0] bg-[#ffdcc0]/50 px-4 py-3 text-sm text-[#2d1600]">
           <p className="font-medium">Вход через Telegram Mini App</p>
@@ -93,7 +99,7 @@ export function HomeTab({ family }: Props) {
         </div>
       ) : null}
 
-      <section>
+      <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#70787d]">
           Профиль: {clinicalId} · Бишкек
         </p>
@@ -103,10 +109,10 @@ export function HomeTab({ family }: Props) {
         <p className="mt-1 text-sm text-[#40484c]">
           Показатели стабильны — продолжайте отслеживать анализы и сон.
         </p>
-      </section>
+      </motion.section>
 
       {profiles.length > 0 ? (
-        <section>
+        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
           <p className="mb-2 text-xs font-semibold text-[#40484c]">Семья</p>
           <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {profiles.map((p, i) => {
@@ -165,10 +171,14 @@ export function HomeTab({ family }: Props) {
               <span className="text-[11px] text-[#70787d]">Добавить</span>
             </button>
           </div>
-        </section>
+        </motion.section>
       ) : null}
 
-      <button
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, delay: 0.14 }}
+        whileTap={{ scale: 0.97 }}
         type="button"
         onClick={() => setScoreSheetOpen(true)}
         className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#004253] to-[#005b71] p-4 text-left text-white shadow-md"
@@ -227,29 +237,35 @@ export function HomeTab({ family }: Props) {
             <p className="font-semibold">1 850</p>
           </div>
         </div>
-      </button>
+      </motion.button>
 
-      <button
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, delay: 0.21 }}
+        whileTap={{ scale: 0.97 }}
         type="button"
         onClick={() => setTab("analyses")}
-        className="flex w-full items-center gap-3 rounded-2xl border border-[#e7e8e9] bg-white p-4 text-left shadow-sm"
+        className="flex w-full items-center gap-3 rounded-2xl border border-emerald-900/10 bg-white/80 p-4 text-left shadow-sm transition-shadow hover:shadow-md"
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#004253]/10 text-[#004253]">
-          <MaterialIcon name="cloud_upload" className="text-[28px]" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#004253] to-[#005b71] text-white">
+          <MaterialIcon name="cloud_upload" className="text-[26px]" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-manrope font-bold text-[#191c1d]">Загрузить анализы</p>
-          <p className="text-xs text-[#70787d]">PDF, фото или ссылка из лаборатории</p>
+          <p className="font-manrope font-bold text-slate-900">Загрузить анализы</p>
+          <p className="text-xs text-slate-500">PDF, фото или ссылка из лаборатории</p>
         </div>
         <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
-      </button>
+      </motion.button>
 
       {authReady && isAuthenticated && profiles.length > 0 ? (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
         <AnalysesPreview
           profiles={profiles}
           refreshKey={analysesRefreshKey}
           onRequestUpload={() => setTab("analyses")}
         />
+        </motion.div>
       ) : null}
 
       <button
@@ -397,7 +413,7 @@ export function HomeTab({ family }: Props) {
           </div>
         ))}
       </BottomSheet>
-      </div>
+      </motion.div>
     </div>
   );
 }

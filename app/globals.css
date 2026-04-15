@@ -6,7 +6,9 @@
 
 @layer base {
   body {
-    background-color: #f8f9fa;
+    background-color: #f0f7f5;
+    background-image: radial-gradient(ellipse at top left, #d6ede9 0%, #f0f7f5 45%, #ffffff 100%);
+    background-attachment: fixed;
   }
 }
 

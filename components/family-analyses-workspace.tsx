@@ -15,6 +15,7 @@ import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { t } from "@/lib/i18n";
 import { seedDemoLabRecord } from "@/app/actions/demo-lab";
+import { UploadFab } from "@/components/upload-fab";
 
 function normalizeFamily(raw: unknown): FamilyWithProfiles {
   const f = raw as FamilyWithProfiles;
@@ -49,7 +50,8 @@ type Props = {
 export function FamilyAnalysesWorkspace({
   showPremiumCta = true,
   showDemoSeedButton = true,
-  compactUpload = false,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  compactUpload: _compactUpload = false,
   onAnalysesChanged,
   uploadSignal = 0,
 }: Props) {
@@ -142,53 +144,49 @@ export function FamilyAnalysesWorkspace({
         onAddMember={admin ? () => setAddOpen(true) : undefined}
       />
 
-      <p className="text-center text-[11px] text-emerald-800/75">{t(lang, "dashboard.quickUploadHint")}</p>
-
+      {/* Подсказка + кнопка «Добавить члена» (компактная) */}
       {activeProfileId ? (
-        <div className="flex flex-col gap-2">
-                   <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] text-emerald-800/75">{t(lang, "dashboard.quickUploadHint")}</p>
+          {admin ? (
             <button
               type="button"
-              onClick={() => setUploadOpen(true)}
-              className={
-                compactUpload
-                  ? "w-full rounded-2xl border-2 border-amber-500/50 bg-emerald-900 py-3 text-center text-sm font-semibold text-mint shadow-lg shadow-emerald-900/20 transition-opacity hover:opacity-95 sm:flex-1"
-                  : "w-full rounded-2xl border-2 border-amber-500/50 bg-emerald-900 py-4 text-center text-base font-bold text-mint shadow-lg shadow-emerald-900/25 transition-opacity hover:opacity-95 sm:flex-1"
-              }
+              onClick={() => setAddOpen(true)}
+              className="shrink-0 rounded-xl border border-emerald-800/30 bg-white/80 px-3 py-1.5 text-[11px] font-semibold text-emerald-900 shadow-sm transition-colors hover:bg-emerald-900/5"
             >
-              {compactUpload ? t(lang, "dashboard.upload") : t(lang, "tests.uploadBig")}
-            </button>
-            {admin ? (
-              <button
-                type="button"
-                onClick={() => setAddOpen(true)}
-                className="w-full rounded-2xl border-2 border-emerald-800/40 bg-white py-3 text-center text-sm font-semibold text-emerald-950 shadow-sm transition-colors hover:bg-emerald-900/5 sm:w-44 sm:shrink-0 sm:self-stretch sm:py-4"
-              >
-                {t(lang, "profile.addMember")}
-              </button>
-            ) : null}
-          </div>
-          {showDemoSeedButton ? (
-            <button
-              type="button"
-              disabled={demoPending}
-              onClick={() => {
-                setDemoPending(true);
-                void seedDemoLabRecord(activeProfileId)
-                  .then((r) => {
-                    if (r.ok) {
-                      setAnalysesRefresh((k) => k + 1);
-                      onAnalysesChanged?.();
-                    }
-                  })
-                  .finally(() => setDemoPending(false));
-              }}
-              className="w-full rounded-2xl border border-emerald-800/40 bg-white py-3 text-center text-sm font-medium text-emerald-900 shadow-sm disabled:opacity-50"
-            >
-              {demoPending ? "…" : t(lang, "tests.demoSeed")}
+              {t(lang, "family.addMemberShort")}
             </button>
           ) : null}
         </div>
+      ) : null}
+
+      {/* Демо-кнопка: только на /tests, компактная, по центру */}
+      {activeProfileId && showDemoSeedButton ? (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            disabled={demoPending}
+            onClick={() => {
+              setDemoPending(true);
+              void seedDemoLabRecord(activeProfileId)
+                .then((r) => {
+                  if (r.ok) {
+                    setAnalysesRefresh((k) => k + 1);
+                    onAnalysesChanged?.();
+                  }
+                })
+                .finally(() => setDemoPending(false));
+            }}
+            className="rounded-2xl border border-emerald-800/30 bg-white/80 px-5 py-2 text-sm font-medium text-emerald-900 shadow-sm transition-colors hover:bg-emerald-50 disabled:opacity-50"
+          >
+            {demoPending ? "…" : t(lang, "tests.demoSeed")}
+          </button>
+        </div>
+      ) : null}
+
+      {/* FAB: плавающая кнопка загрузки (мобилка) */}
+      {activeProfileId ? (
+        <UploadFab onClick={() => setUploadOpen(true)} mobileOnly={false} />
       ) : null}
 
       <HealthHubPanel profiles={family.profiles} refreshKey={analysesRefresh} />

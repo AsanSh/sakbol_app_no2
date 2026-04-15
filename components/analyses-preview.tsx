@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp, PlusCircle, Stethoscope } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { listLabAnalysesForProfile } from "@/app/actions/analyses";
@@ -185,8 +186,8 @@ export function AnalysesPreview({
           ) : null}
         </div>
       ) : (
-        <ul className="mt-3 space-y-2">
-          {rows?.map((a) => {
+        <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {rows?.map((a, idx) => {
             const n = biomarkerCount(a.data);
             const worst = analysisWorstStatus(a.data, activeDob);
             const open = expandedId === a.id;
@@ -196,10 +197,13 @@ export function AnalysesPreview({
                 : null;
 
             return (
-              <li
+              <motion.li
                 key={a.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, delay: idx * 0.05, ease: "easeOut" }}
                 className={cn(
-                  "rounded-xl border-2 px-3 py-2 text-sm text-emerald-900 transition-colors",
+                  "rounded-2xl border-2 px-4 py-3 text-sm text-emerald-900 shadow-sm transition-shadow hover:shadow-md",
                   cardTone(worst),
                 )}
               >
@@ -211,13 +215,13 @@ export function AnalysesPreview({
                 >
                   <span>
                     <span
-                      className="font-medium"
+                      className="font-semibold text-slate-900"
                       style={{ borderBottom: `2px solid ${getStatusColorHex(worst)}` }}
                     >
                       {a.title ?? t(lang, "analyses.analysis")}
                     </span>
                     {n != null ? (
-                      <span className="ml-2 text-xs text-emerald-600/70">
+                      <span className="ml-2 text-xs text-slate-500">
                         {n} {t(lang, "analyses.indicators")}
                       </span>
                     ) : null}
@@ -319,7 +323,7 @@ export function AnalysesPreview({
                     ) : null}
                   </div>
                 ) : null}
-              </li>
+              </motion.li>
             );
           })}
         </ul>
