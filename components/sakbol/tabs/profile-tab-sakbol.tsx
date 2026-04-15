@@ -69,8 +69,18 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             <p className="mt-1 text-xs text-[#693c08]">
               {state.status === "unauthenticated" && state.reason === "no_init_data"
                 ? t(lang, "dashboard.authBodyNoTg")
-                : t(lang, "dashboard.authBody")}
+                : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
+                  ? t(lang, "dashboard.authTelegramRetry")
+                  : t(lang, "dashboard.authBody")}
             </p>
+            {state.status === "unauthenticated" &&
+            state.reason &&
+            state.reason !== "no_init_data" &&
+            state.reason !== "telegram_init_data_missing" ? (
+              <p className="mt-2 rounded-lg bg-white/60 px-2 py-1.5 font-mono text-[10px] leading-snug text-[#5c3200]">
+                {state.reason}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

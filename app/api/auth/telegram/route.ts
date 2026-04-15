@@ -45,52 +45,64 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "initData has no user" }, { status: 400 });
   }
 
-  const telegramUserId = String(user.id);
-  let profile = await prisma.profile.findUnique({
-    where: { telegramUserId },
-  });
-
-  if (!profile) {
-    const family = await prisma.family.create({
-      data: {
-        name: `${buildDisplayName(user)} — үй-бүлө`,
-      },
+  try {
+    const telegramUserId = String(user.id);
+    let profile = await prisma.profile.findUnique({
+      where: { telegramUserId },
     });
 
-    profile = await prisma.profile.create({
-      data: {
-        familyId: family.id,
-        displayName: buildDisplayName(user),
-        telegramUserId,
-        avatarUrl: user.photo_url ?? null,
-        familyRole: FamilyRole.ADMIN,
-        isManaged: false,
-      },
-    });
-  } else if (user.photo_url && user.photo_url !== profile.avatarUrl) {
-    profile = await prisma.profile.update({
-      where: { id: profile.id },
-      data: { avatarUrl: user.photo_url },
-    });
-  }
-  await ensureFamilySubscription(profile.familyId);
+    if (!profile) {
+      const family = await prisma.family.create({
+        data: {
+          name: `${buildDisplayName(user)} — үй-бүлө`,
+        },
+      });
 
-  const token = createSessionToken({
-    profileId: profile.id,
-    familyId: profile.familyId,
-  });
+      profile = await prisma.profile.create({
+        data: {
+          familyId: family.id,
+          displayName: buildDisplayName(user),
+          telegramUserId,
+          avatarUrl: user.photo_url ?? null,
+          familyRole: FamilyRole.ADMIN,
+          isManaged: false,
+        },
+      });
+    } else if (user.photo_url && user.photo_url !== profile.avatarUrl) {
+      profile = await prisma.profile.update({
+        where: { id: profile.id },
+        data: { avatarUrl: user.photo_url },
+      });
+    }
+    await ensureFamilySubscription(profile.familyId);
 
-  const res = NextResponse.json({
-    ok: true,
-    profile: {
-      id: profile.id,
-      displayName: profile.displayName,
-      avatarUrl: profile.avatarUrl,
-      familyRole: profile.familyRole,
+    const token = createSessionToken({
+      profileId: profile.id,
       familyId: profile.familyId,
-    },
-  });
+    });
 
-  res.cookies.set(sessionCookieName(), token, sessionCookieOptions());
-  return res;
+    const res = NextResponse.json({
+      ok: true,
+      profile: {
+        id: profile.id,
+        displayName: profile.displayName,
+        avatarUrl: profile.avatarUrl,
+        familyRole: profile.familyRole,
+        familyId: profile.familyId,
+      },
+    });
+
+    res.cookies.set(sessionCookieName(), token, sessionCookieOptions());
+    return res;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Server error";
+    if (msg.includes("SESSION_SECRET")) {
+      return NextResponse.json(
+        { error: "SESSION_SECRET is not set on the server (min 16 characters)." },
+        { status: 503 },
+      );
+    }
+    console.error("POST /api/auth/telegram", e);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

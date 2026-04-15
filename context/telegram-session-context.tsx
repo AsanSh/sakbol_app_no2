@@ -33,6 +33,19 @@ type TelegramSessionContextValue = {
 
 const TelegramSessionContext = createContext<TelegramSessionContextValue | null>(null);
 
+function sleep(ms: number) {
+  return new Promise<void>((r) => setTimeout(r, ms));
+}
+
+/** Первый кадр в Telegram: initData может прийти чуть позже initDataUnsafe / hash. */
+function looksLikeTelegramWebApp(WebApp: {
+  initDataUnsafe?: { user?: unknown };
+}): boolean {
+  if (typeof window === "undefined") return false;
+  if (WebApp.initDataUnsafe?.user != null) return true;
+  return /tgWebAppData|tgWebAppVersion|tgWebAppPlatform/i.test(window.location.hash);
+}
+
 export function TelegramSessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<TelegramSessionState>({ status: "idle" });
   const [authReady, setAuthReady] = useState(false);
@@ -46,15 +59,31 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
     async function authenticate() {
       setState({ status: "loading" });
 
-      let initData = "";
+      type WebAppType = Awaited<typeof import("@twa-dev/sdk")>["default"];
+      let WebApp: WebAppType | null = null;
       try {
-        const { default: WebApp } = await import("@twa-dev/sdk");
-        initData = WebApp.initData ?? "";
+        const mod = await import("@twa-dev/sdk");
+        WebApp = mod.default;
+        WebApp.ready();
       } catch {
-        /* not in Telegram */
+        /* SDK / Telegram bridge not available */
       }
 
-      if (!initData && process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true") {
+      let initData = "";
+      if (WebApp) {
+        initData = WebApp.initData ?? "";
+        if (!initData && looksLikeTelegramWebApp(WebApp)) {
+          for (let i = 0; i < 50; i++) {
+            await sleep(50);
+            if (cancelled) return;
+            initData = WebApp.initData ?? "";
+            if (initData) break;
+          }
+        }
+      }
+
+      const inTelegramMiniApp = WebApp ? looksLikeTelegramWebApp(WebApp) : false;
+      if (!initData && process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true" && !inTelegramMiniApp) {
         const devRes = await fetch("/api/auth/dev", { method: "POST" });
         if (cancelled) return;
         if (devRes.ok) {
@@ -78,7 +107,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         if (!cancelled) {
           setState({
             status: "unauthenticated",
-            reason: "no_init_data",
+            reason: inTelegramMiniApp ? "telegram_init_data_missing" : "no_init_data",
           });
           setAuthReady(true);
         }
@@ -88,6 +117,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       const res = await fetch("/api/auth/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ initData }),
       });
 

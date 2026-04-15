@@ -66,8 +66,18 @@ export function HomeTab({ family }: Props) {
           <p className="mt-1 text-xs text-[#693c08]">
             {state.status === "unauthenticated" && state.reason === "no_init_data"
               ? "Откройте приложение в Telegram или включите демо-вход в браузере."
-              : "Требуется авторизация для загрузки анализов и семейного профиля."}
+              : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
+                ? "Закройте мини-приложение полностью и откройте снова из бота."
+                : "Требуется авторизация для загрузки анализов и семейного профиля. Проверьте TELEGRAM_BOT_TOKEN, SESSION_SECRET и DATABASE_URL на сервере."}
           </p>
+          {state.status === "unauthenticated" &&
+          state.reason &&
+          state.reason !== "no_init_data" &&
+          state.reason !== "telegram_init_data_missing" ? (
+            <p className="mt-2 rounded-lg bg-white/60 px-2 py-1.5 font-mono text-[10px] leading-snug text-[#5c3200]">
+              {state.reason}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
