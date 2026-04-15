@@ -129,7 +129,7 @@ export function HomeTab({ family }: Props) {
                       <img
                         src={p.avatarUrl}
                         alt=""
-                        className="h-full w-full rounded-full object-cover"
+                        className="h-full w-full rounded-full bg-[#d9e2e7] object-contain"
                       />
                     ) : (
                       initials
