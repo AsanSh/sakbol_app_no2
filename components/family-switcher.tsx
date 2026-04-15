@@ -74,7 +74,8 @@ export function FamilySwitcher({
               >
                 <span
                   className={cn(
-                    "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 text-sm font-semibold transition-colors",
+                    "flex h-14 w-14 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
+                    p.avatarUrl ? "overflow-hidden" : "",
                     active
                       ? "border-amber-500 bg-emerald-900 text-mint shadow-md"
                       : "border-emerald-700/40 bg-white text-emerald-900",

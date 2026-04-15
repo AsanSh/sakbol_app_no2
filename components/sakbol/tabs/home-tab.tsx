@@ -124,7 +124,8 @@ export function HomeTab({ family }: Props) {
                 >
                   <div
                     className={cn(
-                      "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
+                      "flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
+                      p.avatarUrl ? "overflow-hidden" : "",
                       GRADIENTS[i % GRADIENTS.length],
                       active ? "ring-2 ring-[#004253] ring-offset-2 ring-offset-[#f8f9fa]" : "",
                     )}

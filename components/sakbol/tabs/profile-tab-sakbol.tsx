@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BiologicalSex } from "@prisma/client";
+import { cn } from "@/lib/utils";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -120,17 +121,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
     setSaveError(null);
     setSavingBasics(true);
     try {
-      const ageYearsRaw = ageInput.trim();
-      const ageYears =
-        ageYearsRaw === "" ? null : Number.parseInt(ageYearsRaw, 10);
-      const res = await updateOwnProfileBasics({
-        displayName: nameInput,
-        ageYears,
-      });
-      if (!res.ok) {
-        setSaveError(res.error);
-        return;
-      }
+      // Локальные данные (рост/вес/группа крови) сохраняем ВСЕГДА — независимо от сервера.
       if (viewer) {
         const h = Number.parseFloat(heightInput);
         const w = Number.parseFloat(weightInput);
@@ -142,6 +133,19 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             bloodType: bloodTypeInput.trim() || undefined,
           },
         }));
+      }
+
+      // Серверное сохранение имени и возраста — независимо от локального.
+      const ageYearsRaw = ageInput.trim();
+      const ageYears =
+        ageYearsRaw === "" ? null : Number.parseInt(ageYearsRaw, 10);
+      const res = await updateOwnProfileBasics({
+        displayName: nameInput,
+        ageYears,
+      });
+      if (!res.ok) {
+        setSaveError(res.error);
+        // Не выходим: локальные данные уже сохранены, закрываем sheet всё равно.
       }
       reload();
       setDataOpen(false);
@@ -194,20 +198,29 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
           <>
             <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[#004253] to-[#005b71] p-4 text-white shadow-lg">
               <div className="flex items-start gap-3">
-                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white/15 ring-2 ring-white/40">
-                  {viewer.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={viewer.avatarUrl}
-                      alt=""
-                      className="h-full w-full rounded-full bg-[#d9e2e7]/90 p-0.5 object-contain"
-                    />
-                  ) : (
-                    <span className="font-manrope text-lg font-extrabold">
-                      {viewer.displayName.slice(0, 2).toUpperCase()}
-                    </span>
-                  )}
-                </div>
+                {/* avatarUrl: сначала из viewer (Telegram), затем из selfProfile (БД) */}
+                {(() => {
+                  const url = viewer.avatarUrl ?? selfProfile?.avatarUrl ?? null;
+                  return (
+                    <div className={cn(
+                      "flex h-14 w-14 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/40",
+                      url ? "overflow-hidden" : "",
+                    )}>
+                      {url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={url}
+                          alt=""
+                          className="h-full w-full rounded-full bg-[#d9e2e7]/90 p-0.5 object-contain"
+                        />
+                      ) : (
+                        <span className="font-manrope text-lg font-extrabold">
+                          {viewer.displayName.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-[#d4e6e9]">ID {clinical}</p>
                   <p className="font-manrope text-lg font-extrabold">{viewer.displayName}</p>
