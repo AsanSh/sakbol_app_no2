@@ -16,12 +16,8 @@ interface ProfileAvatarProps {
   name: string;
   /** Размер в px. По умолчанию 56 (h-14 w-14) */
   size?: number;
-  /** Дополнительные Tailwind-классы на корневой элемент */
+  /** Дополнительные Tailwind-классы на корневой элемент (рамка активного профиля — только border, без outline/ring-offset) */
   className?: string;
-  /** Кольцо вокруг аватара (активный профиль) */
-  ring?: boolean;
-  /** Цвет кольца */
-  ringColor?: string;
 }
 
 function getInitials(name: string): string {
@@ -54,8 +50,6 @@ export function ProfileAvatar({
   name,
   size = 56,
   className,
-  ring = false,
-  ringColor = "#004253",
 }: ProfileAvatarProps) {
   const px = `${size}px`;
   const fontSize = Math.round(size * 0.32);
@@ -63,17 +57,15 @@ export function ProfileAvatar({
   return (
     <span
       className={cn(
-        // Квадрат фиксированного размера → overflow-hidden → идеальный круг
-        "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full",
+        // box-border: border из className входит в width/height — контур не вылезает за скролл-контейнер
+        "relative box-border inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full",
         !src ? bgForName(name) : "bg-slate-200",
         className,
       )}
       style={{
         width: px,
         height: px,
-        // Кольцо через outline — не конфликтует с overflow-hidden
-        outline: ring ? `2.5px solid ${ringColor}` : "none",
-        outlineOffset: ring ? "2px" : undefined,
+        boxSizing: "border-box",
       }}
       aria-label={name}
     >

@@ -109,7 +109,7 @@ export function HomeTab({ family }: Props) {
       {profiles.length > 0 ? (
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
           <p className="mb-2 text-xs font-semibold text-[#40484c]">Семья</p>
-          <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-3 overflow-x-auto px-1 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {profiles.map((p, i) => {
               const active = p.id === activeProfileId;
               const score = 72 + (i % 5) * 4;
@@ -127,8 +127,10 @@ export function HomeTab({ family }: Props) {
                     src={p.avatarUrl}
                     name={p.displayName}
                     size={56}
-                    ring={active}
-                    ringColor="#004253"
+                    className={cn(
+                      "border-2",
+                      active ? "border-[#004253] shadow-sm" : "border-transparent",
+                    )}
                   />
                   <span className="max-w-[4.5rem] truncate text-center text-[11px] font-medium text-[#40484c]">
                     {p.displayName}

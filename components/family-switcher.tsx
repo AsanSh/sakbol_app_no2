@@ -46,7 +46,7 @@ export function FamilySwitcher({
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-emerald-800/70">
         {t(lang, "family.switcherTitle")}
       </p>
-      <ul className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul className="flex gap-3 overflow-x-auto px-1 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {profiles.map((p) => {
           const active = p.id === activeProfileId;
           return (
@@ -69,8 +69,6 @@ export function FamilySwitcher({
                   src={p.avatarUrl}
                   name={p.displayName}
                   size={56}
-                  ring={active}
-                  ringColor="#f59e0b"
                   className={cn(
                     "border-2 transition-colors",
                     active ? "border-amber-500 shadow-md" : "border-emerald-700/40",

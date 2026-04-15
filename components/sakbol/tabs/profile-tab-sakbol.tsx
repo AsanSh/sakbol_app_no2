@@ -206,7 +206,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                       src={url}
                       name={viewer.displayName}
                       size={56}
-                      className="ring-2 ring-white/60"
+                      className="border-2 border-white/70"
                     />
                   );
                 })()}

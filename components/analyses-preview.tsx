@@ -31,6 +31,7 @@ import {
 } from "@/lib/medical-logic";
 import type { ParsedBiomarker } from "@/types/biomarker";
 import { categoryForBiomarkerKey } from "@/constants/biomarker-categories";
+import { downloadLabPdfClient } from "@/lib/download-lab-pdf";
 
 function biomarkerCount(data: unknown): number | null {
   if (!data || typeof data !== "object") return null;
@@ -73,6 +74,8 @@ export function AnalysesPreview({
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeShare, setActiveShare] = useState<{ recordId: string; url: string } | null>(null);
+  const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<{ id: string; msg: string } | null>(null);
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -241,113 +244,114 @@ export function AnalysesPreview({
                   )}
                 </button>
 
-                {open && payload?.biomarkers ? (
+                {open ? (
                   <div className="mt-2 border-t border-emerald-900/10 pt-3">
-                    {/* Сортировка: критично → внимание → норма */}
-                    {(() => {
-                      const ranked = [...payload.biomarkers].sort((x, y) => {
-                        const rank: Record<MedicalStatus, number> = { critical: 0, warning: 1, normal: 2 };
-                        return rank[statusForBiomarker(x, activeDob)] - rank[statusForBiomarker(y, activeDob)];
-                      });
-                      const critical = ranked.filter(b => statusForBiomarker(b, activeDob) === "critical");
-                      const warning  = ranked.filter(b => statusForBiomarker(b, activeDob) === "warning");
-                      const normal   = ranked.filter(b => statusForBiomarker(b, activeDob) === "normal");
+                    {payload?.biomarkers && payload.biomarkers.length > 0 ? (
+                      <>
+                        {(() => {
+                          const ranked = [...payload.biomarkers].sort((x, y) => {
+                            const rank: Record<MedicalStatus, number> = {
+                              critical: 0,
+                              warning: 1,
+                              normal: 2,
+                            };
+                            return rank[statusForBiomarker(x, activeDob)] - rank[statusForBiomarker(y, activeDob)];
+                          });
+                          const critical = ranked.filter((b) => statusForBiomarker(b, activeDob) === "critical");
+                          const warning = ranked.filter((b) => statusForBiomarker(b, activeDob) === "warning");
+                          const normal = ranked.filter((b) => statusForBiomarker(b, activeDob) === "normal");
 
-                      return (
-                        <>
-                          {/* Проблемные — выделенный блок сверху */}
-                          {(critical.length > 0 || warning.length > 0) && (
-                            <div className="mb-3 rounded-xl border border-coral/30 bg-[#fff8f8] px-3 py-2">
-                              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-coral">
-                                ⚠ Требует внимания
+                          return (
+                            <>
+                              <p className="mb-2 text-[11px] font-semibold text-slate-800">
+                                Все показатели · {ranked.length}{" "}
+                                <span className="font-normal text-slate-500">
+                                  (сначала отклонения от нормы)
+                                </span>
                               </p>
-                              <ul className="space-y-1.5">
-                                {[...critical, ...warning].map((b, idx) => {
+                              <ul className="max-h-[min(60vh,28rem)] space-y-1 overflow-y-auto pr-0.5">
+                                {ranked.map((b: ParsedBiomarker, idx: number) => {
                                   const st = statusForBiomarker(b, activeDob);
+                                  const nk = normalizeBiomarkerKey(b.biomarker);
+                                  const catId = nk ? categoryForBiomarkerKey(nk) : "other";
                                   return (
-                                    <li key={`prob-${idx}`} className="flex items-center justify-between gap-2 text-xs">
-                                      <span className="font-medium text-slate-900">
-                                        {b.biomarker}:{" "}
-                                        <strong className={st === "critical" ? "text-red-700" : "text-amber-700"}>
-                                          {b.value} {b.unit}
-                                        </strong>
+                                    <li
+                                      key={`${a.id}-${idx}-${b.biomarker}`}
+                                      className={cn(
+                                        "flex items-center justify-between gap-2 rounded-lg border-l-4 px-2 py-1.5 text-xs",
+                                        st === "critical" && "border-l-red-500 bg-[#fff4f4]",
+                                        st === "warning" && "border-l-amber-500 bg-amber-50/80",
+                                        st === "normal" && "border-l-emerald-200 bg-white/60",
+                                      )}
+                                    >
+                                      <span className="min-w-0 text-slate-700">
+                                        <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                          {t(lang, `category.${catId}`)}
+                                        </span>
+                                        <span className="font-medium text-slate-900">
+                                          {b.biomarker}:{" "}
+                                          <strong
+                                            className={cn(
+                                              st === "critical" && "text-red-800",
+                                              st === "warning" && "text-amber-900",
+                                              st === "normal" && "text-slate-900",
+                                            )}
+                                          >
+                                            {b.value} {b.unit}
+                                          </strong>
+                                        </span>
                                       </span>
-                                      <span className={cn(
-                                        "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                                        statusIndicatorPillClass(st),
-                                      )}>
+                                      <span
+                                        className={cn(
+                                          "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                          statusIndicatorPillClass(st),
+                                        )}
+                                      >
                                         {t(lang, `status.${st}`)}
                                       </span>
                                     </li>
                                   );
                                 })}
                               </ul>
-                            </div>
-                          )}
 
-                          {/* Остальные показатели */}
-                          <ul className="space-y-1">
-                            {ranked.map((b: ParsedBiomarker, idx: number) => {
-                              const st = statusForBiomarker(b, activeDob);
-                              const nk = normalizeBiomarkerKey(b.biomarker);
-                              const catId = nk ? categoryForBiomarkerKey(nk) : "other";
-                              return (
-                                <li
-                                  key={`${a.id}-${idx}-${b.biomarker}`}
-                                  className={cn(
-                                    "flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-xs",
-                                    st !== "normal" ? "bg-white/50" : "",
-                                  )}
-                                >
-                                  <span className="text-slate-700">
-                                    <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                                      {t(lang, `category.${catId}`)}
-                                    </span>
-                                    {b.biomarker}:{" "}
-                                    <strong className="text-slate-900">{b.value} {b.unit}</strong>
-                                  </span>
-                                  <span className={cn(
-                                    "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                                    statusIndicatorPillClass(st),
-                                  )}>
-                                    {t(lang, `status.${st}`)}
-                                  </span>
-                                </li>
-                              );
-                            })}
-                          </ul>
+                              <div
+                                className={cn(
+                                  "mt-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed",
+                                  critical.length > 0
+                                    ? "border border-coral/30 bg-[#fff4f4] text-red-900"
+                                    : warning.length > 0
+                                      ? "border border-amber-400/40 bg-amber-50 text-amber-900"
+                                      : "border border-emerald-800/15 bg-emerald-50/60 text-emerald-900",
+                                )}
+                              >
+                                <p className="font-semibold">
+                                  {critical.length > 0
+                                    ? "🔴 Критические отклонения"
+                                    : warning.length > 0
+                                      ? "🟡 Незначительные отклонения"
+                                      : "🟢 Все показатели в норме"}
+                                </p>
+                                <p className="mt-1 text-[11px] opacity-85">
+                                  {critical.length > 0
+                                    ? `${critical.map((b) => b.biomarker).join(", ")} — значительно выходит за пределы нормы. Рекомендуем обратиться к врачу.`
+                                    : warning.length > 0
+                                      ? `${warning.map((b) => b.biomarker).join(", ")} — на границе нормы. Рекомендуем повторный анализ через 1–2 месяца.`
+                                      : `${normal.length} показателей в пределах нормы. Продолжайте мониторинг.`}
+                                </p>
+                                <p className="mt-1.5 text-[10px] opacity-60">
+                                  Не является медицинским диагнозом. Консультируйтесь с врачом.
+                                </p>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </>
+                    ) : (
+                      <p className="py-2 text-xs text-slate-500">
+                        Показатели в этой записи не найдены или ещё обрабатываются.
+                      </p>
+                    )}
 
-                          {/* Сводка-расшифровка */}
-                          <div className={cn(
-                            "mt-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed",
-                            critical.length > 0
-                              ? "border border-coral/30 bg-[#fff4f4] text-red-900"
-                              : warning.length > 0
-                                ? "border border-amber-400/40 bg-amber-50 text-amber-900"
-                                : "border border-emerald-800/15 bg-emerald-50/60 text-emerald-900",
-                          )}>
-                            <p className="font-semibold">
-                              {critical.length > 0
-                                ? "🔴 Критические отклонения"
-                                : warning.length > 0
-                                  ? "🟡 Незначительные отклонения"
-                                  : "🟢 Все показатели в норме"}
-                            </p>
-                            <p className="mt-1 text-[11px] opacity-85">
-                              {critical.length > 0
-                                ? `${critical.map(b => b.biomarker).join(", ")} — значительно выходит за пределы нормы. Рекомендуем обратиться к врачу.`
-                                : warning.length > 0
-                                  ? `${warning.map(b => b.biomarker).join(", ")} — на границе нормы. Рекомендуем повторный анализ через 1–2 месяца.`
-                                  : `${normal.length} показателей в пределах нормы. Продолжайте мониторинг.`}
-                            </p>
-                            <p className="mt-1.5 text-[10px] opacity-60">
-                              Не является медицинским диагнозом. Консультируйтесь с врачом.
-                            </p>
-                          </div>
-                        </>
-                      );
-                    })()}
-                    
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -363,20 +367,19 @@ export function AnalysesPreview({
                       </button>
                       <button
                         type="button"
-                        className="rounded-lg border border-emerald-800/35 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900"
+                        disabled={pdfBusyId === a.id}
+                        className="rounded-lg border border-emerald-800/35 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900 disabled:opacity-50"
                         onClick={() => {
-                          const url = `${window.location.origin}/api/analyses/${a.id}/pdf`;
-                          // В Telegram Mini App <a download> открывает белый экран —
-                          // используем openLink для системного браузера.
-                          const tgWebApp = window.Telegram?.WebApp;
-                          if (tgWebApp?.openLink) {
-                            tgWebApp.openLink(url);
-                          } else {
-                            window.open(url, "_blank");
-                          }
+                          setPdfError(null);
+                          setPdfBusyId(a.id);
+                          void downloadLabPdfClient(a.id)
+                            .then((r) => {
+                              if (!r.ok) setPdfError({ id: a.id, msg: r.error });
+                            })
+                            .finally(() => setPdfBusyId(null));
                         }}
                       >
-                        {t(lang, "analyses.downloadPdf")}
+                        {pdfBusyId === a.id ? "…" : t(lang, "analyses.downloadPdf")}
                       </button>
                       {worst === "critical" ? (
                         <a
@@ -389,6 +392,9 @@ export function AnalysesPreview({
                         </a>
                       ) : null}
                     </div>
+                    {pdfError?.id === a.id ? (
+                      <p className="mt-2 text-xs text-red-700">{pdfError.msg}</p>
+                    ) : null}
                     {activeShare?.recordId === a.id ? (
                       <div className="mt-3 rounded-xl border border-emerald-900/20 bg-white p-3">
                         <p className="text-xs font-semibold text-emerald-900">{t(lang, "analyses.qrTitle")}</p>
