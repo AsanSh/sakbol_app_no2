@@ -36,7 +36,14 @@ export function SakbolMainClient() {
           ) : (
             <>
               {tab === "home" ? <HomeTab family={family} /> : null}
-              {tab === "analyses" ? <AnalysesTab onAnalysesChanged={bumpAnalyses} /> : null}
+              {tab === "analyses" ? (
+                <AnalysesTab
+                  onAnalysesChanged={() => {
+                    bumpAnalyses();
+                    reload();
+                  }}
+                />
+              ) : null}
               {tab === "risks" ? (
                 <RisksTab
                   family={family}

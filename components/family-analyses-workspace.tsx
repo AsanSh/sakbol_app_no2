@@ -194,7 +194,14 @@ export function FamilyAnalysesWorkspace({
 
       <AnalysesPreview profiles={family.profiles} refreshKey={analysesRefresh} />
 
-      <AddMemberModal open={addOpen} onClose={() => setAddOpen(false)} onCreated={load} />
+      <AddMemberModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onCreated={() => {
+          load();
+          onAnalysesChanged?.();
+        }}
+      />
 
       {activeProfileId ? (
         <UploadAnalysisModal
