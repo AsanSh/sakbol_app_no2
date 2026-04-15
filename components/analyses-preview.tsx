@@ -246,6 +246,12 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
                       >
                         {t(lang, "analyses.shareDoctor")}
                       </button>
+                      <a
+                        href={`/api/analyses/${a.id}/pdf`}
+                        className="rounded-lg border border-emerald-800/35 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900"
+                      >
+                        {t(lang, "analyses.downloadPdf")}
+                      </a>
                       {worst === "critical" ? (
                         <a
                           href={BISHKEK_CLINICS[0]?.bookingUrl ?? "#"}

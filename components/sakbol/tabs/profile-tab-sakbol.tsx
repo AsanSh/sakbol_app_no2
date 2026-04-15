@@ -20,6 +20,14 @@ import {
 } from "@/app/actions/profile";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 
+const PROFILE_EXTRAS_STORAGE_KEY = "sakbol.profile.extras.v1";
+
+type ProfileExtras = {
+  heightCm?: number;
+  weightKg?: number;
+  bloodType?: string;
+};
+
 type Props = {
   family: FamilyWithProfiles | null;
   loading: boolean;
@@ -37,8 +45,13 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const [ageInput, setAgeInput] = useState("");
   const [heightInput, setHeightInput] = useState("");
   const [weightInput, setWeightInput] = useState("");
+  const [bloodTypeInput, setBloodTypeInput] = useState("");
   const [savingBasics, setSavingBasics] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [extrasByProfile, setExtrasByProfile] = useState<Record<string, ProfileExtras>>({});
 
   const viewer = state.status === "authenticated" ? state.viewer : null;
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
@@ -52,20 +65,53 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   };
 
   const clinical = viewer ? formatClinicalAnonymId(viewer.id) : "—";
+  const selfExtras = viewer ? extrasByProfile[viewer.id] : undefined;
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(PROFILE_EXTRAS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, ProfileExtras>;
+      setExtrasByProfile(parsed);
+    } catch {
+      /* ignore parse/storage errors */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PROFILE_EXTRAS_STORAGE_KEY, JSON.stringify(extrasByProfile));
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [extrasByProfile]);
 
   useEffect(() => {
     if (!dataOpen) return;
     setNameInput(selfProfile?.displayName ?? viewer?.displayName ?? "");
     setAgeInput(age != null ? String(age) : "");
-    setHeightInput("");
-    setWeightInput("");
+    setHeightInput(
+      typeof selfExtras?.heightCm === "number" ? String(selfExtras.heightCm) : "",
+    );
+    setWeightInput(
+      typeof selfExtras?.weightKg === "number" ? String(selfExtras.weightKg) : "",
+    );
+    setBloodTypeInput(selfExtras?.bloodType ?? "");
     setSaveError(null);
-  }, [dataOpen, selfProfile?.displayName, viewer?.displayName, age]);
+  }, [dataOpen, selfProfile?.displayName, viewer?.displayName, age, selfExtras?.heightCm, selfExtras?.weightKg, selfExtras?.bloodType]);
 
   const bmiPreview = (() => {
     const h = Number.parseFloat(heightInput);
     const w = Number.parseFloat(weightInput);
     if (!Number.isFinite(h) || !Number.isFinite(w) || h <= 0 || w <= 0) return null;
+    const m = h / 100;
+    return (w / (m * m)).toFixed(1);
+  })();
+
+  const bmiFromSavedExtras = (() => {
+    const h = selfExtras?.heightCm;
+    const w = selfExtras?.weightKg;
+    if (typeof h !== "number" || typeof w !== "number" || h <= 0 || w <= 0) return null;
     const m = h / 100;
     return (w / (m * m)).toFixed(1);
   })();
@@ -84,6 +130,18 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
       if (!res.ok) {
         setSaveError(res.error);
         return;
+      }
+      if (viewer) {
+        const h = Number.parseFloat(heightInput);
+        const w = Number.parseFloat(weightInput);
+        setExtrasByProfile((prev) => ({
+          ...prev,
+          [viewer.id]: {
+            heightCm: Number.isFinite(h) && h > 0 ? h : undefined,
+            weightKg: Number.isFinite(w) && w > 0 ? w : undefined,
+            bloodType: bloodTypeInput.trim() || undefined,
+          },
+        }));
       }
       reload();
       setDataOpen(false);
@@ -149,7 +207,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">
-                      BMI 24,2
+                      BMI {bmiFromSavedExtras ?? "—"}
                     </span>
                     <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">
                       Score 78
@@ -180,10 +238,18 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[
-                { icon: "height", label: "Рост", val: "—" },
-                { icon: "monitor_weight", label: "Вес", val: "—" },
-                { icon: "monitor_heart", label: "BMI", val: "24,2" },
-                { icon: "bloodtype", label: "Группа", val: "—" },
+                {
+                  icon: "height",
+                  label: "Рост",
+                  val: selfExtras?.heightCm ? `${selfExtras.heightCm} см` : "—",
+                },
+                {
+                  icon: "monitor_weight",
+                  label: "Вес",
+                  val: selfExtras?.weightKg ? `${selfExtras.weightKg} кг` : "—",
+                },
+                { icon: "monitor_heart", label: "BMI", val: bmiFromSavedExtras ?? "—" },
+                { icon: "bloodtype", label: "Группа", val: selfExtras?.bloodType ?? "—" },
               ].map((c) => (
                 <div
                   key={c.label}
@@ -281,18 +347,19 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
             <ul className="space-y-1 rounded-2xl border border-[#e7e8e9] bg-white p-2 shadow-sm">
               {[
-                "Личные данные",
-                "Уведомления",
-                "Конфиденциальность",
-                "Язык",
-                "Поддержка",
-              ].map((label) => (
-                <li key={label}>
+                { label: "Личные данные", onClick: () => setDataOpen(true) },
+                { label: "Уведомления", onClick: () => setNotifyOpen(true) },
+                { label: "Конфиденциальность", onClick: () => setPrivacyOpen(true) },
+                { label: "Язык", onClick: () => {} },
+                { label: "Поддержка", onClick: () => setSupportOpen(true) },
+              ].map((item) => (
+                <li key={item.label}>
                   <button
                     type="button"
+                    onClick={item.onClick}
                     className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#191c1d] hover:bg-[#f8f9fa]"
                   >
-                    {label}
+                    {item.label}
                     <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
                   </button>
                 </li>
@@ -354,6 +421,12 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
               className="rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm"
             />
           </div>
+          <input
+            placeholder="Группа крови (например: O(I)+)"
+            value={bloodTypeInput}
+            onChange={(e) => setBloodTypeInput(e.target.value.slice(0, 12))}
+            className="w-full rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm"
+          />
           <p className="text-xs text-[#40484c]">
             BMI: {bmiPreview ?? "—"} {bmiPreview ? "(локальный расчёт)" : ""}
           </p>
@@ -369,6 +442,24 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             {savingBasics ? "Сохранение..." : "Сохранить"}
           </button>
         </div>
+      </BottomSheet>
+
+      <BottomSheet open={notifyOpen} title="Уведомления" onClose={() => setNotifyOpen(false)}>
+        <p className="text-sm text-[#40484c]">
+          Этот раздел в разработке. В следующем релизе тут будут push- и Telegram-настройки.
+        </p>
+      </BottomSheet>
+
+      <BottomSheet open={privacyOpen} title="Конфиденциальность" onClose={() => setPrivacyOpen(false)}>
+        <p className="text-sm text-[#40484c]">
+          Уже сейчас в PDF-выгрузках и предпросмотре анализов не используются ФИО, только псевдо-ID.
+        </p>
+      </BottomSheet>
+
+      <BottomSheet open={supportOpen} title="Поддержка" onClose={() => setSupportOpen(false)}>
+        <p className="text-sm text-[#40484c]">
+          Если что-то не работает, напишите в поддержку и приложите скриншот + время события.
+        </p>
       </BottomSheet>
     </div>
   );
