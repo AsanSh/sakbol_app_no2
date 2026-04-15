@@ -23,12 +23,13 @@ export function SakbolMainClient() {
   return (
     <div className="flex min-h-dvh">
       {!diaryOpen ? <SakbolDesktopNav /> : null}
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+      {/* На десктопе (> 1024px без sidebar) — ограничиваем контент 480px и центрируем */}
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col md:items-center">
         <div
           className={
             diaryOpen
-              ? "flex min-h-0 flex-1 flex-col"
-              : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom,0px))] md:pb-6"
+              ? "flex min-h-0 w-full flex-1 flex-col"
+              : "flex min-h-0 w-full max-w-[480px] flex-1 flex-col overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom,0px))] md:pb-6"
           }
         >
           {diaryOpen ? (

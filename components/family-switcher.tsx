@@ -10,14 +10,7 @@ import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { hapticImpact } from "@/lib/telegram-haptics";
-
-function initials(displayName: string) {
-  const parts = displayName.trim().split(/\s+/).filter(Boolean);
-  const a = parts[0]?.[0] ?? "";
-  const b = parts[1]?.[0] ?? "";
-  const s = (a + b).toUpperCase();
-  return s || "?";
-}
+import { ProfileAvatar } from "@/components/ui/avatar";
 
 type FamilySwitcherProps = {
   profiles: ProfileSummary[];
@@ -72,25 +65,17 @@ export function FamilySwitcher({
                 aria-pressed={active}
                 aria-label={`${t(lang, "profile.title")}: ${p.displayName}`}
               >
-                <span
+                <ProfileAvatar
+                  src={p.avatarUrl}
+                  name={p.displayName}
+                  size={56}
+                  ring={active}
+                  ringColor="#f59e0b"
                   className={cn(
-                    "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 text-sm font-semibold transition-colors",
-                    active
-                      ? "border-amber-500 bg-emerald-900 text-mint shadow-md"
-                      : "border-emerald-700/40 bg-white text-emerald-900",
+                    "border-2 transition-colors",
+                    active ? "border-amber-500 shadow-md" : "border-emerald-700/40",
                   )}
-                >
-                  {p.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={p.avatarUrl}
-                      alt=""
-                      className="absolute inset-0 h-full w-full object-cover object-top"
-                    />
-                  ) : (
-                    initials(p.displayName)
-                  )}
-                </span>
+                />
                 <span
                   className={cn(
                     "max-w-[4.5rem] truncate text-center text-[11px] font-medium leading-tight",

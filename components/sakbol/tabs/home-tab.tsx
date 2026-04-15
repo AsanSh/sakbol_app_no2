@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { UserPlus } from "lucide-react";
+import { ProfileAvatar } from "@/components/ui/avatar";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
@@ -16,12 +17,6 @@ import { AnalysesPreview } from "@/components/analyses-preview";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 
-const GRADIENTS = [
-  "from-[#004253] to-[#005b71]",
-  "from-[#005b71] to-[#0a7a94]",
-  "from-[#0d5c6e] to-[#004253]",
-  "from-[#1a6b7d] to-[#2d8aa0]",
-];
 
 function greetingRu(hour: number) {
   if (hour < 12) return "Доброе утро";
@@ -117,13 +112,6 @@ export function HomeTab({ family }: Props) {
           <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {profiles.map((p, i) => {
               const active = p.id === activeProfileId;
-              const initials =
-                p.displayName
-                  .split(/\s+/)
-                  .map((s) => s[0])
-                  .join("")
-                  .slice(0, 2)
-                  .toUpperCase() || "?";
               const score = 72 + (i % 5) * 4;
               return (
                 <button
@@ -135,24 +123,13 @@ export function HomeTab({ family }: Props) {
                   }}
                   className="flex shrink-0 flex-col items-center gap-1.5"
                 >
-                  <div
-                    className={cn(
-                      "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
-                      GRADIENTS[i % GRADIENTS.length],
-                      active ? "ring-2 ring-[#004253] ring-offset-2 ring-offset-[#f8f9fa]" : "",
-                    )}
-                  >
-                    {p.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={p.avatarUrl}
-                        alt=""
-                        className="absolute inset-0 h-full w-full object-cover object-top"
-                      />
-                    ) : (
-                      initials
-                    )}
-                  </div>
+                  <ProfileAvatar
+                    src={p.avatarUrl}
+                    name={p.displayName}
+                    size={56}
+                    ring={active}
+                    ringColor="#004253"
+                  />
                   <span className="max-w-[4.5rem] truncate text-center text-[11px] font-medium text-[#40484c]">
                     {p.displayName}
                   </span>

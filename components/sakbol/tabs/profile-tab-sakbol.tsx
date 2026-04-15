@@ -13,6 +13,7 @@ import { useTabApp } from "@/context/tab-app-context";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import type { FamilyWithProfiles } from "@/types/family";
 import { t } from "@/lib/i18n";
+import { ProfileAvatar } from "@/components/ui/avatar";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import {
   updateOwnProfileBasics,
@@ -201,20 +202,12 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 {(() => {
                   const url = viewer.avatarUrl ?? selfProfile?.avatarUrl ?? null;
                   return (
-                    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/15 ring-2 ring-white/40">
-                      {url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={url}
-                          alt=""
-                          className="absolute inset-0 h-full w-full object-cover object-top"
-                        />
-                      ) : (
-                        <span className="font-manrope text-lg font-extrabold">
-                          {viewer.displayName.slice(0, 2).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <ProfileAvatar
+                      src={url}
+                      name={viewer.displayName}
+                      size={56}
+                      className="ring-2 ring-white/60"
+                    />
                   );
                 })()}
                 <div className="min-w-0 flex-1">
