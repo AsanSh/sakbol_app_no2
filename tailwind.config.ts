@@ -13,6 +13,15 @@ export default {
         manrope: ["var(--font-manrope)", "var(--font-inter)", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
       },
+      keyframes: {
+        "sakbol-scan": {
+          "0%": { transform: "translateY(-120%)" },
+          "100%": { transform: "translateY(420%)" },
+        },
+      },
+      animation: {
+        "sakbol-scan": "sakbol-scan 2.1s ease-in-out infinite",
+      },
       colors: {
         emerald: {
           50: "#e8f5f3",

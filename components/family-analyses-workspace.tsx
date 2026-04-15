@@ -6,6 +6,7 @@ import type { FamilyWithProfiles } from "@/types/family";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useLanguage } from "@/context/language-context";
 import { FamilySwitcher } from "@/components/family-switcher";
+import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { AnalysesPreview } from "@/components/analyses-preview";
 import { HealthHubPanel } from "@/components/health-hub-panel";
 import { AddMemberModal } from "@/components/add-member-modal";
@@ -108,7 +109,7 @@ export function FamilyAnalysesWorkspace({
   }
 
   if (loading) {
-    return <p className="text-sm text-emerald-900/70">{t(lang, "analyses.loading")}</p>;
+    return <AnalysisSkeleton />;
   }
 
   if (error) {
@@ -192,7 +193,11 @@ export function FamilyAnalysesWorkspace({
 
       <HealthHubPanel profiles={family.profiles} refreshKey={analysesRefresh} />
 
-      <AnalysesPreview profiles={family.profiles} refreshKey={analysesRefresh} />
+      <AnalysesPreview
+        profiles={family.profiles}
+        refreshKey={analysesRefresh}
+        onRequestUpload={() => setUploadOpen(true)}
+      />
 
       <AddMemberModal
         open={addOpen}

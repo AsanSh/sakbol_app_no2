@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, PlusCircle, Stethoscope } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { listLabAnalysesForProfile } from "@/app/actions/analyses";
 import { createShareToken } from "@/app/actions/share";
@@ -10,6 +10,7 @@ import { useLanguage } from "@/context/language-context";
 import type { LabAnalysisRow, ProfileSummary } from "@/types/family";
 import { useActiveProfile } from "@/context/active-profile-context";
 import type { HealthRecordAnalysisPayload } from "@/types/biomarker";
+import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { BiomarkerChart } from "@/components/biomarker-chart";
 import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
@@ -46,12 +47,24 @@ function cardTone(worst: MedicalStatus): string {
   return "border-emerald-800/25 bg-emerald-900/5";
 }
 
+function statusIndicatorPillClass(st: MedicalStatus): string {
+  if (st === "critical") return "bg-[#FFEBEE] text-red-900";
+  if (st === "warning") return "bg-amber-100 text-amber-950";
+  return "bg-emerald-100 text-[#004d40]";
+}
+
 type Props = {
   profiles: ProfileSummary[];
   refreshKey?: number;
+  /** Пустой список: кнопка «жүктөө» открывает загрузку (родитель). */
+  onRequestUpload?: () => void;
 };
 
-export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
+export function AnalysesPreview({
+  profiles,
+  refreshKey = 0,
+  onRequestUpload,
+}: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
   const [rows, setRows] = useState<LabAnalysisRow[] | null>(null);
@@ -116,8 +129,8 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
   return (
     <section className="rounded-2xl border border-emerald-900/15 bg-white/80 p-4 shadow-sm backdrop-blur">
       <h2 className="text-sm font-semibold text-emerald-950">{t(lang, "analyses.title")}</h2>
-      <p className="mt-0.5 text-xs text-emerald-900/65">{t(lang, "analyses.subtitle")}</p>
-      <p className="mt-1 text-[10px] leading-snug text-emerald-800/70">{t(lang, "analyses.labsBrands")}</p>
+      <p className="mt-0.5 text-xs text-emerald-600/70">{t(lang, "analyses.subtitle")}</p>
+      <p className="mt-1 text-[10px] leading-snug text-emerald-600/70">{t(lang, "analyses.labsBrands")}</p>
 
       {showNearLabs ? (
         <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
@@ -141,11 +154,36 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
       ) : null}
 
       {loading ? (
-        <p className="mt-3 text-sm text-emerald-900/70">{t(lang, "analyses.loading")}</p>
+        <AnalysisSkeleton className="mt-3" />
       ) : error ? (
         <p className="mt-3 text-sm text-coral">{error}</p>
       ) : rows?.length === 0 ? (
-        <p className="mt-3 text-sm text-emerald-900/70">{t(lang, "analyses.empty")}</p>
+        <div className="mt-6 flex flex-col items-center justify-center px-4 py-10 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100/90 shadow-inner">
+            <Stethoscope
+              className="text-emerald-300"
+              size={36}
+              strokeWidth={1.5}
+              aria-hidden
+            />
+          </div>
+          <h3 className="mt-4 font-manrope text-base font-semibold text-emerald-950">
+            {t(lang, "analyses.emptyPrimary")}
+          </h3>
+          <p className="mt-2 max-w-sm text-sm text-emerald-600/70">
+            {t(lang, "analyses.emptySecondary")}
+          </p>
+          {onRequestUpload ? (
+            <button
+              type="button"
+              onClick={onRequestUpload}
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#004253] to-[#005b71] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-emerald-900/20"
+            >
+              <PlusCircle size={16} strokeWidth={2} aria-hidden />
+              {t(lang, "tests.uploadBig")}
+            </button>
+          ) : null}
+        </div>
       ) : (
         <ul className="mt-3 space-y-2">
           {rows?.map((a) => {
@@ -179,7 +217,7 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
                       {a.title ?? t(lang, "analyses.analysis")}
                     </span>
                     {n != null ? (
-                      <span className="ml-2 text-xs text-emerald-800/80">
+                      <span className="ml-2 text-xs text-emerald-600/70">
                         {n} {t(lang, "analyses.indicators")}
                       </span>
                     ) : null}
@@ -188,7 +226,7 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
                         {t(lang, "analyses.private")}
                       </span>
                     ) : null}
-                    <span className="mt-1 block text-xs text-emerald-900/60">
+                    <span className="mt-1 block text-xs text-emerald-600/70">
                       {new Date(a.createdAt).toLocaleDateString(lang === "ru" ? "ru-RU" : "ky-KG")}
                     </span>
                   </span>
@@ -221,11 +259,10 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
                               </strong>
                             </span>
                             <span
-                              className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase"
-                              style={{
-                                backgroundColor: `${getStatusColorHex(st)}22`,
-                                color: getStatusColorHex(st),
-                              }}
+                              className={cn(
+                                "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                statusIndicatorPillClass(st),
+                              )}
                             >
                               {t(lang, `status.${st}`)}
                             </span>
@@ -295,7 +332,7 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
           </h3>
           <div className="flex flex-col gap-4">
             {dynamicsKeys.map((key) => {
-              const series = buildBiomarkerSeries(rows, key);
+              const series = buildBiomarkerSeries(rows, key, activeDob);
               if (series.length < 2) return null;
               const norm = getNormForBiomarker(key, ageMonths);
               const unit = unitForBiomarkerKey(rows, key);

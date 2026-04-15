@@ -156,12 +156,19 @@ export function getSmartTip(
   return `${biomarkerLabel}: көрсөткүч нормадан айырмаланат (${who}). ${isChild ? "Педиатрга жазылыңыз" : "Тейлөөчү дарыерге кайрылыңыз"}; өзүңүздү диагноз койбоңуз.`;
 }
 
-export type DynamicsPoint = { t: string; value: number; recordId: string };
+export type DynamicsPoint = {
+  t: string;
+  value: number;
+  recordId: string;
+  /** Статус точки относительно нормы (для тултипа графика). */
+  status?: MedicalStatus;
+};
 
 /** Бир көрсөткүч боюнча убакыт тартиби (эски → жаңы). */
 export function buildBiomarkerSeries(
   analyses: LabAnalysisRow[],
   biomarkerDisplayName: string,
+  dob?: string | Date | null,
 ): DynamicsPoint[] {
   const key = normalizeBiomarkerKey(biomarkerDisplayName);
   if (!key) return [];
@@ -179,6 +186,7 @@ export function buildBiomarkerSeries(
       t: row.createdAt,
       value: hit.value,
       recordId: row.id,
+      status: statusForBiomarker(hit, dob),
     });
   }
   points.sort((a, b) => new Date(a.t).getTime() - new Date(b.t).getTime());

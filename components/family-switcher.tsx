@@ -9,6 +9,7 @@ import { useLanguage } from "@/context/language-context";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { hapticImpact } from "@/lib/telegram-haptics";
 
 function initials(displayName: string) {
   const parts = displayName.trim().split(/\s+/).filter(Boolean);
@@ -60,7 +61,10 @@ export function FamilySwitcher({
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.96 }}
-                onClick={() => switchProfile(p.id)}
+                onClick={() => {
+                  hapticImpact("medium");
+                  switchProfile(p.id);
+                }}
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-2xl px-1 pt-1 outline-none ring-emerald-600 focus-visible:ring-2",
                   active ? "opacity-100" : "opacity-80 hover:opacity-100",
@@ -70,7 +74,7 @@ export function FamilySwitcher({
               >
                 <span
                   className={cn(
-                    "flex h-14 w-14 items-center justify-center rounded-full border-2 text-sm font-semibold transition-colors",
+                    "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-2 text-sm font-semibold transition-colors",
                     active
                       ? "border-amber-500 bg-emerald-900 text-mint shadow-md"
                       : "border-emerald-700/40 bg-white text-emerald-900",
@@ -81,7 +85,7 @@ export function FamilySwitcher({
                     <img
                       src={p.avatarUrl}
                       alt=""
-                      className="h-full w-full rounded-full object-cover"
+                      className="h-full w-full rounded-full bg-[#d9e2e7] p-0.5 object-contain"
                     />
                   ) : (
                     initials(p.displayName)

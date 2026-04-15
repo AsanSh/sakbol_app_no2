@@ -1,16 +1,26 @@
 "use client";
 
+import {
+  LayoutDashboard,
+  Stethoscope,
+  HeartPulse,
+  BotMessageSquare,
+  UserCircle,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MaterialIcon } from "@/components/sakbol/material-icon";
+import { hapticImpact } from "@/lib/telegram-haptics";
 import type { MainTab } from "@/context/tab-app-context";
 import { useTabApp } from "@/context/tab-app-context";
 
-const ITEMS: { id: MainTab; label: string; icon: string }[] = [
-  { id: "home", label: "Главная", icon: "grid_view" },
-  { id: "analyses", label: "Анализы", icon: "biotech" },
-  { id: "risks", label: "Риски", icon: "monitor_heart" },
-  { id: "ai", label: "ИИ", icon: "smart_toy" },
-  { id: "profile", label: "Профиль", icon: "person" },
+type NavItem = { id: MainTab; label: string; Icon: LucideIcon };
+
+const ITEMS: NavItem[] = [
+  { id: "home",     label: "Главная",  Icon: LayoutDashboard  },
+  { id: "analyses", label: "Анализы",  Icon: Stethoscope       },
+  { id: "risks",    label: "Риски",    Icon: HeartPulse         },
+  { id: "ai",       label: "ИИ",       Icon: BotMessageSquare  },
+  { id: "profile",  label: "Профиль",  Icon: UserCircle        },
 ];
 
 export function SakbolDesktopNav() {
@@ -22,22 +32,26 @@ export function SakbolDesktopNav() {
       aria-label="Меню"
     >
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#004253] to-[#005b71] text-sm font-extrabold text-white font-manrope">
-          S
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#004253] to-[#005b71] text-white">
+          <HeartPulse size={20} strokeWidth={2} aria-hidden />
         </div>
         <div>
           <p className="font-manrope text-base font-extrabold text-[#004253]">Sakbol</p>
           <p className="text-[10px] text-[#70787d]">Кыргызстан</p>
         </div>
       </div>
+
       <nav className="flex flex-1 flex-col gap-1 p-3">
-        {ITEMS.map(({ id, label, icon }) => {
+        {ITEMS.map(({ id, label, Icon }) => {
           const active = tab === id;
           return (
             <button
               key={id}
               type="button"
-              onClick={() => setTab(id)}
+              onClick={() => {
+                hapticImpact("medium");
+                setTab(id);
+              }}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
                 active
@@ -45,7 +59,11 @@ export function SakbolDesktopNav() {
                   : "text-slate-500 hover:bg-slate-50",
               )}
             >
-              <MaterialIcon name={icon} filled={active} className="text-[22px]" />
+              <Icon
+                size={20}
+                strokeWidth={active ? 2 : 1.5}
+                aria-hidden
+              />
               {label}
             </button>
           );

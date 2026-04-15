@@ -194,10 +194,19 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
           <>
             <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[#004253] to-[#005b71] p-4 text-white shadow-lg">
               <div className="flex items-start gap-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 ring-2 ring-white/40">
-                  <span className="font-manrope text-lg font-extrabold">
-                    {viewer.displayName.slice(0, 2).toUpperCase()}
-                  </span>
+                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white/15 ring-2 ring-white/40">
+                  {viewer.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={viewer.avatarUrl}
+                      alt=""
+                      className="h-full w-full rounded-full bg-[#d9e2e7]/90 p-0.5 object-contain"
+                    />
+                  ) : (
+                    <span className="font-manrope text-lg font-extrabold">
+                      {viewer.displayName.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-[#d4e6e9]">ID {clinical}</p>

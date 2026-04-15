@@ -1,16 +1,26 @@
 "use client";
 
+import {
+  LayoutDashboard,
+  Stethoscope,
+  HeartPulse,
+  BotMessageSquare,
+  UserCircle,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MaterialIcon } from "@/components/sakbol/material-icon";
+import { hapticImpact } from "@/lib/telegram-haptics";
 import type { MainTab } from "@/context/tab-app-context";
 import { useTabApp } from "@/context/tab-app-context";
 
-const ITEMS: { id: MainTab; label: string; icon: string }[] = [
-  { id: "home", label: "Главная", icon: "grid_view" },
-  { id: "analyses", label: "Анализы", icon: "biotech" },
-  { id: "risks", label: "Риски", icon: "monitor_heart" },
-  { id: "ai", label: "ИИ", icon: "smart_toy" },
-  { id: "profile", label: "Профиль", icon: "person" },
+type NavItem = { id: MainTab; label: string; Icon: LucideIcon };
+
+const ITEMS: NavItem[] = [
+  { id: "home",     label: "Главная",  Icon: LayoutDashboard  },
+  { id: "analyses", label: "Анализы",  Icon: Stethoscope       },
+  { id: "risks",    label: "Риски",    Icon: HeartPulse         },
+  { id: "ai",       label: "ИИ",       Icon: BotMessageSquare  },
+  { id: "profile",  label: "Профиль",  Icon: UserCircle        },
 ];
 
 export function BottomTabBar() {
@@ -27,13 +37,16 @@ export function BottomTabBar() {
       aria-label="Основная навигация"
     >
       <ul className="mx-auto flex max-w-2xl list-none items-stretch justify-between gap-0 px-2 pt-2">
-        {ITEMS.map(({ id, label, icon }) => {
+        {ITEMS.map(({ id, label, Icon }) => {
           const active = tab === id;
           return (
             <li key={id} className="min-w-0 flex-1">
               <button
                 type="button"
-                onClick={() => setTab(id)}
+                onClick={() => {
+                  hapticImpact("medium");
+                  setTab(id);
+                }}
                 className={cn(
                   "flex w-full flex-col items-center gap-0.5 rounded-2xl px-1 py-2 text-[11px] font-medium transition-colors",
                   active
@@ -41,7 +54,11 @@ export function BottomTabBar() {
                     : "text-slate-400 hover:bg-slate-50/80",
                 )}
               >
-                <MaterialIcon name={icon} filled={active} className="text-[22px]" />
+                <Icon
+                  size={22}
+                  strokeWidth={active ? 2 : 1.5}
+                  aria-hidden
+                />
                 <span className="truncate">{label}</span>
               </button>
             </li>

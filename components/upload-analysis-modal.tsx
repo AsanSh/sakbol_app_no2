@@ -8,6 +8,7 @@ import {
   maskFileForPrivacyPreview,
 } from "@/lib/client/mask-sensitive-document";
 import { cn } from "@/lib/utils";
+import { hapticImpact } from "@/lib/telegram-haptics";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { scrubPlainTextForStorage } from "@/lib/client/scrub-pii-text";
 
@@ -102,6 +103,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
         return;
       }
       setPhase("done");
+      hapticImpact("medium");
       onSuccess();
       reset();
       onClose();
@@ -153,8 +155,8 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
 
         <div
           className={cn(
-            "mt-4 flex min-h-[140px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-emerald-700/35 bg-white/70 px-4 py-8 text-center transition-colors hover:border-emerald-600/50",
-            phase === "masking" && "pointer-events-none opacity-70",
+            "relative mt-4 flex min-h-[140px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-emerald-700/35 bg-white/70 px-4 py-8 text-center transition-colors hover:border-emerald-600/50",
+            phase === "masking" && "pointer-events-none opacity-80",
           )}
           onDragOver={(e) => {
             e.preventDefault();
@@ -172,11 +174,19 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
             input.click();
           }}
         >
-          <FileUp className="mx-auto h-10 w-10 text-emerald-800/60" />
-          <p className="mt-2 text-sm font-medium text-emerald-950">
+          {phase === "masking" ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[10px]"
+              aria-hidden
+            >
+              <div className="absolute inset-x-0 h-14 animate-sakbol-scan bg-gradient-to-b from-transparent via-emerald-400/50 to-transparent blur-[1px]" />
+            </div>
+          ) : null}
+          <FileUp className="relative z-[1] mx-auto h-10 w-10 text-emerald-800/60" />
+          <p className="relative z-[1] mt-2 text-sm font-semibold text-emerald-950">
             Сүйрөп киргизиңиз же басыңыз
           </p>
-          <p className="mt-1 text-xs text-emerald-800/65">PDF · PNG · JPG · WEBP</p>
+          <p className="relative z-[1] mt-1 text-xs text-emerald-600/70">PDF · PNG · JPG · WEBP</p>
         </div>
 
         {phase === "anonymized" || phase === "uploading" || phase === "parsing" ? (

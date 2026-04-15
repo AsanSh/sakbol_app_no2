@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
+import { UserPlus } from "lucide-react";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
@@ -11,6 +12,7 @@ import { useTabApp } from "@/context/tab-app-context";
 import type { FamilyWithProfiles } from "@/types/family";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { AnalysesPreview } from "@/components/analyses-preview";
+import { hapticImpact } from "@/lib/telegram-haptics";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 
 const GRADIENTS = [
@@ -114,7 +116,10 @@ export function HomeTab({ family }: Props) {
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => setActiveProfileId(p.id)}
+                  onClick={() => {
+                    hapticImpact("medium");
+                    setActiveProfileId(p.id);
+                  }}
                   className="flex shrink-0 flex-col items-center gap-1.5"
                 >
                   <div
@@ -129,7 +134,7 @@ export function HomeTab({ family }: Props) {
                       <img
                         src={p.avatarUrl}
                         alt=""
-                        className="h-full w-full rounded-full bg-[#d9e2e7] object-contain"
+                        className="h-full w-full rounded-full bg-[#d9e2e7] p-0.5 object-contain"
                       />
                     ) : (
                       initials
@@ -148,7 +153,7 @@ export function HomeTab({ family }: Props) {
               className="flex shrink-0 flex-col items-center gap-1.5 opacity-80"
             >
               <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-[#bfc8cc] text-[#70787d]">
-                <MaterialIcon name="add" className="text-[24px]" />
+                <UserPlus size={22} strokeWidth={1.5} aria-hidden />
               </div>
               <span className="text-[11px] text-[#70787d]">Добавить</span>
             </button>
@@ -233,7 +238,11 @@ export function HomeTab({ family }: Props) {
       </button>
 
       {authReady && isAuthenticated && profiles.length > 0 ? (
-        <AnalysesPreview profiles={profiles} refreshKey={analysesRefreshKey} />
+        <AnalysesPreview
+          profiles={profiles}
+          refreshKey={analysesRefreshKey}
+          onRequestUpload={() => setTab("analyses")}
+        />
       ) : null}
 
       <button
