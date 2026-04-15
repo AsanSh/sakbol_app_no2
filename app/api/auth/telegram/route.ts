@@ -12,6 +12,7 @@ import { verifyTelegramInitData } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
+/** Единственное место проверки подписи initData; клиент только шлёт строку. */
 export async function POST(req: NextRequest) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {

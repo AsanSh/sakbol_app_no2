@@ -1,8 +1,10 @@
+import "server-only";
+
 import { createHmac } from "crypto";
 
 /**
- * Проверка подписи Telegram Mini App initData.
- * Токен берётся из аргумента или из process.env.TELEGRAM_BOT_TOKEN.
+ * Проверка подписи Telegram Mini App initData — только на сервере (API route).
+ * Клиент передаёт сырую строку initData; TELEGRAM_BOT_TOKEN здесь или во втором аргументе.
  * При ошибке пишет в console.error — видно в логах Vercel.
  * @see https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
  */

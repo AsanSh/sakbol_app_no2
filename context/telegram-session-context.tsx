@@ -58,6 +58,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
 
     async function authenticate() {
       setState({ status: "loading" });
+      /* Подпись initData не проверяем здесь — только на POST /api/auth/telegram (сервер). */
 
       type WebAppType = Awaited<typeof import("@twa-dev/sdk")>["default"];
       let WebApp: WebAppType | null = null;
@@ -114,6 +115,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      /* Сервер: verifyTelegramInitData(initData) + TELEGRAM_BOT_TOKEN */
       const res = await fetch("/api/auth/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
