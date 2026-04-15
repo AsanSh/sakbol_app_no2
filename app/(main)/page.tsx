@@ -1,5 +1,5 @@
-import { HomeDashboard } from "@/components/home-dashboard";
+import { SakbolMainClient } from "@/components/sakbol/sakbol-main-client";
 
 export default function HomePage() {
-  return <HomeDashboard />;
+  return <SakbolMainClient />;
 }

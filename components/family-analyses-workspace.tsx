@@ -39,12 +39,18 @@ type Props = {
   showDemoSeedButton?: boolean;
   /** Компактная кнопка загрузки (главная). */
   compactUpload?: boolean;
+  /** После загрузки / демо — обновить зависимые экраны (риски и т.д.). */
+  onAnalysesChanged?: () => void;
+  /** Инкремент открывает модалку загрузки (кнопка в шапке вкладки). */
+  uploadSignal?: number;
 };
 
 export function FamilyAnalysesWorkspace({
   showPremiumCta = true,
   showDemoSeedButton = true,
   compactUpload = false,
+  onAnalysesChanged,
+  uploadSignal = 0,
 }: Props) {
   const { lang } = useLanguage();
   const { authReady, isAuthenticated } = useTelegramSession();
@@ -90,6 +96,10 @@ export function FamilyAnalysesWorkspace({
     }
     load();
   }, [authReady, isAuthenticated, load]);
+
+  useEffect(() => {
+    if (uploadSignal > 0) setUploadOpen(true);
+  }, [uploadSignal]);
 
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
 
@@ -165,7 +175,10 @@ export function FamilyAnalysesWorkspace({
                 setDemoPending(true);
                 void seedDemoLabRecord(activeProfileId)
                   .then((r) => {
-                    if (r.ok) setAnalysesRefresh((k) => k + 1);
+                    if (r.ok) {
+                      setAnalysesRefresh((k) => k + 1);
+                      onAnalysesChanged?.();
+                    }
                   })
                   .finally(() => setDemoPending(false));
               }}
@@ -188,7 +201,10 @@ export function FamilyAnalysesWorkspace({
           open={uploadOpen}
           onClose={() => setUploadOpen(false)}
           profileId={activeProfileId}
-          onSuccess={() => setAnalysesRefresh((k) => k + 1)}
+          onSuccess={() => {
+            setAnalysesRefresh((k) => k + 1);
+            onAnalysesChanged?.();
+          }}
         />
       ) : null}
 

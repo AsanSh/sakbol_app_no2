@@ -9,7 +9,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        manrope: ["var(--font-manrope)", "var(--font-inter)", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
       },
       colors: {
@@ -40,6 +41,16 @@ export default {
         coral: {
           DEFAULT: "#F28B82",
           soft: "#F28B82",
+        },
+        sakbol: {
+          primary: "#004253",
+          primary2: "#005b71",
+          muted: "#70787d",
+          border: "#e7e8e9",
+          air: "#d4e6e9",
+          warnBg: "#ffdcc0",
+          errorBg: "#ffdad6",
+          errorText: "#93000a",
         },
       },
     },

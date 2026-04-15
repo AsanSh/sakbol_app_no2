@@ -1,6 +1,6 @@
-import { AppShell } from "@/components/app-shell";
 import type { ReactNode } from "react";
+import { TabAppProvider } from "@/context/tab-app-context";
 
 export default function MainAppLayout({ children }: { children: ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+  return <TabAppProvider>{children}</TabAppProvider>;
 }
