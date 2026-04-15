@@ -119,12 +119,21 @@ export function HomeTab({ family }: Props) {
                 >
                   <div
                     className={cn(
-                      "flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
+                      "flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br text-sm font-black text-white font-manrope",
                       GRADIENTS[i % GRADIENTS.length],
                       active ? "ring-2 ring-[#004253] ring-offset-2 ring-offset-[#f8f9fa]" : "",
                     )}
                   >
-                    {initials}
+                    {p.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.avatarUrl}
+                        alt=""
+                        className="h-full w-full rounded-full object-cover"
+                      />
+                    ) : (
+                      initials
+                    )}
                   </div>
                   <span className="max-w-[4.5rem] truncate text-center text-[11px] font-medium text-[#40484c]">
                     {p.displayName}

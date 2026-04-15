@@ -69,7 +69,7 @@ const ru: Dict = {
   "share.home": "На главную",
   "tests.title": "Анализы",
   "tests.subtitle": "Загрузка файлов, демо без файла и динамика показателей.",
-  "tests.uploadBig": "Анализ жүктөө",
+  "tests.uploadBig": "Загрузить анализ",
   "tests.demoSeed": "Добавить демо-анализ (без файла)",
   "profile.viewer": "Текущий пользователь",
   "profile.role": "Роль",
