@@ -11,7 +11,9 @@ import { createHmac } from "crypto";
 export function verifyTelegramInitData(initData: string, botToken?: string): boolean {
   const token = (botToken ?? process.env.TELEGRAM_BOT_TOKEN ?? "").trim();
   if (!token) {
-    console.error("[telegram] initData validation: TELEGRAM_BOT_TOKEN is missing or empty");
+    console.error(
+      "[telegram] initData validation: TELEGRAM_BOT_TOKEN пустой (проверьте Vercel: среда деплоя и Redeploy после изменения env).",
+    );
     return false;
   }
 
@@ -47,7 +49,7 @@ export function verifyTelegramInitData(initData: string, botToken?: string): boo
 
   if (calculated !== hash) {
     console.error(
-      "[telegram] initData validation: HMAC mismatch (wrong TELEGRAM_BOT_TOKEN for this Mini App, or corrupted initData)",
+      "[telegram] initData validation: HMAC mismatch — токен не от того бота, что открыл Mini App, битая строка initData, или неверная сборка data-check-string (см. доку Telegram).",
     );
     return false;
   }

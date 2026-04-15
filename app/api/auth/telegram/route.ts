@@ -16,6 +16,9 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
+    console.error(
+      "[telegram] TELEGRAM_BOT_TOKEN отсутствует в runtime. Часто: переменная только в Production, а деплой Preview; или не сделали Redeploy после добавления env. Vercel: All Environments или дублируйте в Preview + Production.",
+    );
     return NextResponse.json(
       { error: "TELEGRAM_BOT_TOKEN is not configured on the server." },
       { status: 503 },

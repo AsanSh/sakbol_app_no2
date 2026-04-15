@@ -84,6 +84,8 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       }
 
       const inTelegramMiniApp = WebApp ? looksLikeTelegramWebApp(WebApp) : false;
+      /* В браузере нет initData — демо-сессия через /api/auth/dev. ALLOW_DEV_LOGIN на клиенте недоступен
+         (не NEXT_PUBLIC); решение только на сервере. Подпись initData — только POST /api/auth/telegram. */
       if (!initData && !inTelegramMiniApp) {
         const devRes = await fetch("/api/auth/dev", { method: "POST", credentials: "same-origin" });
         if (cancelled) return;
