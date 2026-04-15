@@ -71,18 +71,26 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       setMaskedBlob(blob);
       setMaskedMime(mimeOut);
       setPhase("anonymized");
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Маскалоо катасы");
-      setPhase("error");
+      await submit(blob, mimeOut);
+    } catch {
+      // Если маскирование не сработало в WebView/браузере, не блокируем основной сценарий.
+      const fallbackMime = file.type || "application/octet-stream";
+      setErr("Маскирование недоступно, файл будет загружен без превью.");
+      setMaskedBlob(file);
+      setMaskedMime(fallbackMime);
+      setPhase("anonymized");
+      await submit(file, fallbackMime);
     }
   };
 
-  const submit = async () => {
-    if (!maskedBlob || !maskedMime) return;
+  const submit = async (blobArg?: Blob, mimeArg?: string) => {
+    const blob = blobArg ?? maskedBlob;
+    const mime = mimeArg ?? maskedMime;
+    if (!blob || !mime) return;
     setErr(null);
     try {
       setPhase("uploading");
-      const file = new File([maskedBlob], "masked.bin", { type: maskedMime });
+      const file = new File([blob], "masked.bin", { type: mime });
       const fd = new FormData();
       fd.set("profileId", profileId);
       fd.set("file", file);
@@ -240,7 +248,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
             disabled={phase !== "anonymized" || !maskedBlob}
             onClick={() => void submit()}
           >
-            Жөнөтүү
+            Загрузить анализ
           </button>
         </div>
       </div>

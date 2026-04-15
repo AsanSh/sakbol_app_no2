@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BiologicalSex } from "@prisma/client";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
@@ -14,7 +14,10 @@ import { useTelegramSession } from "@/context/telegram-session-context";
 import type { FamilyWithProfiles } from "@/types/family";
 import { t } from "@/lib/i18n";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
-import { updateProfileBiologicalSex } from "@/app/actions/profile";
+import {
+  updateOwnProfileBasics,
+  updateProfileBiologicalSex,
+} from "@/app/actions/profile";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 
 type Props = {
@@ -30,6 +33,12 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const [addOpen, setAddOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [ageInput, setAgeInput] = useState("");
+  const [heightInput, setHeightInput] = useState("");
+  const [weightInput, setWeightInput] = useState("");
+  const [savingBasics, setSavingBasics] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const viewer = state.status === "authenticated" ? state.viewer : null;
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
@@ -43,6 +52,45 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   };
 
   const clinical = viewer ? formatClinicalAnonymId(viewer.id) : "—";
+
+  useEffect(() => {
+    if (!dataOpen) return;
+    setNameInput(selfProfile?.displayName ?? viewer?.displayName ?? "");
+    setAgeInput(age != null ? String(age) : "");
+    setHeightInput("");
+    setWeightInput("");
+    setSaveError(null);
+  }, [dataOpen, selfProfile?.displayName, viewer?.displayName, age]);
+
+  const bmiPreview = (() => {
+    const h = Number.parseFloat(heightInput);
+    const w = Number.parseFloat(weightInput);
+    if (!Number.isFinite(h) || !Number.isFinite(w) || h <= 0 || w <= 0) return null;
+    const m = h / 100;
+    return (w / (m * m)).toFixed(1);
+  })();
+
+  const onSaveBasics = async () => {
+    setSaveError(null);
+    setSavingBasics(true);
+    try {
+      const ageYearsRaw = ageInput.trim();
+      const ageYears =
+        ageYearsRaw === "" ? null : Number.parseInt(ageYearsRaw, 10);
+      const res = await updateOwnProfileBasics({
+        displayName: nameInput,
+        ageYears,
+      });
+      if (!res.ok) {
+        setSaveError(res.error);
+        return;
+      }
+      reload();
+      setDataOpen(false);
+    } finally {
+      setSavingBasics(false);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -274,16 +322,52 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
       <BottomSheet open={dataOpen} title="Личные данные" onClose={() => setDataOpen(false)}>
         <p className="text-xs text-[#70787d]">
-          Рост, вес и группа крови можно уточнить у врача; здесь — демо-форма.
+          Имя и возраст сохраняются в профиль. Рост/вес используются для локального расчёта BMI.
         </p>
-        <div className="mt-3 space-y-2 rounded-xl bg-[#f3f4f5] p-3">
-          <input placeholder="Имя" className="w-full rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm" />
-          <input placeholder="Возраст" className="w-full rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm" />
+        <div className="mt-3 space-y-2 rounded-xl bg-[#f3f4f5] p-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)]">
+          <input
+            placeholder="Имя"
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            className="w-full rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm"
+          />
+          <input
+            placeholder="Возраст"
+            value={ageInput}
+            onChange={(e) => setAgeInput(e.target.value.replace(/[^\d]/g, ""))}
+            inputMode="numeric"
+            className="w-full rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm"
+          />
           <div className="grid grid-cols-2 gap-2">
-            <input placeholder="Рост, см" className="rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm" />
-            <input placeholder="Вес, кг" className="rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm" />
+            <input
+              placeholder="Рост, см"
+              value={heightInput}
+              onChange={(e) => setHeightInput(e.target.value.replace(/[^0-9.]/g, ""))}
+              inputMode="decimal"
+              className="rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm"
+            />
+            <input
+              placeholder="Вес, кг"
+              value={weightInput}
+              onChange={(e) => setWeightInput(e.target.value.replace(/[^0-9.]/g, ""))}
+              inputMode="decimal"
+              className="rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm"
+            />
           </div>
-          <p className="text-xs text-[#40484c]">BMI будет пересчитан автоматически (мок).</p>
+          <p className="text-xs text-[#40484c]">
+            BMI: {bmiPreview ?? "—"} {bmiPreview ? "(локальный расчёт)" : ""}
+          </p>
+          {saveError ? <p className="text-xs text-coral">{saveError}</p> : null}
+        </div>
+        <div className="sticky bottom-0 mt-3 border-t border-[#e7e8e9] bg-white/95 pb-[env(safe-area-inset-bottom,0px)] pt-2 backdrop-blur">
+          <button
+            type="button"
+            onClick={() => void onSaveBasics()}
+            disabled={savingBasics}
+            className="w-full rounded-lg bg-[#004253] px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {savingBasics ? "Сохранение..." : "Сохранить"}
+          </button>
         </div>
       </BottomSheet>
     </div>
