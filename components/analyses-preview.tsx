@@ -242,38 +242,112 @@ export function AnalysesPreview({
                 </button>
 
                 {open && payload?.biomarkers ? (
-                  <div className="mt-2 border-t border-emerald-900/10 pt-2">
-                    <ul className="space-y-1">
-                      {payload.biomarkers.map((b: ParsedBiomarker, idx: number) => {
-                        const st = statusForBiomarker(b, activeDob);
-                        const nk = normalizeBiomarkerKey(b.biomarker);
-                        const catId = nk ? categoryForBiomarkerKey(nk) : "other";
-                        return (
-                          <li
-                            key={`${a.id}-${idx}-${b.biomarker}`}
-                            className="flex items-center justify-between gap-2 text-xs"
-                          >
-                            <span className="text-emerald-950">
-                              <span className="block text-[10px] font-medium uppercase tracking-wide text-emerald-800/60">
-                                {t(lang, `category.${catId}`)}
-                              </span>
-                              {b.biomarker}:{" "}
-                              <strong>
-                                {b.value} {b.unit}
-                              </strong>
-                            </span>
-                            <span
-                              className={cn(
-                                "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                                statusIndicatorPillClass(st),
-                              )}
-                            >
-                              {t(lang, `status.${st}`)}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                  <div className="mt-2 border-t border-emerald-900/10 pt-3">
+                    {/* Сортировка: критично → внимание → норма */}
+                    {(() => {
+                      const ranked = [...payload.biomarkers].sort((x, y) => {
+                        const rank: Record<MedicalStatus, number> = { critical: 0, warning: 1, normal: 2 };
+                        return rank[statusForBiomarker(x, activeDob)] - rank[statusForBiomarker(y, activeDob)];
+                      });
+                      const critical = ranked.filter(b => statusForBiomarker(b, activeDob) === "critical");
+                      const warning  = ranked.filter(b => statusForBiomarker(b, activeDob) === "warning");
+                      const normal   = ranked.filter(b => statusForBiomarker(b, activeDob) === "normal");
+
+                      return (
+                        <>
+                          {/* Проблемные — выделенный блок сверху */}
+                          {(critical.length > 0 || warning.length > 0) && (
+                            <div className="mb-3 rounded-xl border border-coral/30 bg-[#fff8f8] px-3 py-2">
+                              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-coral">
+                                ⚠ Требует внимания
+                              </p>
+                              <ul className="space-y-1.5">
+                                {[...critical, ...warning].map((b, idx) => {
+                                  const st = statusForBiomarker(b, activeDob);
+                                  return (
+                                    <li key={`prob-${idx}`} className="flex items-center justify-between gap-2 text-xs">
+                                      <span className="font-medium text-slate-900">
+                                        {b.biomarker}:{" "}
+                                        <strong className={st === "critical" ? "text-red-700" : "text-amber-700"}>
+                                          {b.value} {b.unit}
+                                        </strong>
+                                      </span>
+                                      <span className={cn(
+                                        "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                        statusIndicatorPillClass(st),
+                                      )}>
+                                        {t(lang, `status.${st}`)}
+                                      </span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Остальные показатели */}
+                          <ul className="space-y-1">
+                            {ranked.map((b: ParsedBiomarker, idx: number) => {
+                              const st = statusForBiomarker(b, activeDob);
+                              const nk = normalizeBiomarkerKey(b.biomarker);
+                              const catId = nk ? categoryForBiomarkerKey(nk) : "other";
+                              return (
+                                <li
+                                  key={`${a.id}-${idx}-${b.biomarker}`}
+                                  className={cn(
+                                    "flex items-center justify-between gap-2 rounded-lg px-2 py-1 text-xs",
+                                    st !== "normal" ? "bg-white/50" : "",
+                                  )}
+                                >
+                                  <span className="text-slate-700">
+                                    <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                      {t(lang, `category.${catId}`)}
+                                    </span>
+                                    {b.biomarker}:{" "}
+                                    <strong className="text-slate-900">{b.value} {b.unit}</strong>
+                                  </span>
+                                  <span className={cn(
+                                    "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                    statusIndicatorPillClass(st),
+                                  )}>
+                                    {t(lang, `status.${st}`)}
+                                  </span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+
+                          {/* Сводка-расшифровка */}
+                          <div className={cn(
+                            "mt-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed",
+                            critical.length > 0
+                              ? "border border-coral/30 bg-[#fff4f4] text-red-900"
+                              : warning.length > 0
+                                ? "border border-amber-400/40 bg-amber-50 text-amber-900"
+                                : "border border-emerald-800/15 bg-emerald-50/60 text-emerald-900",
+                          )}>
+                            <p className="font-semibold">
+                              {critical.length > 0
+                                ? "🔴 Критические отклонения"
+                                : warning.length > 0
+                                  ? "🟡 Незначительные отклонения"
+                                  : "🟢 Все показатели в норме"}
+                            </p>
+                            <p className="mt-1 text-[11px] opacity-85">
+                              {critical.length > 0
+                                ? `${critical.map(b => b.biomarker).join(", ")} — значительно выходит за пределы нормы. Рекомендуем обратиться к врачу.`
+                                : warning.length > 0
+                                  ? `${warning.map(b => b.biomarker).join(", ")} — на границе нормы. Рекомендуем повторный анализ через 1–2 месяца.`
+                                  : `${normal.length} показателей в пределах нормы. Продолжайте мониторинг.`}
+                            </p>
+                            <p className="mt-1.5 text-[10px] opacity-60">
+                              Не является медицинским диагнозом. Консультируйтесь с врачом.
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                    
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         type="button"
@@ -287,12 +361,23 @@ export function AnalysesPreview({
                       >
                         {t(lang, "analyses.shareDoctor")}
                       </button>
-                      <a
-                        href={`/api/analyses/${a.id}/pdf`}
+                      <button
+                        type="button"
                         className="rounded-lg border border-emerald-800/35 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900"
+                        onClick={() => {
+                          const url = `${window.location.origin}/api/analyses/${a.id}/pdf`;
+                          // В Telegram Mini App <a download> открывает белый экран —
+                          // используем openLink для системного браузера.
+                          const tgWebApp = window.Telegram?.WebApp;
+                          if (tgWebApp?.openLink) {
+                            tgWebApp.openLink(url);
+                          } else {
+                            window.open(url, "_blank");
+                          }
+                        }}
                       >
                         {t(lang, "analyses.downloadPdf")}
-                      </a>
+                      </button>
                       {worst === "critical" ? (
                         <a
                           href={BISHKEK_CLINICS[0]?.bookingUrl ?? "#"}
