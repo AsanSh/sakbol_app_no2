@@ -7,11 +7,8 @@ import {
   sessionCookieName,
   sessionCookieOptions,
 } from "@/lib/session";
-import {
-  buildDisplayName,
-  parseTelegramUserFromInitData,
-  verifyTelegramInitData,
-} from "@/lib/telegram-init-data";
+import { buildDisplayName, parseTelegramUserFromInitData } from "@/lib/telegram-init-data";
+import { verifyTelegramInitData } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 

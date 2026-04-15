@@ -2,6 +2,7 @@
 
 import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
+import os from "os";
 import path from "path";
 import { HealthRecordKind, type Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -11,7 +12,8 @@ import { getSession } from "@/lib/session";
 import { processMedicalDocument } from "@/lib/services/process-medical-document";
 
 const MAX_BYTES = 12 * 1024 * 1024;
-const UPLOAD_ROOT = path.join(process.cwd(), "uploads", "health-records");
+/** На Vercel доступна запись в основном только в os.tmpdir(). */
+const UPLOAD_ROOT = path.join(os.tmpdir(), "sakbol-health-records");
 
 const ALLOWED = new Set([
   "application/pdf",
@@ -105,5 +107,6 @@ export async function uploadHealthRecord(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/tests");
   return { ok: true as const, recordId: record.id, biomarkerCount: biomarkers.length };
 }

@@ -28,8 +28,16 @@ function dbErrorMessage(err: unknown): string {
 /**
  * Демо / dev: сессия под первым ADMIN (после seed или авто-создания в development).
  */
+function devLoginAllowed(): boolean {
+  return (
+    process.env.ALLOW_DEV_LOGIN === "true" ||
+    process.env.AUTO_DEV_ADMIN_IN_BROWSER === "true" ||
+    process.env.NODE_ENV === "development"
+  );
+}
+
 export async function POST() {
-  if (process.env.ALLOW_DEV_LOGIN !== "true") {
+  if (!devLoginAllowed()) {
     return NextResponse.json({ error: "Dev login disabled" }, { status: 403 });
   }
 

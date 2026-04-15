@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { BottomTabBar } from "@/components/sakbol/bottom-tab-bar";
 import { SakbolDesktopNav } from "@/components/sakbol/desktop-nav";
 import { HealthDiaryScreen } from "@/components/sakbol/health-diary-screen";
@@ -18,7 +18,7 @@ export function SakbolMainClient() {
   const { tab, diaryOpen } = useTabApp();
   const { lang } = useLanguage();
   const { family, loading, reload } = useFamilyDefault();
-  const [analysesTick, setAnalysesTick] = useState(0);
+  const { refreshKey: analysesTick, bumpAnalyses } = useAnalysesRefresh();
 
   return (
     <div className="flex min-h-dvh bg-[#f8f9fa]">
@@ -36,9 +36,7 @@ export function SakbolMainClient() {
           ) : (
             <>
               {tab === "home" ? <HomeTab family={family} /> : null}
-              {tab === "analyses" ? (
-                <AnalysesTab onAnalysesChanged={() => setAnalysesTick((k) => k + 1)} />
-              ) : null}
+              {tab === "analyses" ? <AnalysesTab onAnalysesChanged={bumpAnalyses} /> : null}
               {tab === "risks" ? (
                 <RisksTab
                   family={family}

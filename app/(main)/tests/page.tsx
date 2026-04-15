@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import { TestsPageClient } from "@/components/tests-page-client";
+
+export const dynamic = "force-dynamic";
 
 export default function TestsPage() {
-  redirect("/?tab=analyses");
+  return <TestsPageClient />;
 }

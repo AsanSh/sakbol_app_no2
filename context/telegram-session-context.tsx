@@ -83,8 +83,8 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       }
 
       const inTelegramMiniApp = WebApp ? looksLikeTelegramWebApp(WebApp) : false;
-      if (!initData && process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true" && !inTelegramMiniApp) {
-        const devRes = await fetch("/api/auth/dev", { method: "POST" });
+      if (!initData && !inTelegramMiniApp) {
+        const devRes = await fetch("/api/auth/dev", { method: "POST", credentials: "same-origin" });
         if (cancelled) return;
         if (devRes.ok) {
           const data = (await devRes.json()) as { profile: TelegramViewer };

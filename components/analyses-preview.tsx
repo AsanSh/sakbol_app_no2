@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { listLabAnalysesForProfile } from "@/app/actions/analyses";
 import { createShareToken } from "@/app/actions/share";
 import { BISHKEK_CLINICS } from "@/constants/clinics";
 import { useLanguage } from "@/context/language-context";
@@ -80,29 +81,29 @@ export function AnalysesPreview({ profiles, refreshKey = 0 }: Props) {
       setRows(null);
       return;
     }
-    const ac = new AbortController();
+    let cancelled = false;
     setLoading(true);
     setError(null);
-    void fetch(`/api/analyses?profileId=${encodeURIComponent(activeProfileId)}`, {
-      signal: ac.signal,
-      credentials: "include",
-    })
-      .then(async (r) => {
-        if (!r.ok) {
-          const j = (await r.json().catch(() => ({}))) as { error?: string };
-          throw new Error(j.error ?? r.statusText);
+    void listLabAnalysesForProfile(activeProfileId)
+      .then((d) => {
+        if (cancelled) return;
+        if (!d.ok) {
+          throw new Error(d.error);
         }
-        return r.json() as Promise<{ analyses: LabAnalysisRow[] }>;
+        setRows(d.analyses);
       })
-      .then((d) => setRows(d.analyses))
       .catch((e: unknown) => {
-        if (e instanceof Error && e.name === "AbortError") return;
+        if (cancelled) return;
         setError(e instanceof Error ? e.message : t(lang, "analyses.errorLoad"));
         setRows(null);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-    return () => ac.abort();
+    return () => {
+      cancelled = true;
+    };
   }, [activeProfileId, refreshKey, lang]);
 
   const dynamicsKeys = useMemo(

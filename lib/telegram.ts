@@ -1,0 +1,54 @@
+import { createHmac } from "crypto";
+
+/**
+ * Проверка подписи Telegram Mini App initData.
+ * Токен берётся из аргумента или из process.env.TELEGRAM_BOT_TOKEN.
+ * При ошибке пишет в console.error — видно в логах Vercel.
+ * @see https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+ */
+export function verifyTelegramInitData(initData: string, botToken?: string): boolean {
+  const token = (botToken ?? process.env.TELEGRAM_BOT_TOKEN ?? "").trim();
+  if (!token) {
+    console.error("[telegram] initData validation: TELEGRAM_BOT_TOKEN is missing or empty");
+    return false;
+  }
+
+  const params = new URLSearchParams(initData);
+  const hash = params.get("hash");
+  if (!hash) {
+    console.error("[telegram] initData validation: no hash field in initData");
+    return false;
+  }
+
+  const authDate = params.get("auth_date");
+  if (authDate) {
+    const ts = Number.parseInt(authDate, 10);
+    if (Number.isFinite(ts)) {
+      const maxAgeSec = 60 * 60 * 24;
+      if (Date.now() / 1000 - ts > maxAgeSec) {
+        console.error("[telegram] initData validation: auth_date expired (>24h)");
+        return false;
+      }
+    }
+  }
+
+  const pairs: string[] = [];
+  params.forEach((v, k) => {
+    if (k === "hash") return;
+    pairs.push(`${k}=${v}`);
+  });
+  pairs.sort();
+  const dataCheckString = pairs.join("\n");
+
+  const secretKey = createHmac("sha256", "WebAppData").update(token).digest();
+  const calculated = createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+
+  if (calculated !== hash) {
+    console.error(
+      "[telegram] initData validation: HMAC mismatch (wrong TELEGRAM_BOT_TOKEN for this Mini App, or corrupted initData)",
+    );
+    return false;
+  }
+
+  return true;
+}

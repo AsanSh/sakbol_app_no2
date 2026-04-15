@@ -10,6 +10,8 @@ import { useActiveProfile } from "@/context/active-profile-context";
 import { useTabApp } from "@/context/tab-app-context";
 import type { FamilyWithProfiles } from "@/types/family";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
+import { AnalysesPreview } from "@/components/analyses-preview";
+import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 
 const GRADIENTS = [
   "from-[#004253] to-[#005b71]",
@@ -29,6 +31,7 @@ type Props = {
 };
 
 export function HomeTab({ family }: Props) {
+  const { refreshKey: analysesRefreshKey } = useAnalysesRefresh();
   const { state, authReady, isAuthenticated } = useTelegramSession();
   const { activeProfileId, setActiveProfileId } = useActiveProfile();
   const { setTab, openDiary } = useTabApp();
@@ -219,6 +222,10 @@ export function HomeTab({ family }: Props) {
         </div>
         <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
       </button>
+
+      {authReady && isAuthenticated && profiles.length > 0 ? (
+        <AnalysesPreview profiles={profiles} refreshKey={analysesRefreshKey} />
+      ) : null}
 
       <button
         type="button"
