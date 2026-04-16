@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { FileUp, Loader2, ShieldCheck, Sparkles } from "lucide-react";
 import { uploadHealthRecord } from "@/app/actions/health-record";
 import {
@@ -29,11 +30,16 @@ type Props = {
 };
 
 export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Props) {
+  const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [err, setErr] = useState<string | null>(null);
   const [maskedBlob, setMaskedBlob] = useState<Blob | null>(null);
   const [maskedMime, setMaskedMime] = useState<string | null>(null);
   const [maskedObjectUrl, setMaskedObjectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!maskedBlob || !maskedMime?.startsWith("image/")) {
@@ -113,7 +119,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
     }
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const anonymId = formatClinicalAnonymId(profileId);
   const scrubDemo = scrubPlainTextForStorage(
@@ -123,9 +129,9 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
 
   const showImagePreview = maskedObjectUrl && maskedMime?.startsWith("image/");
 
-  return (
+  const overlay = (
     <div
-      className="fixed inset-0 z-[110] flex items-end justify-center bg-emerald-950/50 p-4 sm:items-center"
+      className="fixed inset-0 z-[110] flex max-h-[100dvh] items-end justify-center overflow-y-auto bg-emerald-950/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:items-center sm:py-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="upload-analysis-title"
@@ -136,7 +142,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
         aria-label="Жабуу"
         onClick={handleClose}
       />
-      <div className="relative w-full max-w-lg rounded-2xl border-2 border-emerald-800/25 bg-gradient-to-b from-mint/30 to-white p-5 shadow-2xl">
+      <div className="relative my-auto w-full max-w-lg rounded-2xl border-2 border-emerald-800/25 bg-gradient-to-b from-mint/30 to-white p-5 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-900 text-mint">
             <ShieldCheck className="h-6 w-6" strokeWidth={2} />
@@ -264,4 +270,6 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }
