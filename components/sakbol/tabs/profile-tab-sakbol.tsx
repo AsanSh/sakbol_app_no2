@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex } from "@prisma/client";
+import { ChevronDown } from "lucide-react";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -39,6 +40,8 @@ function FamilyMemberEditableCard({
   lang,
   viewerId,
   canEdit,
+  expanded,
+  onToggle,
   onReload,
   syncViewerFromServer,
 }: {
@@ -46,6 +49,8 @@ function FamilyMemberEditableCard({
   lang: Lang;
   viewerId: string;
   canEdit: boolean;
+  expanded: boolean;
+  onToggle: () => void;
   onReload: () => void;
   syncViewerFromServer: () => Promise<void>;
 }) {
@@ -128,36 +133,54 @@ function FamilyMemberEditableCard({
   return (
     <li
       className={cn(
-        "rounded-2xl border px-3 py-3 text-sm shadow-sm",
+        "rounded-2xl border text-sm shadow-sm",
         profile.familyRole === "ADMIN"
           ? "border-amber-400/70 bg-gradient-to-br from-amber-100/90 via-amber-50/80 to-orange-50/90"
           : "border-sky-400/70 bg-gradient-to-br from-sky-100/90 via-sky-50/80 to-indigo-50/90",
       )}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-semibold text-[#191c1d]">{profile.displayName}</span>
-        <span
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left transition-colors hover:bg-black/[0.03] rounded-2xl"
+      >
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="font-semibold text-[#191c1d]">{profile.displayName}</span>
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+              profile.familyRole === "ADMIN"
+                ? "bg-amber-300 text-amber-950 shadow-inner ring-1 ring-amber-600/40"
+                : "bg-sky-300 text-sky-950 shadow-inner ring-1 ring-sky-600/40",
+            )}
+          >
+            {profile.familyRole === "ADMIN"
+              ? t(lang, "profile.roleAdmin")
+              : t(lang, "profile.roleMember")}
+          </span>
+        </div>
+        <ChevronDown
           className={cn(
-            "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-            profile.familyRole === "ADMIN"
-              ? "bg-amber-300 text-amber-950 shadow-inner ring-1 ring-amber-600/40"
-              : "bg-sky-300 text-sky-950 shadow-inner ring-1 ring-sky-600/40",
+            "h-5 w-5 shrink-0 text-[#40484c] transition-transform duration-200",
+            expanded && "rotate-180",
           )}
-        >
-          {profile.familyRole === "ADMIN"
-            ? t(lang, "profile.roleAdmin")
-            : t(lang, "profile.roleMember")}
-        </span>
-      </div>
-      <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-[#70787d]">
-        <span>
-          {t(lang, "profile.clinicalIdShort")}: {formatClinicalAnonymId(profile.id)}
-        </span>
-        <CopyIdButton text={formatClinicalAnonymId(profile.id)} label={t(lang, "profile.copyId")} />
-      </div>
+          aria-hidden
+          strokeWidth={2}
+        />
+      </button>
+
+      {expanded ? (
+        <>
+          <div className="border-t border-[#191c1d]/10 px-3 pb-2 pt-1 flex flex-wrap items-center gap-2 text-[10px] text-[#70787d]">
+            <span>
+              {t(lang, "profile.clinicalIdShort")}: {formatClinicalAnonymId(profile.id)}
+            </span>
+            <CopyIdButton text={formatClinicalAnonymId(profile.id)} label={t(lang, "profile.copyId")} />
+          </div>
 
       {canEdit ? (
-        <div className="mt-3 space-y-2 border-t border-[#191c1d]/10 pt-3">
+        <div className="space-y-2 border-t border-[#191c1d]/10 px-3 pb-3 pt-2">
           <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
             <span>Имя в приложении</span>
             <input
@@ -237,15 +260,19 @@ function FamilyMemberEditableCard({
           </button>
         </div>
       ) : (
-        <p className="mt-2 text-[11px] text-[#70787d]">
-          {t(lang, "profile.biologicalSex")}:{" "}
-          {profile.biologicalSex === BiologicalSex.MALE
-            ? t(lang, "profile.sexMale")
-            : profile.biologicalSex === BiologicalSex.FEMALE
-              ? t(lang, "profile.sexFemale")
-              : t(lang, "profile.sexUnknown")}
-        </p>
+        <div className="border-t border-[#191c1d]/10 px-3 pb-3 pt-2">
+          <p className="text-[11px] text-[#70787d]">
+            {t(lang, "profile.biologicalSex")}:{" "}
+            {profile.biologicalSex === BiologicalSex.MALE
+              ? t(lang, "profile.sexMale")
+              : profile.biologicalSex === BiologicalSex.FEMALE
+                ? t(lang, "profile.sexFemale")
+                : t(lang, "profile.sexUnknown")}
+          </p>
+        </div>
       )}
+        </>
+      ) : null}
     </li>
   );
 }
@@ -266,6 +293,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  /** Аккордеон семьи: открыта только одна карточка. */
+  const [openFamilyCardId, setOpenFamilyCardId] = useState<string | null>(null);
   const localVitalsMigratedRef = useRef(false);
 
   const viewer = state.status === "authenticated" ? state.viewer : null;
@@ -534,6 +563,10 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                       lang={lang}
                       viewerId={viewer.id}
                       canEdit={canEditMember(p.id)}
+                      expanded={openFamilyCardId === p.id}
+                      onToggle={() => {
+                        setOpenFamilyCardId((prev) => (prev === p.id ? null : p.id));
+                      }}
                       onReload={reload}
                       syncViewerFromServer={syncViewerFromServer}
                     />
