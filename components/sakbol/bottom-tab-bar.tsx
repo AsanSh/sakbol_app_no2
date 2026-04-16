@@ -29,8 +29,8 @@ export function BottomTabBar() {
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 border-t border-[#e7e8e9]/90",
-        "bg-white/80 shadow-[0_-8px_32px_rgba(0,66,83,0.08)] backdrop-blur-xl",
+        "fixed bottom-0 left-0 right-0 z-50 border-t border-emerald-200/70",
+        "bg-gradient-to-t from-white/95 via-emerald-50/35 to-white/90 shadow-[0_-10px_40px_rgba(6,95,70,0.12)] backdrop-blur-xl",
         "rounded-t-[1.5rem]",
         "[padding-bottom:max(0.5rem,env(safe-area-inset-bottom,0px))]",
       )}

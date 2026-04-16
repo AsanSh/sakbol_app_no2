@@ -6,8 +6,12 @@
 
 @layer base {
   body {
-    background-color: #f0f7f5;
-    background-image: radial-gradient(ellipse at top left, #d6ede9 0%, #f0f7f5 45%, #ffffff 100%);
+    background-color: #faf9f6;
+    background-image:
+      radial-gradient(ellipse 130% 70% at 50% -25%, rgba(52, 211, 153, 0.28), transparent 58%),
+      radial-gradient(ellipse 55% 45% at 100% 0%, rgba(253, 224, 200, 0.45), transparent 52%),
+      radial-gradient(ellipse 50% 40% at 0% 100%, rgba(110, 231, 183, 0.18), transparent 50%),
+      linear-gradient(165deg, #f8fafc 0%, #ecfdf5 38%, #fffbeb 100%);
     background-attachment: fixed;
   }
 }

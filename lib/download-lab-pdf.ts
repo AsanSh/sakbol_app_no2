@@ -9,12 +9,18 @@ export async function downloadLabPdfClient(recordId: string): Promise<{ ok: true
   });
 
   if (!res.ok) {
-    const ct = res.headers.get("content-type") ?? "";
-    if (ct.includes("application/json")) {
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
-      return { ok: false, error: j.error ?? res.statusText };
+    const raw = await res.text().catch(() => "");
+    let message = res.statusText?.trim() || `Ошибка ${res.status}`;
+    if (raw) {
+      try {
+        const j = JSON.parse(raw) as { error?: string };
+        if (j.error) message = j.error;
+      } catch {
+        const t = raw.trim().slice(0, 240);
+        if (t && !t.startsWith("<")) message = t;
+      }
     }
-    return { ok: false, error: res.statusText || "Request failed" };
+    return { ok: false, error: message };
   }
 
   const blob = await res.blob();

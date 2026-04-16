@@ -29,7 +29,7 @@ export function SakbolMainClient() {
           className={
             diaryOpen
               ? "flex min-h-0 w-full flex-1 flex-col"
-              : "flex min-h-0 w-full max-w-[480px] flex-1 flex-col overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom,0px))] md:pb-6"
+              : "flex min-h-0 w-full max-w-[480px] flex-1 flex-col overflow-y-auto rounded-none bg-white/55 pb-[calc(7rem+env(safe-area-inset-bottom,0px))] shadow-[0_0_0_1px_rgba(16,185,129,0.08)] backdrop-blur-md md:my-4 md:rounded-2xl md:pb-6 md:shadow-lg md:shadow-emerald-900/[0.07]"
           }
         >
           {diaryOpen ? (

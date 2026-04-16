@@ -1,10 +1,12 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+import { PDFDocument, rgb } from "pdf-lib";
 import { NextRequest, NextResponse } from "next/server";
 import { HealthRecordKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 import { getSession } from "@/lib/session";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
+import { loadNotoSansCyrillicFonts } from "@/lib/pdf-fonts";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,7 @@ export async function GET(
   _req: NextRequest,
   ctx: { params: { id: string } },
 ) {
+  try {
   const session = getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,10 +42,12 @@ export async function GET(
 
   const payload = resolveLabAnalysisPayload(record.data, record.metrics?.payload ?? null);
   const pdf = await PDFDocument.create();
-  let page = pdf.addPage([595, 842]); // A4 portrait
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  pdf.registerFontkit(fontkit);
+  const { regular: regBytes, bold: boldBytes } = await loadNotoSansCyrillicFonts();
+  const font = await pdf.embedFont(regBytes, { subset: true });
+  const bold = await pdf.embedFont(boldBytes, { subset: true });
 
+  let page = pdf.addPage([595, 842]); // A4 portrait
   const margin = 40;
   let y = 800;
   const draw = (text: string, size = 11, isBold = false) => {
@@ -88,4 +93,9 @@ export async function GET(
       "Cache-Control": "no-store",
     },
   });
+  } catch (e) {
+    console.error("GET /api/analyses/[id]/pdf", e);
+    const msg = e instanceof Error ? e.message : "PDF generation failed";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

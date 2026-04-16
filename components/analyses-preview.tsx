@@ -131,9 +131,9 @@ export function AnalysesPreview({
   if (!activeProfileId) return null;
 
   return (
-    <section className="rounded-2xl border border-emerald-900/15 bg-white/80 p-4 shadow-sm backdrop-blur">
+    <section className="rounded-2xl border border-emerald-200/90 bg-white p-4 shadow-md shadow-emerald-900/[0.06] ring-1 ring-emerald-100/80 backdrop-blur-sm">
       <h2 className="text-sm font-semibold text-emerald-950">{t(lang, "analyses.title")}</h2>
-      <p className="mt-0.5 text-xs text-emerald-600/70">{t(lang, "analyses.subtitle")}</p>
+      <p className="mt-0.5 text-xs text-emerald-700/75">{t(lang, "analyses.subtitle")}</p>
       <p className="mt-1 text-[10px] leading-snug text-emerald-600/70">{t(lang, "analyses.labsBrands")}</p>
 
       {showNearLabs ? (
