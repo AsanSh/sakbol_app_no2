@@ -412,10 +412,10 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                     <li
                       key={p.id}
                       className={cn(
-                        "rounded-xl border-[3px] px-3 py-3 text-sm shadow-md",
+                        "rounded-2xl border px-3 py-3 text-sm shadow-sm",
                         p.familyRole === "ADMIN"
-                          ? "border-amber-500 bg-gradient-to-br from-amber-100 via-amber-50 to-orange-100 ring-2 ring-amber-400/50"
-                          : "border-sky-500 bg-gradient-to-br from-sky-100 via-sky-50 to-indigo-100 ring-2 ring-sky-400/50",
+                          ? "border-amber-400/70 bg-gradient-to-br from-amber-100/90 via-amber-50/80 to-orange-50/90"
+                          : "border-sky-400/70 bg-gradient-to-br from-sky-100/90 via-sky-50/80 to-indigo-50/90",
                       )}
                     >
                       <div className="flex flex-wrap items-center gap-2">

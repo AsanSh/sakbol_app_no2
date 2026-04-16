@@ -20,6 +20,25 @@ export async function downloadLabPdfClient(recordId: string): Promise<{ ok: true
         if (t && !t.startsWith("<")) message = t;
       }
     }
+    if (res.status === 401) {
+      message =
+        "Нужна сессия в этом браузере. Откройте сайт, войдите через Telegram (виджет на странице входа) или откройте мини-апп.";
+    }
+    return { ok: false, error: message };
+  }
+
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("application/pdf")) {
+    const raw = await res.text().catch(() => "");
+    let message = "Сервер вернул не PDF.";
+    if (raw) {
+      try {
+        const j = JSON.parse(raw) as { error?: string };
+        if (j.error) message = j.error;
+      } catch {
+        message = raw.trim().slice(0, 200) || message;
+      }
+    }
     return { ok: false, error: message };
   }
 

@@ -296,9 +296,9 @@ export function HomeTabDesktop({
                                 setActiveProfileId(p.id);
                               }}
                               className={cn(
-                                "group relative flex min-w-[6rem] flex-col items-center gap-1 rounded-2xl bg-health-surface px-2.5 pb-2 pt-2.5 text-center shadow-md shadow-slate-900/[0.05] ring-1 transition-all duration-300",
-                                isAdmin ? "ring-amber-200/90" : "ring-health-border/70",
-                                active && "ring-2 ring-health-primary ring-offset-2 ring-offset-health-bg",
+                                "group relative flex min-w-[6rem] flex-col items-center gap-1 rounded-2xl bg-health-surface px-2.5 pb-2 pt-2.5 text-center shadow-sm shadow-slate-900/[0.04] ring-1 transition-all duration-300",
+                                isAdmin ? "ring-amber-200/55" : "ring-health-border/45",
+                                active && "ring-1 ring-health-primary/90",
                               )}
                             >
                               {isAdmin ? (
@@ -310,7 +310,7 @@ export function HomeTabDesktop({
                                 src={p.avatarUrl}
                                 name={p.displayName}
                                 size={44}
-                                className="ring-2 ring-white shadow-sm"
+                                className="ring-1 ring-white/90 shadow-sm"
                               />
                               <span className="max-w-[5rem] truncate text-center text-[11px] font-semibold text-health-text">
                                 {p.displayName}

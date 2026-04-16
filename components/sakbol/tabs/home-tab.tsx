@@ -215,8 +215,8 @@ export function HomeTab({ family }: Props) {
                     name={p.displayName}
                     size={56}
                     className={cn(
-                      "ring-2 ring-offset-2 ring-offset-health-bg transition-shadow",
-                      active ? "ring-health-primary shadow-md" : "ring-transparent",
+                      "ring-1 ring-offset-1 ring-offset-health-bg transition-shadow",
+                      active ? "ring-health-primary/90 shadow-sm" : "ring-transparent",
                     )}
                   />
                   <span className="max-w-[4.5rem] truncate text-center text-[11px] font-medium text-health-text">

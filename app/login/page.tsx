@@ -2,8 +2,9 @@
 
 import { motion } from "framer-motion";
 import { Send } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Script from "next/script";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { APP_NAME } from "@/constants";
 import { useTelegramSession } from "@/context/telegram-session-context";
 
@@ -14,14 +15,40 @@ function telegramAuthUrl(): string | null {
   return `https://t.me/${u}?start=auth`;
 }
 
-export default function LoginPage() {
+function telegramBotUsername(): string {
+  return process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
+}
+
+function loginErrorMessage(code: string | null): string | null {
+  switch (code) {
+    case "no_profile":
+      return "Аккаунт не найден. Сначала откройте мини-приложение в Telegram и завершите регистрацию (ПИН), затем войдите здесь снова.";
+    case "telegram_widget":
+      return "Не удалось подтвердить вход Telegram. Проверьте домен бота (/setdomain в BotFather) и попробуйте ещё раз.";
+    case "server":
+      return "Сервер временно недоступен. Попробуйте позже.";
+    default:
+      return code ? "Ошибка входа. Обновите страницу и попробуйте снова." : null;
+  }
+}
+
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { authReady, isAuthenticated, refresh } = useTelegramSession();
   const [devBusy, setDevBusy] = useState(false);
   const [devErr, setDevErr] = useState<string | null>(null);
+  const [widgetAuthUrl, setWidgetAuthUrl] = useState<string | null>(null);
 
   const tgUrl = telegramAuthUrl();
+  const botUser = telegramBotUsername();
   const showDevLogin = process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true";
+  const urlErr = searchParams.get("err");
+  const bannerErr = loginErrorMessage(urlErr);
+
+  useEffect(() => {
+    setWidgetAuthUrl(`${window.location.origin}/api/auth/telegram-widget`);
+  }, []);
 
   const tryDevLogin = useCallback(async () => {
     setDevErr(null);
@@ -63,7 +90,35 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {bannerErr ? (
+          <p
+            className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-center text-xs text-red-900"
+            role="alert"
+          >
+            {bannerErr}
+          </p>
+        ) : null}
+
         <div className="mt-8 space-y-3 sakbol-web-cta-wrap">
+          {botUser && widgetAuthUrl ? (
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-center text-[11px] font-medium text-slate-600">
+                Браузерден кирүү (тот эле профиль, мини-апптагыдай)
+              </p>
+              <div className="flex min-h-[42px] w-full items-center justify-center [&_iframe]:rounded-xl">
+                <Script
+                  src="https://telegram.org/js/telegram-widget.js?22"
+                  strategy="afterInteractive"
+                  data-telegram-login={botUser}
+                  data-size="large"
+                  data-radius="12"
+                  data-auth-url={widgetAuthUrl}
+                  data-request-access="write"
+                />
+              </div>
+            </div>
+          ) : null}
+
           {tgUrl ? (
             <motion.a
               href={tgUrl}
@@ -83,7 +138,8 @@ export default function LoginPage() {
           )}
 
           <p className="text-center text-[11px] text-slate-500">
-            Ботто ачылгандан кийин Mini Appти ачыңыз — сессия браузерге жайгашат.
+            Мини-апп: ботто ачылгандан кийин сессия ушул браузерге жайгашат. Башка компьютерде — жогорудагы
+            «Login with Telegram» баскычы.
           </p>
 
           {showDevLogin ? (
@@ -113,5 +169,19 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-slate-100 via-white to-slate-100">
+          <p className="text-sm text-slate-500">Жүктөлүүдө…</p>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
