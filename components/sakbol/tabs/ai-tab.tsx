@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
+import { askLabAssistantFromBook } from "@/app/actions/lab-assistant";
 
 type Msg = { id: string; role: "user" | "assistant"; text: string; time: string };
 
@@ -12,15 +13,6 @@ const FAQ = [
   "Как подготовиться к анализу крови?",
   "Норма глюкозы натощак",
 ];
-
-const ANSWERS: Record<string, string> = {
-  "Что такое ЛПНП?":
-    "ЛПНП — «плохой» холестерин. Повышение увеличивает риск атеросклероза; целевые уровни зависят от ваших факторов риска — уточняйте у врача.",
-  "Как подготовиться к анализу крови?":
-    "Обычно 8–12 часов натощак, вода можно; избегайте тяжёлой нагрузки и алкоголя накануне. Точные правила — по направлению лаборатории.",
-  "Норма глюкозы натощак":
-    "Часто ориентируются на уровень до 5,6 ммоль/л (около 100 мг/дл) для плазмы; границы могут отличаться — сверяйте с бланком и врачом.",
-};
 
 function nowTime() {
   return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -31,37 +23,31 @@ export function AiTab() {
     {
       id: "0",
       role: "assistant",
-      text: "Здравствуйте! Я Sakbol ИИ — отвечу на общие вопросы о показателях и здоровье. Это не медицинская консультация.",
+      text: "Здравствуйте! Ответы собираются из справочника по лабораторным анализам (Хиггинс и др.), загруженного в проект. Напишите показатель или вопрос — подберём близкие фрагменты текста. Это не диагноз и не замена врачу.",
       time: nowTime(),
     },
   ]);
   const [input, setInput] = useState("");
-  const [typing, setTyping] = useState(false);
+  const [pending, startTransition] = useTransition();
   const taRef = useRef<HTMLTextAreaElement>(null);
 
-  const send = useCallback(
-    (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
+  const send = useCallback((text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || pending) return;
 
-      const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: trimmed, time: nowTime() };
-      setMessages((m) => [...m, userMsg]);
-      setInput("");
-      setTyping(true);
+    const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: trimmed, time: nowTime() };
+    setMessages((m) => [...m, userMsg]);
+    setInput("");
 
-      window.setTimeout(() => {
-        const reply =
-          ANSWERS[trimmed] ??
-          "Спасибо за вопрос. Уточните показатель или приложите контекст анализа — или обратитесь к врачу для персональной оценки.";
-        setMessages((m) => [
-          ...m,
-          { id: crypto.randomUUID(), role: "assistant", text: reply, time: nowTime() },
-        ]);
-        setTyping(false);
-      }, 600 + Math.random() * 400);
-    },
-    [setMessages],
-  );
+    startTransition(async () => {
+      const res = await askLabAssistantFromBook(trimmed);
+      const reply = res.ok ? res.answer : res.error;
+      setMessages((m) => [
+        ...m,
+        { id: crypto.randomUUID(), role: "assistant", text: reply, time: nowTime() },
+      ]);
+    });
+  }, [pending]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -88,11 +74,11 @@ export function AiTab() {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-manrope font-bold text-[#191c1d]">Sakbol ИИ</p>
                 <span className="flex items-center gap-0.5 rounded-full bg-[#d4e6e9]/60 px-2 py-0.5 text-[9px] font-semibold text-[#004253]">
-                  <MaterialIcon name="verified" className="text-[14px]" filled />
-                  Медицинская база
+                  <MaterialIcon name="menu_book" className="text-[14px]" filled />
+                  Справочник Хиггинс
                 </span>
               </div>
-              <p className="text-xs text-[#70787d]">Общие ответы, без диагноза</p>
+              <p className="text-xs text-[#70787d]">Поиск по книге на сервере, без облачного ИИ</p>
             </div>
           </div>
         </div>
@@ -143,7 +129,7 @@ export function AiTab() {
               </div>
             </div>
           ))}
-          {typing ? (
+          {pending ? (
             <div className="flex items-center gap-1 pl-10 text-[#70787d]">
               <span className="animate-bounce">●</span>
               <span className="animate-bounce [animation-delay:0.15s]">●</span>
@@ -171,7 +157,8 @@ export function AiTab() {
             <button
               type="button"
               onClick={() => send(input)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#004253] to-[#005b71] text-white shadow-sm"
+              disabled={pending}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#004253] to-[#005b71] text-white shadow-sm disabled:opacity-50"
               aria-label="Отправить"
             >
               <MaterialIcon name="send" className="text-[20px]" filled />

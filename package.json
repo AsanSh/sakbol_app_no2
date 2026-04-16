@@ -12,7 +12,9 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:local": "prisma migrate deploy && tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "lab-ref:build": "node scripts/build-lab-reference.cjs",
+    "lab-ref:build:full": "LAB_REF_MAX_CHARS=0 node scripts/build-lab-reference.cjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -28,6 +30,7 @@
     "lucide-react": "^1.8.0",
     "next": "14.2.35",
     "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
     "qrcode.react": "^4.2.0",
     "react": "^18",
     "react-dom": "^18",
