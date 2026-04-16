@@ -106,6 +106,13 @@ export function parseLabReferenceRange(ref: string): LabNormEntry | null {
     return { min: 0, max };
   }
 
+  const lessThan = s0.match(/^[≤<]\s*([\d.,]+)/);
+  if (lessThan) {
+    const max = commaToNum(lessThan[1]);
+    if (!Number.isFinite(max)) return null;
+    return { min: 0, max };
+  }
+
   const fromTo = s0.match(/от\s*([\d.,]+)\s*до\s*([\d.,]+)/i);
   if (fromTo) {
     const a = commaToNum(fromTo[1]);
