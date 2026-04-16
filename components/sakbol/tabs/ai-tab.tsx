@@ -25,7 +25,7 @@ export function AiTab() {
     {
       id: "0",
       role: "assistant",
-      text: "Здравствуйте! Ответы собираются из справочника по лабораторным анализам (Хиггинс и др.), загруженного в проект. Напишите показатель или вопрос — подберём близкие фрагменты текста. Это не диагноз и не замена врачу.",
+      text: "Здравствуйте! Здесь нет подключённой медицинской книги — только краткие ответы с учётом последнего загруженного анализа выбранного профиля (если он есть). Статусы показателей смотрите на вкладке «Анализы». Это не диагноз и не замена врачу.",
       time: nowTime(),
     },
   ]);
@@ -76,12 +76,12 @@ export function AiTab() {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-manrope font-bold text-[#191c1d]">Sakbol ИИ</p>
                 <span className="flex items-center gap-0.5 rounded-full bg-[#d4e6e9]/60 px-2 py-0.5 text-[9px] font-semibold text-[#004253]">
-                  <MaterialIcon name="menu_book" className="text-[14px]" filled />
-                  Справочник Хиггинс
+                  <MaterialIcon name="biotech" className="text-[14px]" filled />
+                  По вашим анализам
                 </span>
               </div>
               <p className="text-xs text-[#70787d]">
-                Поиск по книге; к запросу подмешивается последний анализ выбранного профиля (семья)
+                К ответу подмешиваются данные последнего анализа активного профиля семьи
               </p>
             </div>
           </div>

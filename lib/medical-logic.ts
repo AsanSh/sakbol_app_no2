@@ -42,6 +42,8 @@ const ALIASES: Record<string, string> = {
   glucose: "Глюкоза",
   ферритин: "Ферритин",
   ferritin: "Ферритин",
+  т3: "Т3",
+  т4: "Т4",
   ттг: "ТТГ",
   tsh: "ТТГ",
   "витамин d": "Витамин D",
@@ -68,6 +70,10 @@ export function normalizeBiomarkerKey(raw: string): string | null {
   for (const key of Object.keys(LAB_NORMS)) {
     if (key.toLowerCase() === lower) return key;
   }
+  if (/\bттг\b|tsh|тиреотроп/i.test(lower)) return "ТТГ";
+  if (/\bт3\b|трийод/i.test(lower)) return "Т3";
+  if ((/\bт4\b|тироксин/i.test(lower)) && !/трийод/i.test(lower)) return "Т4";
+  if (/c-реактив|с-реактив|(^|[\s,])crp([\s,]|$)|c-reactive/i.test(lower)) return "С-реактивный белок";
   return null;
 }
 
@@ -79,6 +85,44 @@ export function getNormForBiomarker(
   const table = LAB_NORMS[biomarkerKey];
   if (!table) return null;
   return table[band] ?? null;
+}
+
+/**
+ * Парсит референс с бланка (как вернул парсер из PDF): «0.35 - 4.94», «до 5», «от 0.89 до 2.44».
+ * При успехе статусы в UI совпадают с лабораторией, а не только с внутренней таблицей.
+ */
+export function parseLabReferenceRange(ref: string): LabNormEntry | null {
+  const s0 = ref.replace(/\s+/g, " ").trim();
+  if (!s0) return null;
+  const commaToNum = (x: string) => {
+    const n = parseFloat(x.replace(",", ".").trim());
+    return Number.isFinite(n) ? n : NaN;
+  };
+
+  const upTo = s0.match(/^до\s*([\d.,]+)/i);
+  if (upTo) {
+    const max = commaToNum(upTo[1]);
+    if (!Number.isFinite(max)) return null;
+    return { min: 0, max };
+  }
+
+  const fromTo = s0.match(/от\s*([\d.,]+)\s*до\s*([\d.,]+)/i);
+  if (fromTo) {
+    const a = commaToNum(fromTo[1]);
+    const b = commaToNum(fromTo[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return { min: Math.min(a, b), max: Math.max(a, b) };
+  }
+
+  const range = s0.match(/([\d.,]+)\s*[-–—]\s*([\d.,]+)/);
+  if (range) {
+    const a = commaToNum(range[1]);
+    const b = commaToNum(range[2]);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return { min: Math.min(a, b), max: Math.max(a, b) };
+  }
+
+  return null;
 }
 
 /**
@@ -108,6 +152,9 @@ export function statusForBiomarker(
   biomarker: ParsedBiomarker,
   dob: string | Date | null | undefined,
 ): MedicalStatus {
+  const fromLab = parseLabReferenceRange(biomarker.reference);
+  if (fromLab) return getStatus(biomarker.value, fromLab);
+
   const key = normalizeBiomarkerKey(biomarker.biomarker);
   if (!key) return "normal";
   const months = ageInMonthsFromDob(dob);

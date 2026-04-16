@@ -39,7 +39,25 @@ export const LAB_NORMS: Record<string, BiomarkerNorms> = {
   ТТГ: {
     infant: { min: 0.7, max: 6.5 },
     child: { min: 0.7, max: 4.5 },
-    adult: { min: 0.4, max: 4.0 },
+    adult: { min: 0.35, max: 4.94 },
+  },
+  /** Запасной ориентир, ммоль/л; при наличии строки reference на бланке используется она. */
+  Т3: {
+    infant: { min: 0.89, max: 2.44 },
+    child: { min: 0.89, max: 2.44 },
+    adult: { min: 0.89, max: 2.44 },
+  },
+  /** Свободный тироксин, нмоль/л — запасной ориентир. */
+  Т4: {
+    infant: { min: 62.67, max: 150.8 },
+    child: { min: 62.67, max: 150.8 },
+    adult: { min: 62.67, max: 150.8 },
+  },
+  /** СРБ, мг/л — верхняя граница как у многих лабораторных форм. */
+  "С-реактивный белок": {
+    infant: { min: 0, max: 10 },
+    child: { min: 0, max: 8 },
+    adult: { min: 0, max: 5 },
   },
   "Витамин D": {
     infant: { min: 20, max: 100 },

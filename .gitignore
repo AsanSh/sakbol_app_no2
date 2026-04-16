@@ -39,5 +39,9 @@ next-env.d.ts
 # local uploads (anonymized blobs)
 /uploads
 
-# Книга Хиггинс (PDF) — локально; в репо только data/lab-reference-chunks.json + scripts/build-lab-reference.cjs
+# Локальные PDF справочники (не коммитить)
 khiggins_rasshifrovka_laboratornykh_analizov.pdf
+
+# Случайные артефакты у корня
+/картинки.jpg
+/картинки.jpg.zip

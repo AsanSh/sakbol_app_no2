@@ -4,11 +4,10 @@ import { HealthRecordKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 import { getSession } from "@/lib/session";
-import { searchLabReference } from "@/lib/lab-reference-search";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const DISCLAIMER =
-  "Ниже — выдержки из справочника по лабораторным показателям (Хиггинс и др.). Это не диагноз и не замена врачу. Интерпретация индивидуальна.\n\n";
+  "Информация справочная, не диагноз и не замена консультации врача. Статусы у показателей на вкладке «Анализы» считаются по референсу с вашего бланка (если он распознан) и по возрасту.\n\n";
 
 const MAX_BIOMARKERS_IN_CONTEXT = 45;
 
@@ -50,8 +49,7 @@ async function latestLabContextBlock(
 }
 
 /**
- * Ответ «ИИ» на основе локального индекса книги (без вызова внешнего LLM).
- * @param activeProfileId — профиль из переключателя семьи; подмешивается последний лаб. анализ для поиска по книге.
+ * Ответ без внешней «книги»: только контекст последнего анализа и общий дисклеймер.
  */
 export async function askLabAssistantFromBook(
   question: string,
@@ -70,42 +68,25 @@ export async function askLabAssistantFromBook(
     return { ok: false, error: "Слишком длинный текст." };
   }
 
-  let usedLastLab = false;
-  let searchQuery = q;
-
   const session = getSession();
   const pid = activeProfileId?.trim() || null;
+
   if (session && pid) {
     const block = await latestLabContextBlock(session.familyId, pid);
     if (block) {
-      usedLastLab = true;
-      searchQuery = `${q}\n\n---\nКонтекст последнего анализа выбранного профиля:\n${block}`;
+      return {
+        ok: true,
+        hasBook: false,
+        usedLastLab: true,
+        answer: `${DISCLAIMER}Контекст последнего анализа выбранного профиля:\n\n${block}\n\n—\nВаш вопрос: «${q}»\n\nОбщие медицинские тексты в приложении отключены. Сверяйтесь с подписями и референсами на бланке и при необходимости обсудите результаты с лечащим врачом.`,
+      };
     }
   }
 
-  const hits = searchLabReference(searchQuery, 4);
-  if (hits.length === 0) {
-    return {
-      ok: true,
-      hasBook: false,
-      usedLastLab,
-      answer:
-        "По этому запросу не нашлось близких фрагментов в загруженной части справочника. Уточните название показателя (например, «гемоглобин», «ЛПВП», «креатинин») или проверьте, что файл data/lab-reference-chunks.json собран (скрипт scripts/build-lab-reference.cjs).",
-    };
-  }
-
-  const body = hits
-    .map((h, i) => `— Фрагмент ${i + 1} —\n${h.text}`)
-    .join("\n\n────────\n\n");
-
-  const labNote = usedLastLab
-    ? "К поиску добавлены показатели из последнего загруженного анализа выбранного профиля.\n\n"
-    : "";
-
   return {
     ok: true,
-    hasBook: true,
-    usedLastLab,
-    answer: `${DISCLAIMER}${labNote}${body}`,
+    hasBook: false,
+    usedLastLab: false,
+    answer: `${DISCLAIMER}Загрузите анализ для выбранного профиля — тогда в ответ можно будет подставить его показатели. Общий справочник по литературе отключён.\n\nВаш вопрос: «${q}»`,
   };
 }

@@ -19,8 +19,11 @@ const KEY_TO_CAT: Record<string, BiomarkerCategoryId> = {
   ЛПВП: "lipids",
   Креатинин: "liver_kidney",
   ТТГ: "thyroid_vitamins",
+  Т3: "thyroid_vitamins",
+  Т4: "thyroid_vitamins",
   "Витамин D": "thyroid_vitamins",
   Ферритин: "hema",
+  "С-реактивный белок": "hema",
 };
 
 export function categoryForBiomarkerKey(canonicalKey: string): BiomarkerCategoryId {
