@@ -9,16 +9,18 @@ import { revalidatePath } from "next/cache";
 import { FREE_MAX_PROFILES, getFamilyTier } from "@/lib/premium";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
+import {
+  dateOfBirthFromKg14Pin,
+  normalizeKgPinInput,
+  pinAnchorFromUserInput,
+} from "@/lib/pin-subject-anchor";
 
 export type CreateManagedProfileInput = {
   displayName: string;
   managedRole: ManagedRelationRole;
-  /** ISO date string yyyy-mm-dd or empty */
-  dateOfBirth?: string | null;
   avatarUrl?: string | null;
   biologicalSex?: BiologicalSex;
-  /** ПИН/ИНН (КР), обязателен — на сервер сохраняется только HMAC-якорь */
+  /** ПИН/ИНН (КР), обязателен — на сервер сохраняется только HMAC-якорь; для 14-зн. ПИН дата рождения берётся из номера */
   pin: string;
 };
 
@@ -59,15 +61,6 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
     };
   }
 
-  let dateOfBirth: Date | null = null;
-  if (input.dateOfBirth?.trim()) {
-    const d = new Date(input.dateOfBirth.trim());
-    if (Number.isNaN(d.getTime())) {
-      return { ok: false as const, error: "Invalid date of birth." };
-    }
-    dateOfBirth = d;
-  }
-
   let pinAnchor: string;
   try {
     pinAnchor = pinAnchorFromUserInput(input.pin);
@@ -77,6 +70,9 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
       error: e instanceof Error ? e.message : "Некорректный ПИН.",
     };
   }
+
+  const normalizedPin = normalizeKgPinInput(input.pin);
+  const dateOfBirth = dateOfBirthFromKg14Pin(normalizedPin);
 
   const taken = await prisma.profile.findFirst({
     where: { pinAnchor },

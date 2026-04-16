@@ -43,6 +43,35 @@ export function assertValidPinFormat(normalized: string): string | null {
 }
 
 /**
+ * Кыргызстан: 14-значный ПИН — цифры 2–7 (индексы 1…6) — дата рождения **ДДММГГ**
+ * (1-я цифра — пол/гражданство). Для ИНН другой длины или других стран — `null`.
+ * При двусмысленности 19xx/20xx выбирается более поздняя допустимая дата (не в будущем, не старше ~120 лет).
+ */
+export function dateOfBirthFromKg14Pin(normalizedPin: string): Date | null {
+  const n = normalizeKgPinInput(normalizedPin);
+  if (!/^\d{14}$/.test(n)) return null;
+  const dd = parseInt(n.slice(1, 3), 10);
+  const mm = parseInt(n.slice(3, 5), 10);
+  const yy = parseInt(n.slice(5, 7), 10);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+
+  const now = new Date();
+  const maxTs = now.getTime() + 86400000;
+  const minYear = now.getFullYear() - 120;
+
+  let best: Date | null = null;
+  for (const century of [2000, 1900]) {
+    const year = century + yy;
+    if (year < minYear) continue;
+    const d = new Date(Date.UTC(year, mm - 1, dd));
+    if (Number.isNaN(d.getTime()) || d.getUTCDate() !== dd) continue;
+    if (d.getTime() > maxTs) continue;
+    if (!best || d.getTime() > best.getTime()) best = d;
+  }
+  return best;
+}
+
+/**
  * Стабильный якорь для сопоставления одного и того же ПИН с разных каналов (форма, OCR).
  * На сервере и в воркере OCR использовать один и тот же `pepper` из env.
  */
