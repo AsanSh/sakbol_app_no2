@@ -108,15 +108,39 @@ function biomarkersFromLlmJsonText(text: string): ParsedBiomarker[] {
   return out;
 }
 
-/** Google AI Studio / Gemini API: изображения и PDF (inline). */
-async function parseWithGemini(
+/** Имена моделей для AI Studio REST v1beta (без префикса models/). */
+function geminiModelCandidates(): string[] {
+  const fromEnv = process.env.GEMINI_MODEL?.trim();
+  const fallbacks = [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-001",
+    "gemini-1.5-flash-8b",
+    "gemini-1.5-pro",
+  ];
+  const raw = (fromEnv ? [fromEnv, ...fallbacks] : fallbacks).filter(Boolean);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const m of raw) {
+    if (seen.has(m)) continue;
+    seen.add(m);
+    out.push(m);
+  }
+  return out;
+}
+
+/** Следующая модель из списка — только при «модель не найдена» (часто 404 на v1beta). */
+function shouldTryNextGeminiModel(errMsg: string): boolean {
+  return /(^|\s)404(\s|:)|\bNOT_FOUND\b|is not found for API version|not supported for generateContent/i.test(
+    errMsg,
+  );
+}
+
+async function generateContentWithGeminiModel(
+  model: string,
   buffer: Buffer,
   mimeType: string,
+  key: string,
 ): Promise<ParsedBiomarker[]> {
-  const key = process.env.GEMINI_API_KEY?.trim();
-  if (!key) throw new Error("No Gemini API key");
-
-  const model = process.env.GEMINI_MODEL?.trim() || "gemini-1.5-flash";
   const b64 = buffer.toString("base64");
   const userPrompt =
     "Чыгарып бер: лабораториялык көрсөткүчтөрдүн JSON массиви гана, башка текст жок.";
@@ -140,12 +164,12 @@ async function parseWithGemini(
     }),
   });
 
+  const bodyText = await res.text();
   if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Gemini ${res.status}: ${t.slice(0, 300)}`);
+    throw new Error(`Gemini ${res.status} (${model}): ${bodyText.slice(0, 400)}`);
   }
 
-  const json = (await res.json()) as {
+  const json = JSON.parse(bodyText) as {
     candidates?: Array<{
       finishReason?: string;
       content?: { parts?: Array<{ text?: string }> };
@@ -162,9 +186,33 @@ async function parseWithGemini(
     throw new Error(`Gemini finish: ${fr}`);
   }
   const text =
-    cand?.content?.parts?.map((p) => p.text ?? "").join("")?.trim() ?? "";
+    cand?.content?.parts?.map((part) => part.text ?? "").join("")?.trim() ?? "";
   if (!text) throw new Error("Empty Gemini response");
   return biomarkersFromLlmJsonText(text);
+}
+
+/** Google AI Studio / Gemini API: изображения и PDF (inline). */
+async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<ParsedBiomarker[]> {
+  const key = process.env.GEMINI_API_KEY?.trim();
+  if (!key) throw new Error("No Gemini API key");
+
+  const models = geminiModelCandidates();
+  let lastErr = "";
+  for (const model of models) {
+    try {
+      return await generateContentWithGeminiModel(model, buffer, mimeType, key);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      lastErr = msg;
+      if (shouldTryNextGeminiModel(msg)) {
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error(
+    `Gemini: ни одна модель не подошла (${models.join(", ")}). Последняя ошибка: ${lastErr.slice(0, 280)}`,
+  );
 }
 
 async function parseWithOpenAIVision(
