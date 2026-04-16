@@ -4,6 +4,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Веб (узкий столбец): основные CTA не на всю ширину монитора */
+@layer components {
+  @media (min-width: 1024px) {
+    .sakbol-narrow-app .sakbol-web-cta {
+      max-width: 20rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+}
+
 @layer base {
   body {
     background-color: #faf9f6;

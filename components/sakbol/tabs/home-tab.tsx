@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
@@ -77,16 +78,27 @@ export function HomeTab({ family }: Props) {
         <div className="rounded-2xl border border-[#ffdcc0] bg-[#ffdcc0]/50 px-4 py-3 text-sm text-[#2d1600]">
           <p className="font-medium">Вход через Telegram Mini App</p>
           <p className="mt-1 text-xs text-[#693c08]">
-            {state.status === "unauthenticated" && state.reason === "no_init_data"
-              ? "Откройте приложение в Telegram или включите демо-вход в браузере."
-              : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
-                ? "Закройте мини-приложение полностью и откройте снова из бота."
-                : "Требуется авторизация для загрузки анализов и семейного профиля. Проверьте TELEGRAM_BOT_TOKEN, SESSION_SECRET и DATABASE_URL на сервере."}
+            {state.status === "unauthenticated" && state.reason === "web_login_required"
+              ? "Сессия в браузере жок. Кирүү үчүн /login бетин ачыңыз же Telegram аркылуу кирүү."
+              : state.status === "unauthenticated" && state.reason === "no_init_data"
+                ? "Откройте приложение в Telegram. Демо-вход в браузере: ALLOW_DEV_LOGIN на сервере и кнопка на /login."
+                : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
+                  ? "Закройте мини-приложение полностью и откройте снова из бота."
+                  : "Требуется авторизация для загрузки анализов и семейного профиля. Проверьте TELEGRAM_BOT_TOKEN, SESSION_SECRET и DATABASE_URL на сервере."}
           </p>
+          {state.status === "unauthenticated" && state.reason === "web_login_required" ? (
+            <Link
+              href="/login"
+              className="mt-3 inline-flex rounded-xl bg-[#5c3200] px-4 py-2 text-xs font-semibold text-[#ffead4]"
+            >
+              Страница входа
+            </Link>
+          ) : null}
           {state.status === "unauthenticated" &&
           state.reason &&
           state.reason !== "no_init_data" &&
-          state.reason !== "telegram_init_data_missing" ? (
+          state.reason !== "telegram_init_data_missing" &&
+          state.reason !== "web_login_required" ? (
             <p className="mt-2 rounded-lg bg-white/60 px-2 py-1.5 font-mono text-[10px] leading-snug text-[#5c3200]">
               {state.reason}
             </p>
@@ -162,7 +174,7 @@ export function HomeTab({ family }: Props) {
         whileTap={{ scale: 0.97 }}
         type="button"
         onClick={() => setScoreSheetOpen(true)}
-        className="relative w-full overflow-hidden rounded-2xl bg-sakbol-cta p-4 text-left text-white shadow-cta-coral"
+        className="sakbol-web-cta relative w-full overflow-hidden rounded-2xl bg-sakbol-cta p-4 text-left text-white shadow-cta-coral"
       >
         <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute bottom-0 right-12 h-16 w-16 rounded-full bg-[#8dd0e9]/20" />
@@ -227,7 +239,7 @@ export function HomeTab({ family }: Props) {
         whileTap={{ scale: 0.97 }}
         type="button"
         onClick={() => setTab("analyses")}
-        className="flex w-full items-center gap-3 rounded-2xl border border-emerald-900/10 bg-white/80 p-4 text-left shadow-sm transition-shadow hover:shadow-md"
+        className="sakbol-web-cta flex w-full items-center gap-3 rounded-2xl border border-emerald-900/10 bg-white/80 p-4 text-left shadow-sm transition-shadow hover:shadow-md"
       >
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#004253] to-[#005b71] text-white">
           <MaterialIcon name="cloud_upload" className="text-[26px]" />
@@ -252,7 +264,7 @@ export function HomeTab({ family }: Props) {
       <button
         type="button"
         onClick={() => setTab("risks")}
-        className="w-full rounded-2xl border border-[#e7e8e9] bg-white p-4 text-left shadow-sm"
+        className="sakbol-web-cta w-full rounded-2xl border border-[#e7e8e9] bg-white p-4 text-left shadow-sm"
       >
         <div className="flex items-center justify-between gap-2">
           <p className="font-manrope text-base font-bold text-[#191c1d]">Оценка рисков</p>

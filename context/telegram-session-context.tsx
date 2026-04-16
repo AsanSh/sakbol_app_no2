@@ -120,20 +120,16 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       const inTelegramMiniApp = WebApp ? looksLikeTelegramWebApp(WebApp) : false;
 
       if (!initData && !inTelegramMiniApp) {
-        const devRes = await fetch("/api/auth/dev", { method: "POST", credentials: "same-origin" });
+        const sessionRes = await fetch("/api/auth/session", { credentials: "same-origin" });
         if (cancelled) return;
-        if (devRes.ok) {
-          const data = (await devRes.json()) as { profile: TelegramViewer };
+        if (sessionRes.ok) {
+          const data = (await sessionRes.json()) as { profile: TelegramViewer };
           setState({ status: "authenticated", viewer: data.profile });
           setAuthReady(true);
           return;
         }
-        const errBody = (await devRes.json().catch(() => ({}))) as { error?: string };
         if (!cancelled) {
-          setState({
-            status: "unauthenticated",
-            reason: errBody.error ?? `dev_login_${devRes.status}`,
-          });
+          setState({ status: "unauthenticated", reason: "web_login_required" });
           setAuthReady(true);
         }
         return;

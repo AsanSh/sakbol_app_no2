@@ -8,9 +8,11 @@ export function usePlatform(): Platform {
   const [platform, setPlatform] = useState<Platform>("unknown");
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const init = window.Telegram?.WebApp?.initData;
+    const hasInit = typeof init === "string" && init.length > 0;
     const hasTg =
-      typeof window !== "undefined" &&
-      !!(window.Telegram?.WebApp?.initData || window.location.hash.includes("tgWebApp"));
+      hasInit || /tgWebAppData|tgWebAppVersion|tgWebAppPlatform/i.test(window.location.hash);
     setPlatform(hasTg ? "telegram" : "browser");
   }, []);
 

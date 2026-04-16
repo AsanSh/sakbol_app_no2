@@ -58,7 +58,7 @@ export function ProfileAvatar({
     <span
       className={cn(
         // box-border: border из className входит в width/height — контур не вылезает за скролл-контейнер
-        "relative box-border inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full",
+        "relative box-border inline-flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-full",
         !src ? bgForName(name) : "bg-slate-200",
         className,
       )}

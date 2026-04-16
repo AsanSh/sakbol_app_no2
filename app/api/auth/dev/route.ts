@@ -31,8 +31,7 @@ function dbErrorMessage(err: unknown): string {
 function devLoginAllowed(): boolean {
   return (
     process.env.ALLOW_DEV_LOGIN === "true" ||
-    process.env.AUTO_DEV_ADMIN_IN_BROWSER === "true" ||
-    process.env.NODE_ENV === "development"
+    process.env.AUTO_DEV_ADMIN_IN_BROWSER === "true"
   );
 }
 

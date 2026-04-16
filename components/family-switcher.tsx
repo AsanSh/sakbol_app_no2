@@ -46,7 +46,7 @@ export function FamilySwitcher({
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-emerald-800/70">
         {t(lang, "family.switcherTitle")}
       </p>
-      <ul className="flex gap-3 overflow-x-auto px-1 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul className="flex gap-3 overflow-x-auto overflow-y-visible px-1 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {profiles.map((p) => {
           const active = p.id === activeProfileId;
           return (

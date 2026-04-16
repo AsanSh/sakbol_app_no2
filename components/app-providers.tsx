@@ -6,6 +6,7 @@ import { AnalysesRefreshProvider } from "@/context/analyses-refresh-context";
 import { LanguageProvider } from "@/context/language-context";
 import { TelegramSessionProvider } from "@/context/telegram-session-context";
 import { TelegramPinGates } from "@/components/telegram-pin-gates";
+import { WebAuthGate } from "@/components/web-auth-gate";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <TelegramPinGates />
       <LanguageProvider>
         <AnalysesRefreshProvider>
-          <ActiveProfileProvider>{children}</ActiveProfileProvider>
+          <ActiveProfileProvider>
+            <WebAuthGate>{children}</WebAuthGate>
+          </ActiveProfileProvider>
         </AnalysesRefreshProvider>
       </LanguageProvider>
     </TelegramSessionProvider>
