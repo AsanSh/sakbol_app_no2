@@ -20,7 +20,10 @@ export function resolveLabAnalysisPayload(
 
   const parserRaw = d.parser;
   const parser: HealthRecordAnalysisPayload["parser"] =
-    parserRaw === "openai" || parserRaw === "mock" || parserRaw === "seed"
+    parserRaw === "gemini" ||
+    parserRaw === "openai" ||
+    parserRaw === "mock" ||
+    parserRaw === "seed"
       ? parserRaw
       : "mock";
 

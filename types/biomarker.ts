@@ -13,5 +13,5 @@ export type HealthRecordAnalysisPayload = {
   mimeType: string;
   anonymizedAt: string;
   parsedAt: string;
-  parser: "openai" | "mock" | "seed";
+  parser: "gemini" | "openai" | "mock" | "seed";
 };

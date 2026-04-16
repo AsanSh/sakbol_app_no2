@@ -71,6 +71,78 @@ async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
+function biomarkersFromLlmJsonText(text: string): ParsedBiomarker[] {
+  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const parsed = JSON.parse(cleaned) as unknown;
+  if (!Array.isArray(parsed)) throw new Error("LLM returned non-array");
+  const out: ParsedBiomarker[] = [];
+  for (const row of parsed) {
+    const r = row as Record<string, unknown>;
+    const biomarker = String(r.biomarker ?? "").trim();
+    const value = Number(r.value);
+    if (!biomarker || Number.isNaN(value)) continue;
+    out.push({
+      biomarker,
+      value,
+      unit: String(r.unit ?? "").trim(),
+      reference: String(r.reference ?? "").trim(),
+    });
+  }
+  if (out.length === 0) throw new Error("No biomarkers in LLM output");
+  return out;
+}
+
+/** Google AI Studio / Gemini API: изображения и PDF (inline). */
+async function parseWithGemini(
+  buffer: Buffer,
+  mimeType: string,
+): Promise<ParsedBiomarker[]> {
+  const key = process.env.GEMINI_API_KEY?.trim();
+  if (!key) throw new Error("No Gemini API key");
+
+  const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+  const b64 = buffer.toString("base64");
+  const userPrompt =
+    "Чыгарып бер: лабораториялык көрсөткүчтөрдүн JSON массиви гана, башка текст жок.";
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: LLM_BIOMARKER_SYSTEM }] },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: userPrompt }, { inlineData: { mimeType, data: b64 } }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Gemini ${res.status}: ${t.slice(0, 300)}`);
+  }
+
+  const json = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    promptFeedback?: { blockReason?: string };
+  };
+  if (json.promptFeedback?.blockReason) {
+    throw new Error(`Gemini blocked: ${json.promptFeedback.blockReason}`);
+  }
+  if (!json.candidates?.length) throw new Error("Gemini: empty candidates");
+  const text =
+    json.candidates[0]?.content?.parts?.map((p) => p.text ?? "").join("")?.trim() ?? "";
+  if (!text) throw new Error("Empty Gemini response");
+  return biomarkersFromLlmJsonText(text);
+}
+
 async function parseWithOpenAIVision(
   buffer: Buffer,
   mimeType: string,
@@ -115,30 +187,33 @@ async function parseWithOpenAIVision(
     choices?: Array<{ message?: { content?: string } }>;
   };
   const text = json.choices?.[0]?.message?.content?.trim() ?? "";
-  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
-  const parsed = JSON.parse(cleaned) as unknown;
-  if (!Array.isArray(parsed)) throw new Error("LLM returned non-array");
-  return parsed.map((row) => {
-    const r = row as Record<string, unknown>;
-    return {
-      biomarker: String(r.biomarker ?? ""),
-      value: Number(r.value),
-      unit: String(r.unit ?? ""),
-      reference: String(r.reference ?? ""),
-    };
-  });
+  return biomarkersFromLlmJsonText(text);
 }
 
 /**
- * OCR/LLM: для изображений — OpenAI при наличии ключа; иначе (и для PDF) — пауза 3 с и мок в БД.
+ * OCR/LLM: при `GEMINI_API_KEY` — Gemini (сүрөт + PDF); иначе сүрөттөр үчүн OpenAI;
+ * андан кийин 3 с жана мок.
  */
 export async function processMedicalDocument(
   buffer: Buffer,
   mimeType: string,
-): Promise<{ biomarkers: ParsedBiomarker[]; parser: "openai" | "mock" }> {
-  const canVision = mimeType.startsWith("image/") && !!process.env.OPENAI_API_KEY?.trim();
+): Promise<{ biomarkers: ParsedBiomarker[]; parser: "gemini" | "openai" | "mock" }> {
+  const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
+  const canGemini =
+    hasGemini &&
+    (mimeType.startsWith("image/") || mimeType === "application/pdf");
 
-  if (canVision) {
+  if (canGemini) {
+    try {
+      const biomarkers = await parseWithGemini(buffer, mimeType);
+      return { biomarkers, parser: "gemini" };
+    } catch {
+      /* fall through */
+    }
+  }
+
+  const canOpenAIVision = mimeType.startsWith("image/") && !!process.env.OPENAI_API_KEY?.trim();
+  if (canOpenAIVision) {
     try {
       const biomarkers = await parseWithOpenAIVision(buffer, mimeType);
       return { biomarkers, parser: "openai" };
