@@ -35,6 +35,8 @@ type TelegramSessionContextValue = {
   authReady: boolean;
   isAuthenticated: boolean;
   refresh: () => void;
+  /** Подтянуть displayName/avatar из БД без полного re-login (после сохранения профиля). */
+  syncViewerFromServer: () => Promise<void>;
   submitNewUserPin: (pin: string) => Promise<SubmitPinResult>;
 };
 
@@ -60,6 +62,21 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
   const pendingInitDataRef = useRef<string | null>(null);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
+
+  const syncViewerFromServer = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/session", { credentials: "same-origin" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { profile: TelegramViewer };
+      setState((prev) =>
+        prev.status === "authenticated"
+          ? { status: "authenticated", viewer: data.profile }
+          : prev,
+      );
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const submitNewUserPin = useCallback(async (pin: string): Promise<SubmitPinResult> => {
     const initData = pendingInitDataRef.current;
@@ -199,9 +216,10 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       authReady,
       isAuthenticated: state.status === "authenticated",
       refresh,
+      syncViewerFromServer,
       submitNewUserPin,
     }),
-    [state, authReady, refresh, submitNewUserPin],
+    [state, authReady, refresh, syncViewerFromServer, submitNewUserPin],
   );
 
   return (

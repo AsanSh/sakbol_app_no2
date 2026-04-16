@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { BiologicalSex } from "@prisma/client";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
@@ -37,7 +38,7 @@ type Props = {
 
 export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const { lang } = useLanguage();
-  const { authReady, isAuthenticated, state } = useTelegramSession();
+  const { authReady, isAuthenticated, state, syncViewerFromServer } = useTelegramSession();
   const { openDiary } = useTabApp();
   const [addOpen, setAddOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
@@ -146,6 +147,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
       if (!res.ok) {
         setSaveError(res.error);
         // Не выходим: локальные данные уже сохранены, закрываем sheet всё равно.
+      } else {
+        await syncViewerFromServer();
       }
       reload();
       setDataOpen(false);
@@ -177,16 +180,27 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
           <div className="rounded-2xl border border-[#ffdcc0] bg-[#ffdcc0]/50 px-4 py-3 text-sm text-[#2d1600]">
             <p className="font-medium">{t(lang, "dashboard.authTitle")}</p>
             <p className="mt-1 text-xs text-[#693c08]">
-              {state.status === "unauthenticated" && state.reason === "no_init_data"
-                ? t(lang, "dashboard.authBodyNoTg")
-                : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
-                  ? t(lang, "dashboard.authTelegramRetry")
-                  : t(lang, "dashboard.authBody")}
+              {state.status === "unauthenticated" && state.reason === "web_login_required"
+                ? "Кирүү үчүн /login бетин ачыңыз же Telegram аркылуу кирүү."
+                : state.status === "unauthenticated" && state.reason === "no_init_data"
+                  ? t(lang, "dashboard.authBodyNoTg")
+                  : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
+                    ? t(lang, "dashboard.authTelegramRetry")
+                    : t(lang, "dashboard.authBody")}
             </p>
+            {state.status === "unauthenticated" && state.reason === "web_login_required" ? (
+              <Link
+                href="/login"
+                className="mt-3 inline-flex rounded-xl bg-[#5c3200] px-4 py-2 text-xs font-semibold text-[#ffead4]"
+              >
+                Кирүү
+              </Link>
+            ) : null}
             {state.status === "unauthenticated" &&
             state.reason &&
             state.reason !== "no_init_data" &&
-            state.reason !== "telegram_init_data_missing" ? (
+            state.reason !== "telegram_init_data_missing" &&
+            state.reason !== "web_login_required" ? (
               <p className="mt-2 rounded-lg bg-white/60 px-2 py-1.5 font-mono text-[10px] leading-snug text-[#5c3200]">
                 {state.reason}
               </p>
@@ -196,23 +210,27 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
         {authReady && isAuthenticated && viewer ? (
           <>
-            <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[#004253] to-[#005b71] p-4 text-white shadow-lg">
+            <div className="overflow-visible rounded-2xl bg-gradient-to-br from-[#004253] to-[#005b71] p-4 text-white shadow-lg">
               <div className="flex items-start gap-3">
-                {/* avatarUrl: сначала из viewer (Telegram), затем из selfProfile (БД) */}
                 {(() => {
-                  const url = viewer.avatarUrl ?? selfProfile?.avatarUrl ?? null;
+                  const url = selfProfile?.avatarUrl ?? viewer.avatarUrl ?? null;
+                  const displayName = selfProfile?.displayName ?? viewer.displayName;
                   return (
-                    <ProfileAvatar
-                      src={url}
-                      name={viewer.displayName}
-                      size={56}
-                      className="border-2 border-white/70"
-                    />
+                    <div className="flex shrink-0 items-center justify-center">
+                      <ProfileAvatar
+                        src={url}
+                        name={displayName}
+                        size={56}
+                        className="border-2 border-white/70"
+                      />
+                    </div>
                   );
                 })()}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-[#d4e6e9]">ID {clinical}</p>
-                  <p className="font-manrope text-lg font-extrabold">{viewer.displayName}</p>
+                  <p className="font-manrope text-lg font-extrabold">
+                    {selfProfile?.displayName ?? viewer.displayName}
+                  </p>
                   <p className="text-xs text-[#b7eaff]">
                     {age != null ? `${age} лет` : "Возраст не указан"} · Бишкек
                   </p>

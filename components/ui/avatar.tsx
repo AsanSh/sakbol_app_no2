@@ -74,20 +74,8 @@ export function ProfileAvatar({
         <img
           src={src}
           alt=""
-          /*
-           * absolute inset-0 — отрывает img от flex-потока родителя.
-           * Без этого flex-алгоритм может сжать img даже при h-full w-full.
-           * object-cover + object-[center_30%] — заполняет круг и показывает
-           * верхнюю треть изображения, где обычно находится лицо.
-           */
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            objectPosition: "center 30%",
-          }}
+          className="h-full w-full object-cover object-[center_30%]"
+          loading="lazy"
         />
       ) : (
         <span

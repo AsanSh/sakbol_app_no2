@@ -13,6 +13,8 @@ import { hapticImpact } from "@/lib/telegram-haptics";
 import type { MainTab } from "@/context/tab-app-context";
 import { useTabApp } from "@/context/tab-app-context";
 
+type Dock = "fixed" | "embedded";
+
 type NavItem = { id: MainTab; label: string; Icon: LucideIcon };
 
 const ITEMS: NavItem[] = [
@@ -23,16 +25,24 @@ const ITEMS: NavItem[] = [
   { id: "profile",  label: "Профиль",  Icon: UserCircle        },
 ];
 
-export function BottomTabBar() {
+type TabBarProps = {
+  /** fixed — на весь экран (TWA / моб. браузер); embedded — внутри узкой колонки на ПК */
+  dock?: Dock;
+};
+
+export function BottomTabBar({ dock = "fixed" }: TabBarProps) {
   const { tab, setTab } = useTabApp();
 
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 border-t border-emerald-200/70",
+        "z-50 border-t border-emerald-200/70",
         "bg-gradient-to-t from-white/95 via-emerald-50/35 to-white/90 shadow-[0_-10px_40px_rgba(6,95,70,0.12)] backdrop-blur-xl",
         "rounded-t-[1.5rem]",
         "[padding-bottom:max(0.5rem,env(safe-area-inset-bottom,0px))]",
+        dock === "fixed"
+          ? "fixed bottom-0 left-0 right-0"
+          : "relative mt-auto w-full shrink-0",
       )}
       aria-label="Основная навигация"
     >
