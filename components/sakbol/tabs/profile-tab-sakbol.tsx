@@ -21,6 +21,7 @@ import {
   updateProfileBiologicalSex,
 } from "@/app/actions/profile";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
+import { cn } from "@/lib/utils";
 
 const PROFILE_EXTRAS_STORAGE_KEY = "sakbol.profile.extras.v1";
 
@@ -325,11 +326,27 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                   {family.profiles.map((p) => (
                     <li
                       key={p.id}
-                      className="rounded-xl border border-[#f3f4f5] bg-[#f8f9fa] px-3 py-2 text-sm"
+                      className={cn(
+                        "rounded-xl border-[3px] px-3 py-3 text-sm shadow-md",
+                        p.familyRole === "ADMIN"
+                          ? "border-amber-500 bg-gradient-to-br from-amber-100 via-amber-50 to-orange-100 ring-2 ring-amber-400/50"
+                          : "border-sky-500 bg-gradient-to-br from-sky-100 via-sky-50 to-indigo-100 ring-2 ring-sky-400/50",
+                      )}
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-[#191c1d]">{p.displayName}</span>
-                        <span className="text-xs text-[#70787d]">{p.familyRole}</span>
+                        <span className="font-semibold text-[#191c1d]">{p.displayName}</span>
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                            p.familyRole === "ADMIN"
+                              ? "bg-amber-300 text-amber-950 shadow-inner ring-1 ring-amber-600/40"
+                              : "bg-sky-300 text-sky-950 shadow-inner ring-1 ring-sky-600/40",
+                          )}
+                        >
+                          {p.familyRole === "ADMIN"
+                            ? t(lang, "profile.roleAdmin")
+                            : t(lang, "profile.roleMember")}
+                        </span>
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-[#70787d]">
                         <span>

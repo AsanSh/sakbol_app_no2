@@ -33,6 +33,8 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [err, setErr] = useState<string | null>(null);
+  /** Оригинал для сервера (Gemini читает без закрашенных зон превью). */
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [maskedBlob, setMaskedBlob] = useState<Blob | null>(null);
   const [maskedMime, setMaskedMime] = useState<string | null>(null);
   const [maskedObjectUrl, setMaskedObjectUrl] = useState<string | null>(null);
@@ -54,6 +56,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
   const reset = useCallback(() => {
     setPhase("idle");
     setErr(null);
+    setOriginalFile(null);
     setMaskedBlob(null);
     setMaskedMime(null);
   }, []);
@@ -64,40 +67,42 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
     onClose();
   };
 
-  const onPickFile = async (file: File | null) => {
-    if (!file) return;
+  const onPickFile = async (picked: File | null) => {
+    if (!picked) return;
     setErr(null);
-    if (!isSupportedAnalysisMime(file.type)) {
+    if (!isSupportedAnalysisMime(picked.type)) {
       setErr("PDF же сүрөт гана (PNG, JPG, WEBP).");
       return;
     }
 
+    setOriginalFile(picked);
+
     try {
       setPhase("masking");
-      const { blob, mimeOut } = await maskFileForPrivacyPreview(file);
+      const { blob, mimeOut } = await maskFileForPrivacyPreview(picked);
       setMaskedBlob(blob);
       setMaskedMime(mimeOut);
       setPhase("anonymized");
-      await submit(blob, mimeOut);
     } catch {
-      // Если маскирование не сработало в WebView/браузере, не блокируем основной сценарий.
-      const fallbackMime = file.type || "application/octet-stream";
-      setErr("Маскирование недоступно, файл будет загружен без превью.");
-      setMaskedBlob(file);
+      const fallbackMime = picked.type || "application/octet-stream";
+      setErr(
+        "Превью с маской недоступно. Нажмите «Загрузить» — уйдет оригинал файла (таблица не закрашена).",
+      );
+      setMaskedBlob(picked);
       setMaskedMime(fallbackMime);
       setPhase("anonymized");
-      await submit(file, fallbackMime);
     }
   };
 
-  const submit = async (blobArg?: Blob, mimeArg?: string) => {
-    const blob = blobArg ?? maskedBlob;
-    const mime = mimeArg ?? maskedMime;
-    if (!blob || !mime) return;
+  const submitWithOriginal = async (file: File) => {
+    if (!isSupportedAnalysisMime(file.type)) {
+      setErr("PDF же сүрөт гана (PNG, JPG, WEBP).");
+      setPhase("error");
+      return;
+    }
     setErr(null);
     try {
       setPhase("uploading");
-      const file = new File([blob], "masked.bin", { type: mime });
       const fd = new FormData();
       fd.set("profileId", profileId);
       fd.set("file", file);
@@ -117,6 +122,10 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       setErr(e instanceof Error ? e.message : "Жүктөө катасы");
       setPhase("error");
     }
+  };
+
+  const submitFromButton = () => {
+    if (originalFile) void submitWithOriginal(originalFile);
   };
 
   if (!open || !mounted) return null;
@@ -152,8 +161,10 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
               Анализ жүктөө
             </h2>
             <p className="mt-0.5 text-sm text-emerald-900/75">
-              Клиентте маскалоо + псевдо-ID <span className="font-mono text-emerald-950">{anonymId}</span>.
-              Тексттик демо-скрабинг:{" "}
+              Төмөндө — маскалонгон көрүнүш гана. Серверге жана Gemini&apos;ге{" "}
+              <strong className="font-semibold text-emerald-950">чыкылдаган файл</strong> жөнөтүлөт (таблица
+              көрүнөт). Псевдо-ID: <span className="font-mono text-emerald-950">{anonymId}</span>. Мисал
+              текст скраббери:{" "}
               <span className="block break-all text-[11px] text-emerald-800/90">{scrubDemo}</span>
             </p>
           </div>
@@ -198,7 +209,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
         {phase === "anonymized" || phase === "uploading" || phase === "parsing" ? (
           <div className="mt-3 rounded-xl border border-emerald-900/15 bg-emerald-900/5 p-3">
             <p className="mb-2 text-center text-[11px] font-medium uppercase tracking-wide text-emerald-800/70">
-              Маскалонгон көрүнүш (имитация)
+              Маскалонгон көрүнүш (имитация) — жүктөө оригинал менен
             </p>
             {showImagePreview ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -209,7 +220,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
               />
             ) : maskedMime === "application/pdf" ? (
               <p className="py-6 text-center text-sm text-emerald-900/80">
-                PDF: документке кара тилкелер кошулду. Сервер окуу үчүн файлды кийинки этапта иштетет.
+                PDF: превьюдо кара тилкелер. Талдоо үчүн оригинал PDF жөнөтүлөт.
               </p>
             ) : null}
           </div>
@@ -261,8 +272,8 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
           <button
             type="button"
             className="rounded-xl bg-sakbol-cta px-4 py-2 text-sm font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05] disabled:opacity-45"
-            disabled={phase !== "anonymized" || !maskedBlob}
-            onClick={() => void submit()}
+            disabled={phase !== "anonymized" || !originalFile}
+            onClick={() => void submitFromButton()}
           >
             Загрузить анализ
           </button>

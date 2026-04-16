@@ -52,7 +52,7 @@ export function HomeDashboard() {
 
       {authReady && isAuthenticated ? (
         <>
-          <FamilyAnalysesWorkspace showDemoSeedButton compactUpload={false} />
+          <FamilyAnalysesWorkspace compactUpload={false} />
           <p className="text-center text-xs text-emerald-800/70">
             {t(lang, "dashboard.profileIdsHint")}
           </p>

@@ -78,9 +78,10 @@ async function maskRasterImageSimulatedPii(file: File): Promise<Blob> {
   const w = canvas.width;
   const h = canvas.height;
   ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, w, h * 0.14);
-  ctx.fillRect(w * 0.04, h * 0.28, w * 0.55, h * 0.1);
-  ctx.fillRect(w * 0.58, h * 0.06, w * 0.38, h * 0.11);
+  /* Только узкие зоны «шапки» для превью; сервер получает оригинал — таблица не режется. */
+  ctx.fillRect(0, 0, w, h * 0.12);
+  ctx.fillRect(w * 0.04, h * 0.11, w * 0.5, h * 0.055);
+  ctx.fillRect(w * 0.55, h * 0.04, w * 0.4, h * 0.065);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(

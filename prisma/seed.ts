@@ -1,7 +1,6 @@
 import {
   BiologicalSex,
   FamilyRole,
-  HealthRecordKind,
   ManagedRelationRole,
   PrismaClient,
 } from "@prisma/client";
@@ -52,42 +51,6 @@ async function main() {
       dateOfBirth: new Date("2020-05-15"),
       biologicalSex: BiologicalSex.MALE,
       pinAnchor: childPin,
-    },
-  });
-
-  await prisma.healthRecord.create({
-    data: {
-      profileId: child.id,
-      kind: HealthRecordKind.LAB_ANALYSIS,
-      isPrivate: false,
-      title: "Общий анализ крови (seed)",
-      data: {
-        sourceFileId: "seed",
-        mimeType: "application/x-seed",
-        anonymizedAt: new Date().toISOString(),
-        parsedAt: new Date().toISOString(),
-        parser: "seed",
-      },
-      metrics: {
-        create: {
-          payload: {
-            biomarkers: [
-              {
-                biomarker: "Гемоглобин",
-                value: 128,
-                unit: "г/л",
-                reference: "110–145",
-              },
-              {
-                biomarker: "Глюкоза",
-                value: 4.9,
-                unit: "ммоль/л",
-                reference: "3.3–5.6",
-              },
-            ],
-          },
-        },
-      },
     },
   });
 

@@ -58,7 +58,6 @@ export function AnalysesTab({ onAnalysesChanged }: Props) {
 
         {authReady && isAuthenticated ? (
           <FamilyAnalysesWorkspace
-            showDemoSeedButton
             showPremiumCta
             compactUpload={false}
             onAnalysesChanged={onAnalysesChanged}

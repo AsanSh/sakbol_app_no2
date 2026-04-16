@@ -23,14 +23,17 @@ function TabPanels({
   reload,
   analysesTick,
   bumpAnalyses,
+  desktopWeb,
 }: {
   family: ReturnType<typeof useFamilyDefault>["family"];
   loading: boolean;
   reload: () => void;
   analysesTick: number;
   bumpAnalyses: () => void;
+  desktopWeb: boolean;
 }) {
   const { tab, diaryOpen } = useTabApp();
+  const homeOneScreen = desktopWeb && !diaryOpen && tab === "home";
 
   return (
     <AnimatePresence mode="wait">
@@ -40,7 +43,10 @@ function TabPanels({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
         transition={{ duration: 0.2 }}
-        className="flex min-h-0 min-w-0 flex-1 flex-col"
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          homeOneScreen ? "overflow-hidden" : "overflow-y-auto",
+        )}
       >
         {diaryOpen ? (
           <HealthDiaryScreen />
@@ -79,7 +85,7 @@ function TabPanels({
  */
 export function SakbolMainClient() {
   const device = useDeviceType();
-  const { diaryOpen } = useTabApp();
+  const { diaryOpen, tab } = useTabApp();
   const { lang } = useLanguage();
   const { family, loading, reload } = useFamilyDefault();
   const { refreshKey: analysesTick, bumpAnalyses } = useAnalysesRefresh();
@@ -93,19 +99,23 @@ export function SakbolMainClient() {
       reload={reload}
       analysesTick={analysesTick}
       bumpAnalyses={bumpAnalyses}
+      desktopWeb={isDesktopWeb}
     />
   );
 
+  const desktopHomeNoScroll = isDesktopWeb && !diaryOpen && tab === "home";
+
   if (isDesktopWeb) {
     return (
-      <div className="flex min-h-dvh w-full bg-slate-100">
+      <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-slate-100">
         {!diaryOpen ? <SakbolDesktopNav /> : null}
-        <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-50/90">
             <div
               className={cn(
-                "sakbol-dashboard-main mx-auto min-h-0 w-full max-w-6xl flex-1 overflow-y-auto",
-                "px-4 py-4 md:px-8 md:py-6",
+                "sakbol-dashboard-main mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col",
+                "px-4 py-3 md:px-8 md:py-4",
+                desktopHomeNoScroll ? "overflow-hidden" : "overflow-y-auto",
               )}
             >
               {tabPanels}

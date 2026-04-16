@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, ChevronUp, PlusCircle, Stethoscope } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, PlusCircle, Stethoscope, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { listLabAnalysesForProfile } from "@/app/actions/analyses";
+import { deleteLabAnalysis } from "@/app/actions/health-record";
 import { createShareToken } from "@/app/actions/share";
 import { BISHKEK_CLINICS } from "@/constants/clinics";
 import { useLanguage } from "@/context/language-context";
@@ -60,12 +61,18 @@ type Props = {
   refreshKey?: number;
   /** Пустой список: кнопка «жүктөө» открывает загрузку (родитель). */
   onRequestUpload?: () => void;
+  /** Десктоп: уместить в одну колонку без прокрутки — до 2 карточек, без динамики и лишнего текста */
+  compact?: boolean;
+  /** В compact при клике по карточке — перейти к полной вкладке анализов */
+  onOpenAnalyses?: () => void;
 };
 
 export function AnalysesPreview({
   profiles,
   refreshKey = 0,
   onRequestUpload,
+  compact = false,
+  onOpenAnalyses,
 }: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
@@ -76,6 +83,7 @@ export function AnalysesPreview({
   const [activeShare, setActiveShare] = useState<{ recordId: string; url: string } | null>(null);
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<{ id: string; msg: string } | null>(null);
+  const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -130,15 +138,33 @@ export function AnalysesPreview({
 
   if (!activeProfileId) return null;
 
+  const rowsForUi = compact ? rows?.slice(0, 2) : rows;
+
   return (
-    <section className="rounded-2xl border border-emerald-200/90 bg-white p-4 shadow-md shadow-emerald-900/[0.06] ring-1 ring-emerald-100/80 backdrop-blur-sm">
-      <h2 className="border-l-4 border-coral pl-3 text-sm font-semibold text-emerald-950">
+    <section
+      className={cn(
+        "rounded-2xl border border-emerald-200/90 bg-white shadow-md shadow-emerald-900/[0.06] ring-1 ring-emerald-100/80 backdrop-blur-sm",
+        compact ? "flex h-full min-h-0 flex-col overflow-hidden p-2" : "p-4",
+      )}
+    >
+      <h2
+        className={cn(
+          "border-coral font-semibold text-emerald-950",
+          compact ? "border-l-2 pl-2 text-xs" : "border-l-4 pl-3 text-sm",
+        )}
+      >
         {t(lang, "analyses.title")}
       </h2>
-      <p className="mt-0.5 text-xs text-emerald-700/75">{t(lang, "analyses.subtitle")}</p>
-      <p className="mt-1 text-[10px] leading-snug text-emerald-600/70">{t(lang, "analyses.labsBrands")}</p>
+      {!compact ? (
+        <>
+          <p className="mt-0.5 text-xs text-emerald-700/75">{t(lang, "analyses.subtitle")}</p>
+          <p className="mt-1 text-[10px] leading-snug text-emerald-600/70">{t(lang, "analyses.labsBrands")}</p>
+        </>
+      ) : (
+        <p className="mt-0.5 truncate text-[10px] text-emerald-700/70">{t(lang, "analyses.subtitle")}</p>
+      )}
 
-      {showNearLabs ? (
+      {!compact && showNearLabs ? (
         <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
           <p className="text-xs font-semibold text-emerald-950">{t(lang, "analyses.nearLabs")}</p>
           <p className="mt-0.5 text-[11px] text-emerald-900/75">{t(lang, "analyses.nearLabsHint")}</p>
@@ -160,42 +186,72 @@ export function AnalysesPreview({
       ) : null}
 
       {loading ? (
-        <AnalysisSkeleton className="mt-3" />
+        <AnalysisSkeleton className={compact ? "mt-2" : "mt-3"} />
       ) : error ? (
-        <p className="mt-3 text-sm text-coral">{error}</p>
+        <p className={cn("text-coral", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>{error}</p>
       ) : rows?.length === 0 ? (
-        <div className="mt-6 flex flex-col items-center justify-center px-4 py-10 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100/90 shadow-inner">
+        <div
+          className={cn(
+            "flex flex-col items-center justify-center text-center",
+            compact ? "mt-2 px-2 py-4" : "mt-6 px-4 py-10",
+          )}
+        >
+          <div
+            className={cn(
+              "flex items-center justify-center rounded-2xl bg-emerald-100/90 shadow-inner",
+              compact ? "h-10 w-10" : "h-16 w-16",
+            )}
+          >
             <Stethoscope
               className="text-emerald-300"
-              size={36}
+              size={compact ? 22 : 36}
               strokeWidth={1.5}
               aria-hidden
             />
           </div>
-          <h3 className="mt-4 font-manrope text-base font-semibold text-emerald-950">
+          <h3
+            className={cn(
+              "font-manrope font-semibold text-emerald-950",
+              compact ? "mt-2 text-xs" : "mt-4 text-base",
+            )}
+          >
             {t(lang, "analyses.emptyPrimary")}
           </h3>
-          <p className="mt-2 max-w-sm text-sm text-emerald-600/70">
+          <p
+            className={cn(
+              "text-emerald-600/70",
+              compact ? "mt-1 max-w-xs text-[10px]" : "mt-2 max-w-sm text-sm",
+            )}
+          >
             {t(lang, "analyses.emptySecondary")}
           </p>
           {onRequestUpload ? (
             <button
               type="button"
               onClick={onRequestUpload}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-sakbol-cta px-6 py-3 text-sm font-semibold text-white shadow-cta-coral transition-[filter] hover:brightness-[1.04] active:brightness-[0.98]"
+              className={cn(
+                "inline-flex items-center gap-2 rounded-2xl bg-sakbol-cta font-semibold text-white shadow-cta-coral transition-[filter] hover:brightness-[1.04] active:brightness-[0.98]",
+                compact ? "mt-2 px-3 py-1.5 text-[11px]" : "mt-5 px-6 py-3 text-sm",
+              )}
             >
-              <PlusCircle size={16} strokeWidth={2} aria-hidden />
+              <PlusCircle size={compact ? 14 : 16} strokeWidth={2} aria-hidden />
               {t(lang, "tests.uploadBig")}
             </button>
           ) : null}
         </div>
       ) : (
-        <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {rows?.map((a, idx) => {
+        <ul
+          className={cn(
+            "grid gap-2",
+            compact
+              ? "mt-2 min-h-0 flex-1 grid-cols-1 overflow-hidden"
+              : "mt-3 grid-cols-1 gap-3 sm:grid-cols-2",
+          )}
+        >
+          {rowsForUi?.map((a, idx) => {
             const n = biomarkerCount(a.data);
             const worst = analysisWorstStatus(a.data, activeDob);
-            const open = expandedId === a.id;
+            const open = !compact && expandedId === a.id;
             const payload =
               a.data && typeof a.data === "object"
                 ? (a.data as HealthRecordAnalysisPayload)
@@ -208,43 +264,95 @@ export function AnalysesPreview({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22, delay: idx * 0.05, ease: "easeOut" }}
                 className={cn(
-                  "rounded-2xl border-2 px-4 py-3 text-sm text-emerald-900 shadow-sm transition-shadow hover:shadow-md",
+                  "rounded-2xl border-2 text-emerald-900 shadow-sm transition-shadow hover:shadow-md",
+                  compact ? "px-2.5 py-2 text-xs" : "px-4 py-3 text-sm",
                   cardTone(worst),
                 )}
               >
-                <button
-                  type="button"
-                  className="flex w-full items-start justify-between gap-2 text-left"
-                  onClick={() => setExpandedId(open ? null : a.id)}
-                  aria-expanded={open}
-                >
-                  <span>
+                <div className="flex items-stretch gap-2">
+                  <button
+                    type="button"
+                    className="flex min-w-0 min-h-[3rem] flex-1 items-start justify-between gap-2 text-left"
+                    onClick={() => {
+                      if (compact && onOpenAnalyses) {
+                        onOpenAnalyses();
+                        return;
+                      }
+                      setExpandedId(open ? null : a.id);
+                    }}
+                    aria-expanded={open}
+                  >
+                    <span>
+                      <span
+                        className="font-semibold text-slate-900"
+                        style={{ borderBottom: `2px solid ${getStatusColorHex(worst)}` }}
+                      >
+                        {a.title ?? t(lang, "analyses.analysis")}
+                      </span>
+                      {n != null ? (
+                        <span className="ml-2 text-xs text-slate-500">
+                          {n} {t(lang, "analyses.indicators")}
+                        </span>
+                      ) : null}
+                      {a.isPrivate ? (
+                        <span className="ml-2 rounded bg-amber-500/20 px-1.5 text-[10px] font-medium text-emerald-900">
+                          {t(lang, "analyses.private")}
+                        </span>
+                      ) : null}
+                      <span className="mt-1 block text-xs text-emerald-600/70">
+                        {new Date(a.createdAt).toLocaleDateString(lang === "ru" ? "ru-RU" : "ky-KG")}
+                      </span>
+                    </span>
+                    {!compact ? (
+                      open ? (
+                        <ChevronUp className="mt-0.5 h-4 w-4 shrink-0 text-emerald-800" />
+                      ) : (
+                        <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-emerald-800" />
+                      )
+                    ) : null}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleteBusyId === a.id}
+                    title={t(lang, "analyses.delete")}
+                    aria-label={t(lang, "analyses.delete")}
+                    className={cn(
+                      "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border-2 border-red-400/90 bg-white px-2 py-1.5 text-red-700 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
+                      compact && "min-w-10 px-1.5 py-1",
+                    )}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!window.confirm(t(lang, "analyses.deleteConfirm"))) return;
+                      setDeleteBusyId(a.id);
+                      void deleteLabAnalysis(a.id)
+                        .then((r) => {
+                          if (!r.ok) {
+                            setError(r.error);
+                            return;
+                          }
+                          setRows((prev) => prev?.filter((x) => x.id !== a.id) ?? null);
+                          setExpandedId((ex) => (ex === a.id ? null : ex));
+                          setActiveShare((s) => (s?.recordId === a.id ? null : s));
+                        })
+                        .finally(() => setDeleteBusyId(null));
+                    }}
+                  >
+                    {deleteBusyId === a.id ? (
+                      <Loader2 className={cn("animate-spin", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
+                    ) : (
+                      <Trash2 className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
+                    )}
                     <span
-                      className="font-semibold text-slate-900"
-                      style={{ borderBottom: `2px solid ${getStatusColorHex(worst)}` }}
+                      className={cn(
+                        "max-w-[3.5rem] text-center text-[9px] font-bold uppercase leading-tight text-red-800 sm:max-w-none sm:text-[10px]",
+                        compact && "sr-only",
+                      )}
                     >
-                      {a.title ?? t(lang, "analyses.analysis")}
+                      {t(lang, "analyses.delete")}
                     </span>
-                    {n != null ? (
-                      <span className="ml-2 text-xs text-slate-500">
-                        {n} {t(lang, "analyses.indicators")}
-                      </span>
-                    ) : null}
-                    {a.isPrivate ? (
-                      <span className="ml-2 rounded bg-amber-500/20 px-1.5 text-[10px] font-medium text-emerald-900">
-                        {t(lang, "analyses.private")}
-                      </span>
-                    ) : null}
-                    <span className="mt-1 block text-xs text-emerald-600/70">
-                      {new Date(a.createdAt).toLocaleDateString(lang === "ru" ? "ru-RU" : "ky-KG")}
-                    </span>
-                  </span>
-                  {open ? (
-                    <ChevronUp className="mt-0.5 h-4 w-4 shrink-0 text-emerald-800" />
-                  ) : (
-                    <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-emerald-800" />
-                  )}
-                </button>
+                  </button>
+                </div>
 
                 {open ? (
                   <div className="mt-2 border-t border-emerald-900/10 pt-3">
@@ -394,6 +502,37 @@ export function AnalysesPreview({
                         </a>
                       ) : null}
                     </div>
+
+                    {!compact ? (
+                      <button
+                        type="button"
+                        disabled={deleteBusyId === a.id}
+                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-400 bg-red-50/90 py-2.5 text-sm font-semibold text-red-800 shadow-sm transition-colors hover:bg-red-100 disabled:opacity-50"
+                        onClick={() => {
+                          if (!window.confirm(t(lang, "analyses.deleteConfirm"))) return;
+                          setDeleteBusyId(a.id);
+                          void deleteLabAnalysis(a.id)
+                            .then((r) => {
+                              if (!r.ok) {
+                                setError(r.error);
+                                return;
+                              }
+                              setRows((prev) => prev?.filter((x) => x.id !== a.id) ?? null);
+                              setExpandedId((ex) => (ex === a.id ? null : ex));
+                              setActiveShare((s) => (s?.recordId === a.id ? null : s));
+                            })
+                            .finally(() => setDeleteBusyId(null));
+                        }}
+                      >
+                        {deleteBusyId === a.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
+                        )}
+                        {t(lang, "analyses.delete")}
+                      </button>
+                    ) : null}
+
                     {pdfError?.id === a.id ? (
                       <p className="mt-2 text-xs text-red-700">{pdfError.msg}</p>
                     ) : null}
@@ -422,7 +561,18 @@ export function AnalysesPreview({
         </ul>
       )}
 
-      {rows && rows.length >= 2 && dynamicsKeys.length > 0 ? (
+      {compact && rows && rows.length > 2 && onOpenAnalyses ? (
+        <button
+          type="button"
+          onClick={onOpenAnalyses}
+          className="mt-1.5 shrink-0 rounded-lg border border-emerald-800/25 bg-emerald-50/80 py-1.5 text-center text-[11px] font-medium text-emerald-900 transition-colors hover:bg-emerald-100/90"
+        >
+          {t(lang, "analyses.viewAll")}
+          <span className="text-emerald-700/80"> · +{rows.length - 2}</span>
+        </button>
+      ) : null}
+
+      {!compact && rows && rows.length >= 2 && dynamicsKeys.length > 0 ? (
         <div className="mt-6 space-y-4 border-t border-emerald-900/10 pt-4">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-800/80">
             {t(lang, "analyses.dynamics")}
@@ -467,7 +617,9 @@ export function AnalysesPreview({
         </div>
       ) : null}
 
-      <p className="mt-4 text-[10px] leading-tight text-emerald-800/55">{t(lang, "analyses.disclaimer")}</p>
+      {!compact ? (
+        <p className="mt-4 text-[10px] leading-tight text-emerald-800/55">{t(lang, "analyses.disclaimer")}</p>
+      ) : null}
     </section>
   );
 }

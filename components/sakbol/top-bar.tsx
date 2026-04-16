@@ -12,6 +12,8 @@ type Props = {
   showBell?: boolean;
   onBell?: () => void;
   bellUnread?: boolean;
+  /** Компактная шапка для десктоп-дашборда без лишней высоты */
+  dense?: boolean;
 };
 
 export function SakbolTopBar({
@@ -22,30 +24,47 @@ export function SakbolTopBar({
   showBell,
   onBell,
   bellUnread,
+  dense = false,
 }: Props) {
   return (
     <header
       className={cn(
         "sticky top-0 z-40 flex items-center justify-between gap-3",
-        "border-b border-slate-100 bg-white/80 px-4 py-3 backdrop-blur-md",
+        "border-b border-slate-100 bg-white/80 backdrop-blur-md",
+        dense ? "shrink-0 px-3 py-2" : "px-4 py-3",
       )}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className={cn("flex min-w-0 items-center", dense ? "gap-2" : "gap-3")}>
         {variant === "back" ? (
           <button
             type="button"
             onClick={onBack}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c] transition-colors hover:bg-[#e7e8e9]"
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c] transition-colors hover:bg-[#e7e8e9]",
+              dense ? "h-8 w-8" : "h-10 w-10",
+            )}
             aria-label="Назад"
           >
-            <MaterialIcon name="arrow_back" className="text-[22px]" />
+            <MaterialIcon name="arrow_back" className={dense ? "text-[18px]" : "text-[22px]"} />
           </button>
         ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#004253] to-[#005b71] text-sm font-extrabold text-white font-manrope">
+          <div
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#004253] to-[#005b71] font-extrabold text-white font-manrope",
+              dense ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm",
+            )}
+          >
             S
           </div>
         )}
-        <span className="truncate font-manrope text-lg font-extrabold text-[#004253]">{title}</span>
+        <span
+          className={cn(
+            "truncate font-manrope font-extrabold text-[#004253]",
+            dense ? "text-base" : "text-lg",
+          )}
+        >
+          {title}
+        </span>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {rightSlot}
@@ -53,10 +72,13 @@ export function SakbolTopBar({
           <button
             type="button"
             onClick={onBell}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c]"
+            className={cn(
+              "relative flex items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c]",
+              dense ? "h-8 w-8" : "h-10 w-10",
+            )}
             aria-label="Уведомления"
           >
-            <MaterialIcon name="notifications" className="text-[22px]" />
+            <MaterialIcon name="notifications" className={dense ? "text-[18px]" : "text-[22px]"} />
             {bellUnread ? (
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
             ) : null}

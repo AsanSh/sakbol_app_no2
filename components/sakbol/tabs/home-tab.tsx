@@ -17,6 +17,7 @@ import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { AnalysesPreview } from "@/components/analyses-preview";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
+import { useDeviceType } from "@/hooks/use-device-type";
 
 
 function greetingRu(hour: number) {
@@ -31,6 +32,8 @@ type Props = {
 
 export function HomeTab({ family }: Props) {
   const { refreshKey: analysesRefreshKey } = useAnalysesRefresh();
+  const device = useDeviceType();
+  const isDesktopWeb = device === "desktop-web";
   const { state, authReady, isAuthenticated } = useTelegramSession();
   const { activeProfileId, setActiveProfileId } = useActiveProfile();
   const { setTab, openDiary } = useTabApp();
@@ -60,6 +63,279 @@ export function HomeTab({ family }: Props) {
     { icon: "lab_research", title: "Готов расшифровка анализа", time: "09:12" },
     { icon: "event", title: "Напоминание: витамин D", time: "Вчера" },
   ];
+
+  const sharedSheets = (
+    <>
+      <BottomSheet open={notificationsOpen} title="Уведомления" onClose={() => setNotificationsOpen(false)}>
+        <ul className="space-y-3">
+          {notifications.map((n) => (
+            <li key={n.title} className="flex gap-3 rounded-xl bg-[#f8f9fa] p-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#004253] shadow-sm">
+                <MaterialIcon name={n.icon} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#191c1d]">{n.title}</p>
+                <p className="text-xs text-[#70787d]">{n.time}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </BottomSheet>
+
+      <BottomSheet open={scoreSheetOpen} title="Health Score" onClose={() => setScoreSheetOpen(false)}>
+        {[
+          { label: "Анализы крови", v: 82 },
+          { label: "Активность", v: 74 },
+          { label: "Сон", v: 71 },
+          { label: "Питание", v: 69 },
+          { label: "Риски", v: 76 },
+        ].map((row) => (
+          <div key={row.label} className="mb-3">
+            <div className="flex justify-between text-xs font-medium text-[#40484c]">
+              <span>{row.label}</span>
+              <span>{row.v}%</span>
+            </div>
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#f3f4f5]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#004253] to-[#005b71]"
+                style={{ width: `${row.v}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </BottomSheet>
+    </>
+  );
+
+  if (isDesktopWeb) {
+    return (
+      <>
+        <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+          <SakbolTopBar
+            dense
+            showBell
+            bellUnread
+            onBell={() => setNotificationsOpen(true)}
+          />
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-2 pb-2 pt-1 md:px-3">
+            {authReady && !isAuthenticated ? (
+              <div className="shrink-0 rounded-xl border border-[#ffdcc0] bg-[#ffdcc0]/50 px-3 py-2 text-xs text-[#2d1600]">
+                <p className="font-medium">Вход</p>
+                <p className="mt-0.5 text-[11px] text-[#693c08]">
+                  {state.status === "unauthenticated" && state.reason === "web_login_required"
+                    ? "Откройте /login или Telegram."
+                    : "Требуется авторизация."}
+                </p>
+                {state.status === "unauthenticated" && state.reason === "web_login_required" ? (
+                  <Link
+                    href="/login"
+                    className="mt-2 inline-flex rounded-lg bg-[#5c3200] px-3 py-1.5 text-[11px] font-semibold text-[#ffead4]"
+                  >
+                    Кирүү
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
+
+            {authReady && isAuthenticated ? (
+              <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-hidden lg:grid-cols-2 lg:gap-4">
+                <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
+                  <div className="shrink-0">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-[#70787d]">
+                      {clinicalId} · {greet}
+                    </p>
+                    <h1 className="font-manrope text-lg font-extrabold leading-tight text-[#191c1d]">
+                      {viewerName}
+                    </h1>
+                  </div>
+
+                  {profiles.length > 0 ? (
+                    <div className="shrink-0">
+                      <p className="mb-1 text-[10px] font-semibold text-[#40484c]">Семья</p>
+                      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {profiles.map((p, i) => {
+                          const active = p.id === activeProfileId;
+                          const score = 72 + (i % 5) * 4;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                hapticImpact("medium");
+                                setActiveProfileId(p.id);
+                              }}
+                              className="flex shrink-0 flex-col items-center gap-0.5"
+                            >
+                              <ProfileAvatar
+                                src={p.avatarUrl}
+                                name={p.displayName}
+                                size={40}
+                                className={cn("border-2", active ? "border-[#004253]" : "border-transparent")}
+                              />
+                              <span className="max-w-[3.5rem] truncate text-center text-[10px] font-medium text-[#40484c]">
+                                {p.displayName}
+                              </span>
+                              <span className="text-[9px] text-[#70787d]">{score}</span>
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setTab("analyses")}
+                          className="flex shrink-0 flex-col items-center gap-0.5 opacity-80"
+                        >
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-dashed border-[#bfc8cc] text-[#70787d]">
+                            <UserPlus size={18} strokeWidth={1.5} aria-hidden />
+                          </div>
+                          <span className="text-[10px] text-[#70787d]">+</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={() => setScoreSheetOpen(true)}
+                    className="sakbol-web-cta relative shrink-0 overflow-hidden rounded-xl bg-sakbol-cta p-2 text-left text-white shadow-cta-coral"
+                  >
+                    <p className="text-[10px] font-medium text-[#d4e6e9]">Health Score</p>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <p className="font-manrope text-2xl font-extrabold leading-none">
+                        {healthScore}
+                        <span className="text-sm font-semibold text-[#b7eaff]">/100</span>
+                      </p>
+                      <div className="relative h-14 w-14 shrink-0">
+                        <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
+                          <path
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.2)"
+                            strokeWidth="3"
+                          />
+                          <path
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="#b7eaff"
+                            strokeDasharray={`${healthScore}, 100`}
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-1 border-t border-white/15 pt-2 text-center text-[9px]">
+                      <div>
+                        <p className="text-[#d4e6e9]">Сон</p>
+                        <p className="font-semibold">7,5</p>
+                      </div>
+                      <div>
+                        <p className="text-[#d4e6e9]">Шаги</p>
+                        <p className="font-semibold">8k</p>
+                      </div>
+                      <div>
+                        <p className="text-[#d4e6e9]">Ккал</p>
+                        <p className="font-semibold">1850</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTab("analyses")}
+                    className="sakbol-web-cta flex shrink-0 items-center gap-2 rounded-xl border border-emerald-900/10 bg-white/90 p-2 text-left shadow-sm"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#004253] to-[#005b71] text-white">
+                      <MaterialIcon name="cloud_upload" className="text-[20px]" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-slate-900">Анализы</p>
+                      <p className="text-[10px] text-slate-500">Загрузка PDF / фото</p>
+                    </div>
+                    <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTab("risks")}
+                    className="min-h-0 shrink-0 overflow-hidden rounded-xl border border-[#e7e8e9] bg-white p-2 text-left shadow-sm"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold text-[#191c1d]">Риски</p>
+                      <span className="text-[10px] font-semibold text-[#004253]">→</span>
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-1">
+                      {[
+                        { icon: "cardiology", label: "Сердце", tone: "text-amber-700" },
+                        { icon: "bloodtype", label: "Диабет", tone: "text-emerald-700" },
+                        { icon: "radiology", label: "Онко", tone: "text-emerald-700" },
+                      ].map((c) => (
+                        <div key={c.label} className="rounded-lg bg-[#f8f9fa] p-1.5 text-center">
+                          <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-md bg-[#d4e6e9]/80 text-[#004253]">
+                            <MaterialIcon name={c.icon} className="text-[14px]" />
+                          </div>
+                          <p className="mt-0.5 text-[9px] font-semibold text-[#191c1d]">{c.label}</p>
+                          <p className={cn("text-[8px]", c.tone)}>·</p>
+                        </div>
+                      ))}
+                    </div>
+                  </button>
+
+                  <div className="min-h-0 shrink-0 overflow-hidden rounded-xl border border-[#ffdcc0]/80 bg-[#ffdcc0] p-2 text-[#2d1600]">
+                    <div className="flex gap-2">
+                      <MaterialIcon name="wb_sunny" className="shrink-0 text-[18px] text-[#5c3200]" />
+                      <p className="line-clamp-2 text-[10px] leading-snug">
+                        <span className="font-semibold">Витамин D</span> — ниже целевого; обсудите с врачом.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid shrink-0 grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={openDiary}
+                      className="rounded-xl border border-[#e7e8e9] bg-white p-2 text-left shadow-sm"
+                    >
+                      <MaterialIcon name="hotel_class" className="text-[18px] text-indigo-600" filled />
+                      <p className="mt-1 font-manrope text-sm font-extrabold text-[#191c1d]">7,2 ч</p>
+                      <p className="text-[9px] text-[#70787d]">Сон</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTab("analyses")}
+                      className="rounded-xl border border-[#e7e8e9] bg-white p-2 text-left shadow-sm"
+                    >
+                      <MaterialIcon name="local_fire_department" className="text-[18px] text-orange-600" filled />
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#f3f4f5]">
+                        <div className="h-full w-[72%] rounded-full bg-orange-500" />
+                      </div>
+                      <p className="mt-0.5 text-[9px] text-[#70787d]">Ккал</p>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+                  {profiles.length > 0 ? (
+                    <AnalysesPreview
+                      profiles={profiles}
+                      refreshKey={analysesRefreshKey}
+                      onRequestUpload={() => setTab("analyses")}
+                      compact
+                      onOpenAnalyses={() => setTab("analyses")}
+                    />
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-emerald-800/25 p-4 text-center text-xs text-emerald-800">
+                      Добавьте профиль семьи
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        {sharedSheets}
+      </>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -368,44 +644,7 @@ export function HomeTab({ family }: Props) {
         </button>
       </div>
 
-      <BottomSheet open={notificationsOpen} title="Уведомления" onClose={() => setNotificationsOpen(false)}>
-        <ul className="space-y-3">
-          {notifications.map((n) => (
-            <li key={n.title} className="flex gap-3 rounded-xl bg-[#f8f9fa] p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#004253] shadow-sm">
-                <MaterialIcon name={n.icon} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[#191c1d]">{n.title}</p>
-                <p className="text-xs text-[#70787d]">{n.time}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </BottomSheet>
-
-      <BottomSheet open={scoreSheetOpen} title="Health Score" onClose={() => setScoreSheetOpen(false)}>
-        {[
-          { label: "Анализы крови", v: 82 },
-          { label: "Активность", v: 74 },
-          { label: "Сон", v: 71 },
-          { label: "Питание", v: 69 },
-          { label: "Риски", v: 76 },
-        ].map((row) => (
-          <div key={row.label} className="mb-3">
-            <div className="flex justify-between text-xs font-medium text-[#40484c]">
-              <span>{row.label}</span>
-              <span>{row.v}%</span>
-            </div>
-            <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#f3f4f5]">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#004253] to-[#005b71]"
-                style={{ width: `${row.v}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </BottomSheet>
+      {sharedSheets}
       </motion.div>
     </div>
   );

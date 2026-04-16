@@ -37,8 +37,8 @@ export function TestsPageClient() {
           <p className="text-[10px] font-semibold uppercase tracking-wider text-[#70787d]">Лаборатория</p>
           <h1 className="font-manrope text-xl font-extrabold text-[#191c1d]">Загрузка анализов</h1>
           <p className="mt-1 text-sm text-[#40484c]">
-            Выберите PDF или фото — показатели появятся в списке ниже (без ключа OpenAI через ~3 с
-            подставляются демо-значения: гемоглобин, витамин D и др.).
+            Выберите PDF или фото — показатели извлекаются через Gemini (нужен GEMINI_API_KEY на сервере).
+            При ошибке API запись не создаётся, текст ошибки покажется в модалке.
           </p>
         </div>
 
@@ -59,7 +59,6 @@ export function TestsPageClient() {
 
         {authReady && isAuthenticated ? (
           <FamilyAnalysesWorkspace
-            showDemoSeedButton
             showPremiumCta
             compactUpload={false}
             uploadSignal={uploadSignal}

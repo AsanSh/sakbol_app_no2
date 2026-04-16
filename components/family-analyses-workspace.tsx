@@ -14,7 +14,6 @@ import { PaywallModal } from "@/components/paywall-modal";
 import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { t } from "@/lib/i18n";
-import { seedDemoLabRecord } from "@/app/actions/demo-lab";
 import { UploadFab } from "@/components/upload-fab";
 
 function normalizeFamily(raw: unknown): FamilyWithProfiles {
@@ -37,8 +36,6 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
 type Props = {
   /** Показывать CTA Premium (главная). */
   showPremiumCta?: boolean;
-  /** Кнопка «Демо-анализ» (мок без файла) — для Vercel / быстрый тест графика. */
-  showDemoSeedButton?: boolean;
   /** Компактная кнопка загрузки (главная). */
   compactUpload?: boolean;
   /** После загрузки / демо — обновить зависимые экраны (риски и т.д.). */
@@ -49,7 +46,6 @@ type Props = {
 
 export function FamilyAnalysesWorkspace({
   showPremiumCta = true,
-  showDemoSeedButton = true,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   compactUpload: _compactUpload = false,
   onAnalysesChanged,
@@ -65,8 +61,6 @@ export function FamilyAnalysesWorkspace({
   const [uploadOpen, setUploadOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [analysesRefresh, setAnalysesRefresh] = useState(0);
-  const [demoPending, setDemoPending] = useState(false);
-
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -157,30 +151,6 @@ export function FamilyAnalysesWorkspace({
               {t(lang, "family.addMemberShort")}
             </button>
           ) : null}
-        </div>
-      ) : null}
-
-      {/* Демо-кнопка: только на /tests, компактная, по центру */}
-      {activeProfileId && showDemoSeedButton ? (
-        <div className="flex justify-center">
-          <button
-            type="button"
-            disabled={demoPending}
-            onClick={() => {
-              setDemoPending(true);
-              void seedDemoLabRecord(activeProfileId)
-                .then((r) => {
-                  if (r.ok) {
-                    setAnalysesRefresh((k) => k + 1);
-                    onAnalysesChanged?.();
-                  }
-                })
-                .finally(() => setDemoPending(false));
-            }}
-            className="rounded-2xl border border-emerald-800/30 bg-white/80 px-5 py-2 text-sm font-medium text-emerald-900 shadow-sm transition-colors hover:bg-emerald-50 disabled:opacity-50"
-          >
-            {demoPending ? "…" : t(lang, "tests.demoSeed")}
-          </button>
         </div>
       ) : null}
 
