@@ -23,7 +23,8 @@ export function getPinAnchorPepper(): string {
   const p = process.env.PIN_ANCHOR_PEPPER?.trim();
   if (p && p.length >= 16) return p;
   if (process.env.NODE_ENV !== "production") {
-    return "dev-only-pin-pepper-min16!!";
+    // Ровно 16 символов — тот же минимум, что в production (удобно для локальных проверок длины).
+    return "devpinanchorxx16";
   }
   throw new Error("PIN_ANCHOR_PEPPER must be set (min 16 characters).");
 }
