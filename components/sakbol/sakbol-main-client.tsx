@@ -53,6 +53,7 @@ function TabPanels({
             {tab === "home" ? <HomeTab family={family} /> : null}
             {tab === "analyses" ? (
               <AnalysesTab
+                family={family}
                 onAnalysesChanged={() => {
                   bumpAnalyses();
                   reload();

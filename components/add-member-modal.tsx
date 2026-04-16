@@ -12,9 +12,10 @@ type Props = {
 };
 
 const ROLES: { value: ManagedRelationRole; label: string }[] = [
-  { value: ManagedRelationRole.CHILD, label: "Бала" },
-  { value: ManagedRelationRole.ELDER, label: "Улуктар" },
-  { value: ManagedRelationRole.OTHER, label: "Башка" },
+  { value: ManagedRelationRole.CHILD, label: "Ребёнок (пол: сын / дочь)" },
+  { value: ManagedRelationRole.SPOUSE, label: "Супруг(а)" },
+  { value: ManagedRelationRole.ELDER, label: "Родитель / старшее поколение" },
+  { value: ManagedRelationRole.OTHER, label: "Другой родственник" },
 ];
 
 export function AddMemberModal({ open, onClose, onCreated }: Props) {

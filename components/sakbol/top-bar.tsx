@@ -8,6 +8,8 @@ type Props = {
   variant?: "logo" | "back";
   title?: string;
   onBack?: () => void;
+  /** Между заголовком и правыми кнопками (например переключатель профиля). */
+  centerSlot?: ReactNode;
   rightSlot?: ReactNode;
   showBell?: boolean;
   onBell?: () => void;
@@ -20,6 +22,7 @@ export function SakbolTopBar({
   variant = "logo",
   title = "Sakbol",
   onBack,
+  centerSlot,
   rightSlot,
   showBell,
   onBell,
@@ -29,12 +32,12 @@ export function SakbolTopBar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 flex items-center justify-between gap-3",
+        "sticky top-0 z-40 flex items-center gap-2",
         "border-b border-health-border/80 bg-health-surface/90 backdrop-blur-md",
         dense ? "shrink-0 px-3 py-2" : "px-4 py-3",
       )}
     >
-      <div className={cn("flex min-w-0 items-center", dense ? "gap-2" : "gap-3")}>
+      <div className={cn("flex min-w-0 shrink-0 items-center", dense ? "gap-2" : "gap-3")}>
         {variant === "back" ? (
           <button
             type="button"
@@ -66,7 +69,12 @@ export function SakbolTopBar({
           {title}
         </span>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      {centerSlot ? (
+        <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {centerSlot}
+        </div>
+      ) : null}
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         {rightSlot}
         {showBell ? (
           <button

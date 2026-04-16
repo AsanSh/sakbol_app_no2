@@ -1,31 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { FamilyRole } from "@prisma/client";
 import { Upload } from "lucide-react";
 import { FamilyAnalysesWorkspace } from "@/components/family-analyses-workspace";
+import { FamilySwitcher } from "@/components/family-switcher";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useLanguage } from "@/context/language-context";
 import { useDeviceType } from "@/hooks/use-device-type";
+import type { FamilyWithProfiles } from "@/types/family";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type Props = {
+  family: FamilyWithProfiles | null;
   onAnalysesChanged?: () => void;
 };
 
-export function AnalysesTab({ onAnalysesChanged }: Props) {
+export function AnalysesTab({ family, onAnalysesChanged }: Props) {
   const { lang } = useLanguage();
   const { authReady, isAuthenticated, state } = useTelegramSession();
   const [uploadSignal, setUploadSignal] = useState(0);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const device = useDeviceType();
   const isDesktopWeb = device === "desktop-web";
+
+  const admin = useMemo(
+    () => family?.profiles.find((p) => p.familyRole === FamilyRole.ADMIN),
+    [family?.profiles],
+  );
+
+  const headerSwitcher =
+    authReady && isAuthenticated && family?.profiles?.length ? (
+      <FamilySwitcher
+        variant="header"
+        profiles={family.profiles}
+        canAddMember={!!admin}
+        onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+      />
+    ) : null;
 
   return (
     <div className="w-full">
       <SakbolTopBar
         title="Анализы"
+        centerSlot={headerSwitcher}
         rightSlot={
           <button
             type="button"
@@ -74,12 +95,17 @@ export function AnalysesTab({ onAnalysesChanged }: Props) {
         ) : null}
 
         {authReady && isAuthenticated ? (
-          <FamilyAnalysesWorkspace
-            showPremiumCta
-            compactUpload={false}
-            onAnalysesChanged={onAnalysesChanged}
-            uploadSignal={uploadSignal}
-          />
+          <>
+            <FamilyAnalysesWorkspace
+              showPremiumCta
+              compactUpload={false}
+              onAnalysesChanged={onAnalysesChanged}
+              uploadSignal={uploadSignal}
+              hideFamilySwitcher
+              addMemberModalOpen={addMemberOpen}
+              onAddMemberModalOpenChange={setAddMemberOpen}
+            />
+          </>
         ) : null}
       </motion.div>
     </div>

@@ -8,7 +8,6 @@ import { useLanguage } from "@/context/language-context";
 import { FamilySwitcher } from "@/components/family-switcher";
 import { AnalysisSkeleton } from "@/components/analysis-skeleton";
 import { AnalysesPreview } from "@/components/analyses-preview";
-import { HealthHubPanel } from "@/components/health-hub-panel";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { PaywallModal } from "@/components/paywall-modal";
 import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
@@ -47,6 +46,11 @@ type Props = {
   uploadSignal?: number;
   /** Вкладка «Динамика»: без Health Hub, только сравнение и графики. */
   variant?: "default" | "trends";
+  /** Не показывать свитчер семьи (родитель — в шапке страницы). */
+  hideFamilySwitcher?: boolean;
+  /** Управление модалкой «Добавить члена» снаружи (кнопка + в шапке). */
+  addMemberModalOpen?: boolean;
+  onAddMemberModalOpenChange?: (open: boolean) => void;
 };
 
 export function FamilyAnalysesWorkspace({
@@ -56,6 +60,9 @@ export function FamilyAnalysesWorkspace({
   onAnalysesChanged,
   uploadSignal = 0,
   variant = "default",
+  hideFamilySwitcher = false,
+  addMemberModalOpen: addMemberModalOpenProp,
+  onAddMemberModalOpenChange,
 }: Props) {
   const isTrends = variant === "trends";
   const { lang } = useLanguage();
@@ -64,7 +71,13 @@ export function FamilyAnalysesWorkspace({
   const [family, setFamily] = useState<FamilyWithProfiles | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
+  const [addOpenInternal, setAddOpenInternal] = useState(false);
+  const addModalControlled = typeof onAddMemberModalOpenChange === "function";
+  const addOpen = addModalControlled ? Boolean(addMemberModalOpenProp) : addOpenInternal;
+  const setAddOpen = (open: boolean) => {
+    if (addModalControlled) onAddMemberModalOpenChange(open);
+    else setAddOpenInternal(open);
+  };
   const [uploadOpen, setUploadOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [analysesRefresh, setAnalysesRefresh] = useState(0);
@@ -139,11 +152,13 @@ export function FamilyAnalysesWorkspace({
         </button>
       ) : null}
 
-      <FamilySwitcher
-        profiles={family.profiles}
-        canAddMember={!!admin}
-        onAddMember={admin ? () => setAddOpen(true) : undefined}
-      />
+      {hideFamilySwitcher ? null : (
+        <FamilySwitcher
+          profiles={family.profiles}
+          canAddMember={!!admin}
+          onAddMember={admin ? () => setAddOpen(true) : undefined}
+        />
+      )}
 
       {/* Подсказка + кнопка «Добавить члена» (компактная) */}
       {activeProfileId ? (
@@ -165,10 +180,6 @@ export function FamilyAnalysesWorkspace({
       {activeProfileId ? (
         <UploadFab onClick={() => setUploadOpen(true)} mobileOnly={false} />
       ) : null}
-
-      {isTrends ? null : (
-        <HealthHubPanel profiles={family.profiles} refreshKey={analysesRefresh} />
-      )}
 
       <AnalysesPreview
         profiles={family.profiles}

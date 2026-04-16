@@ -131,6 +131,7 @@ enum ManagedRelationRole {
   CHILD
   ELDER
   OTHER
+  SPOUSE
 }
 
 enum HealthRecordKind {

@@ -7,7 +7,6 @@ import { QRCodeSVG } from "qrcode.react";
 import { listLabAnalysesForProfile } from "@/app/actions/analyses";
 import { deleteLabAnalysis } from "@/app/actions/health-record";
 import { createShareToken } from "@/app/actions/share";
-import { BISHKEK_CLINICS } from "@/constants/clinics";
 import { useLanguage } from "@/context/language-context";
 import type { LabAnalysisRow, ProfileSummary } from "@/types/family";
 import { useActiveProfile } from "@/context/active-profile-context";
@@ -98,14 +97,6 @@ export function AnalysesPreview({
 
   const ageMonths = useMemo(() => ageInMonthsFromDob(activeDob), [activeDob]);
   const childProfile = useMemo(() => isProfileChild(activeDob), [activeDob]);
-
-  const showNearLabs = useMemo(() => {
-    if (isTrends || !rows?.length) return false;
-    return rows.some((a) => {
-      const w = analysisWorstStatus(a.data, activeDob);
-      return w === "warning" || w === "critical";
-    });
-  }, [rows, activeDob, isTrends]);
 
   useEffect(() => {
     if (!activeProfileId) {
@@ -213,30 +204,6 @@ export function AnalysesPreview({
               {label}
             </button>
           ))}
-        </div>
-      ) : null}
-
-      {!compact && showNearLabs ? (
-        <div className="mt-4 rounded-xl bg-amber-50/90 p-3 ring-1 ring-amber-200/70">
-          <p className="text-sm font-semibold text-amber-950">{t(lang, "analyses.nearLabs")}</p>
-          <p className="mt-0.5 text-caption text-amber-900/85">{t(lang, "analyses.nearLabsHint")}</p>
-          <ul className="mt-2 space-y-2">
-            {BISHKEK_CLINICS.map((c) => (
-              <li
-                key={c.name}
-                className="rounded-xl bg-health-surface px-2.5 py-2 text-xs text-health-text shadow-sm ring-1 ring-health-border/60"
-              >
-                <span className="font-medium">{c.name}</span>
-                <span className="mt-0.5 block text-health-text-secondary">{c.address}</span>
-                <a
-                  className="mt-0.5 inline-block font-medium text-health-primary underline decoration-teal-200 underline-offset-2"
-                  href={`tel:${c.phone.replace(/\s/g, "")}`}
-                >
-                  {c.phone}
-                </a>
-              </li>
-            ))}
-          </ul>
         </div>
       ) : null}
 
@@ -568,16 +535,6 @@ export function AnalysesPreview({
                       >
                         {pdfBusyId === a.id ? "…" : t(lang, "analyses.downloadPdf")}
                       </button>
-                      {worst === "critical" ? (
-                        <a
-                          href={BISHKEK_CLINICS[0]?.bookingUrl ?? "#"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 ring-1 ring-red-200/70"
-                        >
-                          {t(lang, "analyses.findClinic")}
-                        </a>
-                      ) : null}
                     </div>
 
                     {!compact ? (

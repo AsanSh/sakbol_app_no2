@@ -9,8 +9,6 @@ import { DesktopDashboardHeader } from "@/components/dashboard/desktop-dashboard
 import { InsightsRail } from "@/components/dashboard/insights-rail";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { DsCard } from "@/components/ui/ds-card";
-import { HealthScoreRing } from "@/components/ui/health-score-ring";
-import { StatChip } from "@/components/ui/stat-chip";
 import { ProfileAvatar } from "@/components/ui/avatar";
 import type { FamilyWithProfiles } from "@/types/family";
 import type { TelegramSessionState } from "@/context/telegram-session-context";
@@ -20,6 +18,7 @@ import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
+import { profileKinshipLabelRu } from "@/lib/profile-kinship";
 
 type Props = {
   family: FamilyWithProfiles | null;
@@ -29,15 +28,11 @@ type Props = {
   activeProfileId: string | null;
   setActiveProfileId: (id: string) => void;
   setTab: (t: MainTab) => void;
-  openDiary: () => void;
   viewerName: string;
   greet: string;
   clinicalId: string;
-  healthScore: number;
-  profileScore: (id: string | null) => number;
   analysesRefreshKey: number;
   onOpenNotifications: () => void;
-  onOpenScoreDetail: () => void;
   sharedSheets: ReactNode;
 };
 
@@ -49,15 +44,11 @@ export function HomeTabDesktop({
   activeProfileId,
   setActiveProfileId,
   setTab,
-  openDiary,
   viewerName,
   greet,
   clinicalId,
-  healthScore,
-  profileScore,
   analysesRefreshKey,
   onOpenNotifications,
-  onOpenScoreDetail,
   sharedSheets,
 }: Props) {
   const { lang } = useLanguage();
@@ -71,13 +62,6 @@ export function HomeTabDesktop({
   const activeAge = activeProfile?.dateOfBirth
     ? ageYearsFromIsoDob(activeProfile.dateOfBirth)
     : null;
-  const familyAvg =
-    profiles.length > 0
-      ? Math.round(profiles.reduce((sum, p) => sum + profileScore(p.id), 0) / profiles.length)
-      : null;
-  const scoreLabel =
-    healthScore >= 85 ? "Отличное состояние" : healthScore >= 72 ? "Хороший фон" : "Зоны внимания";
-
   const ctaBase =
     "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-caption font-semibold transition-all duration-300";
   const ctaPrimary = `${ctaBase} bg-health-primary text-white shadow-md shadow-teal-900/15 hover:bg-teal-700`;
@@ -140,9 +124,8 @@ export function HomeTabDesktop({
                           {activeAge != null ? `${activeAge} лет · активный профиль` : "Активный профиль"}
                         </p>
                         <p className="mt-3 max-w-md text-body leading-relaxed text-health-text-secondary">
-                          Ваш индекс здоровья стабильно растёт — около{" "}
-                          <span className="font-semibold text-health-primary">+12%</span> к прошлому месяцу
-                          (демо-тренд). Продолжайте загружать анализы и вести дневник.
+                          Загружайте анализы, следите за динамикой показателей и ведите дневник — так картина
+                          здоровья будет полнее.
                         </p>
                         <div className="mt-4 flex flex-wrap gap-2">
                           <button type="button" className={ctaPrimary} onClick={() => setTab("analyses")}>
@@ -211,52 +194,6 @@ export function HomeTabDesktop({
                   </DsCard>
                 </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <DsCard hoverLift className="cursor-pointer" onClick={onOpenScoreDetail} role="button">
-                    <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
-                          Health Score
-                        </p>
-                        <p className="mt-1 text-body text-health-text-secondary">
-                          Сводная оценка (демо) для выбранного члена семьи
-                        </p>
-                      </div>
-                      <HealthScoreRing score={healthScore} label={scoreLabel} size={128} />
-                    </div>
-                    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <StatChip
-                        icon={<MaterialIcon name="bedtime" className="text-[16px] text-health-primary" />}
-                        label="Сон"
-                        value="7,5 ч"
-                      />
-                      <StatChip
-                        icon={<MaterialIcon name="footprint" className="text-[16px] text-health-primary" />}
-                        label="Активность"
-                        value="8 420 шагов"
-                      />
-                      <StatChip
-                        icon={
-                          <MaterialIcon name="local_fire_department" className="text-[16px] text-health-warning" />
-                        }
-                        label="Ккал"
-                        value="1 850"
-                        tone="warning"
-                      />
-                      <StatChip
-                        icon={<MaterialIcon name="spa" className="text-[16px] text-health-secondary" />}
-                        label="Стресс"
-                        value="Низкий"
-                        tone="positive"
-                      />
-                    </div>
-                  </DsCard>
-                </motion.div>
-
                 {profiles.length > 0 ? (
                   <motion.div
                     initial={{ opacity: 0, y: 12 }}
@@ -270,8 +207,7 @@ export function HomeTabDesktop({
                             Семья
                           </p>
                           <p className="mt-0.5 text-sm text-health-text-secondary">
-                            Средний балл:{" "}
-                            <span className="font-semibold text-health-text">{familyAvg}</span>
+                            Выберите профиль — данные и анализы ниже обновятся.
                           </p>
                         </div>
                         <button
@@ -285,8 +221,8 @@ export function HomeTabDesktop({
                       <div className="mt-3 flex flex-wrap gap-2">
                         {profiles.map((p) => {
                           const active = p.id === activeProfileId;
-                          const score = profileScore(p.id);
                           const isAdmin = p.familyRole === "ADMIN";
+                          const kinship = profileKinshipLabelRu(p);
                           return (
                             <button
                               key={p.id}
@@ -317,14 +253,11 @@ export function HomeTabDesktop({
                               </span>
                               <span
                                 className={cn(
-                                  "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide",
+                                  "rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wide",
                                   isAdmin ? "bg-amber-100 text-amber-950" : "bg-slate-100 text-slate-800",
                                 )}
                               >
-                                {isAdmin ? "Админ" : "Участник"}
-                              </span>
-                              <span className="text-[10px] font-medium tabular-nums text-health-text-secondary">
-                                {score}/100
+                                {kinship}
                               </span>
                             </button>
                           );
@@ -344,11 +277,11 @@ export function HomeTabDesktop({
                   </motion.div>
                 ) : null}
 
-                <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="shrink-0">
                   <button
                     type="button"
                     onClick={() => setTab("analyses")}
-                    className="rounded-2xl bg-health-surface p-4 text-left shadow-md shadow-slate-900/[0.05] ring-1 ring-health-border/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+                    className="w-full rounded-2xl bg-health-surface p-4 text-left shadow-md shadow-slate-900/[0.05] ring-1 ring-health-border/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-caption font-bold uppercase tracking-wide text-health-text">
@@ -376,29 +309,6 @@ export function HomeTabDesktop({
                       ))}
                     </div>
                   </button>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={openDiary}
-                      className="rounded-2xl bg-health-surface p-3 text-left shadow-md ring-1 ring-health-border/70 transition-all hover:shadow-lg"
-                    >
-                      <MaterialIcon name="hotel_class" className="text-[20px] text-indigo-600" filled />
-                      <p className="mt-2 font-manrope text-xl font-bold tabular-nums text-health-text">7,2 ч</p>
-                      <p className="text-[11px] font-medium text-health-text-secondary">Сон · дневник</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTab("analyses")}
-                      className="rounded-2xl bg-health-surface p-3 text-left shadow-md ring-1 ring-health-border/70 transition-all hover:shadow-lg"
-                    >
-                      <MaterialIcon name="local_fire_department" className="text-[20px] text-orange-500" filled />
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-health-secondary to-health-primary" />
-                      </div>
-                      <p className="mt-2 text-[11px] font-medium text-health-text-secondary">Ккал · цель</p>
-                    </button>
-                  </div>
                 </div>
               </div>
 
@@ -448,7 +358,7 @@ export function HomeTabDesktop({
                 </DsCard>
               </div>
 
-              <InsightsRail familyAvgScore={familyAvg} className="lg:col-span-3" />
+              <InsightsRail className="lg:col-span-3" />
             </div>
           ) : null}
         </div>

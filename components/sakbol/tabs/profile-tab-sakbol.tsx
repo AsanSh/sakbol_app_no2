@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BiologicalSex } from "@prisma/client";
+import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
 import { ChevronDown } from "lucide-react";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
@@ -24,6 +24,8 @@ import {
   updateProfileBiologicalSex,
   updateProfileVitals,
 } from "@/app/actions/profile";
+import { updateManagedProfileKinship } from "@/app/actions/family";
+import { profileKinshipLabelRu } from "@/lib/profile-kinship";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 import { cn } from "@/lib/utils";
 
@@ -35,10 +37,18 @@ type ProfileExtras = {
   bloodType?: string;
 };
 
+const KINSHIP_OPTIONS: { value: ManagedRelationRole; label: string }[] = [
+  { value: ManagedRelationRole.CHILD, label: "Ребёнок (пол: сын / дочь)" },
+  { value: ManagedRelationRole.SPOUSE, label: "Супруг(а)" },
+  { value: ManagedRelationRole.ELDER, label: "Родитель / старшее поколение" },
+  { value: ManagedRelationRole.OTHER, label: "Другой родственник" },
+];
+
 function FamilyMemberEditableCard({
   profile,
   lang,
   viewerId,
+  viewerIsAdmin,
   canEdit,
   expanded,
   onToggle,
@@ -48,6 +58,7 @@ function FamilyMemberEditableCard({
   profile: ProfileSummary;
   lang: Lang;
   viewerId: string;
+  viewerIsAdmin: boolean;
   canEdit: boolean;
   expanded: boolean;
   onToggle: () => void;
@@ -149,15 +160,13 @@ function FamilyMemberEditableCard({
           <span className="font-semibold text-[#191c1d]">{profile.displayName}</span>
           <span
             className={cn(
-              "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+              "rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide",
               profile.familyRole === "ADMIN"
                 ? "bg-amber-300 text-amber-950 shadow-inner ring-1 ring-amber-600/40"
                 : "bg-sky-300 text-sky-950 shadow-inner ring-1 ring-sky-600/40",
             )}
           >
-            {profile.familyRole === "ADMIN"
-              ? t(lang, "profile.roleAdmin")
-              : t(lang, "profile.roleMember")}
+            {profileKinshipLabelRu(profile)}
           </span>
         </div>
         <ChevronDown
@@ -245,6 +254,28 @@ function FamilyMemberEditableCard({
               <option value={BiologicalSex.FEMALE}>{t(lang, "profile.sexFemale")}</option>
             </select>
           </label>
+          {profile.isManaged && viewerIsAdmin ? (
+            <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+              <span>Родство в семье</span>
+              <select
+                className="rounded-lg border border-[#e7e8e9] bg-white px-2 py-1.5 text-xs text-[#191c1d]"
+                value={profile.managedRole ?? ManagedRelationRole.OTHER}
+                onChange={(e) => {
+                  const v = e.target.value as ManagedRelationRole;
+                  void updateManagedProfileKinship(profile.id, v).then((res) => {
+                    if (res.ok) onReload();
+                    else setErr(res.error);
+                  });
+                }}
+              >
+                {KINSHIP_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           {err ? (
             <p className="text-[11px] text-red-600" role="alert">
               {err}
@@ -562,6 +593,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                       profile={p}
                       lang={lang}
                       viewerId={viewer.id}
+                      viewerIsAdmin={viewer.familyRole === "ADMIN"}
                       canEdit={canEditMember(p.id)}
                       expanded={openFamilyCardId === p.id}
                       onToggle={() => {

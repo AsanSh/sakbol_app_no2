@@ -125,3 +125,51 @@ export async function getFamilyMembers() {
     },
   });
 }
+
+/** Только для карточных профилей: смена «кто это» (дочь, супруг и т.д.). */
+export async function updateManagedProfileKinship(
+  profileId: string,
+  managedRole: ManagedRelationRole,
+) {
+  const session = getSession();
+  if (!session) {
+    return { ok: false as const, error: "Требуется вход." };
+  }
+
+  const actor = await prisma.profile.findFirst({
+    where: {
+      id: session.profileId,
+      familyId: session.familyId,
+      familyRole: FamilyRole.ADMIN,
+    },
+  });
+  if (!actor) {
+    return {
+      ok: false as const,
+      error: "Только администратор семьи может менять родство.",
+    };
+  }
+
+  const target = await prisma.profile.findFirst({
+    where: { id: profileId, familyId: session.familyId },
+    select: { id: true, isManaged: true },
+  });
+  if (!target) {
+    return { ok: false as const, error: "Профиль не найден." };
+  }
+  if (!target.isManaged) {
+    return {
+      ok: false as const,
+      error: "Родство задаётся только для добавленных членов семьи.",
+    };
+  }
+
+  await prisma.profile.update({
+    where: { id: profileId },
+    data: { managedRole },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/profile");
+  return { ok: true as const };
+}

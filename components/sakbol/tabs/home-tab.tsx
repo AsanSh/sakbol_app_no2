@@ -21,6 +21,7 @@ import { hapticImpact } from "@/lib/telegram-haptics";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { useDeviceType } from "@/hooks/use-device-type";
 import { HomeTabDesktop } from "@/components/sakbol/tabs/home-tab-desktop";
+import { profileKinshipLabelRu } from "@/lib/profile-kinship";
 
 function greetingRu(hour: number) {
   if (hour < 12) return "Доброе утро";
@@ -39,9 +40,8 @@ export function HomeTab({ family }: Props) {
   const isDesktopWeb = device === "desktop-web";
   const { state, authReady, isAuthenticated } = useTelegramSession();
   const { activeProfileId, setActiveProfileId } = useActiveProfile();
-  const { setTab, openDiary } = useTabApp();
+  const { setTab } = useTabApp();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [scoreSheetOpen, setScoreSheetOpen] = useState(false);
 
   const viewerName =
     state.status === "authenticated" ? state.viewer.displayName.split(/\s+/)[0] ?? "друг" : "друг";
@@ -53,14 +53,6 @@ export function HomeTab({ family }: Props) {
     state.status === "authenticated" ? formatClinicalAnonymId(state.viewer.id) : "—";
 
   const profiles = family?.profiles ?? [];
-
-  /** Стабильный (детерминированный) скор на профиль — меняется при переключении. */
-  function profileScore(profileId: string | null): number {
-    if (!profileId) return 78;
-    const sum = profileId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-    return 60 + (sum % 36); // диапазон 60–95
-  }
-  const healthScore = profileScore(activeProfileId);
 
   const notifications = [
     { icon: "lab_research", title: "Готов расшифровка анализа", time: "09:12" },
@@ -84,29 +76,6 @@ export function HomeTab({ family }: Props) {
           ))}
         </ul>
       </BottomSheet>
-
-      <BottomSheet open={scoreSheetOpen} title="Health Score" onClose={() => setScoreSheetOpen(false)}>
-        {[
-          { label: "Анализы крови", v: 82 },
-          { label: "Активность", v: 74 },
-          { label: "Сон", v: 71 },
-          { label: "Питание", v: 69 },
-          { label: "Риски", v: 76 },
-        ].map((row) => (
-          <div key={row.label} className="mb-3">
-            <div className="flex justify-between text-xs font-medium text-[#40484c]">
-              <span>{row.label}</span>
-              <span>{row.v}%</span>
-            </div>
-            <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#f3f4f5]">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#004253] to-[#005b71]"
-                style={{ width: `${row.v}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </BottomSheet>
     </>
   );
 
@@ -120,15 +89,11 @@ export function HomeTab({ family }: Props) {
         activeProfileId={activeProfileId}
         setActiveProfileId={setActiveProfileId}
         setTab={setTab}
-        openDiary={openDiary}
         viewerName={viewerName}
         greet={greet}
         clinicalId={clinicalId}
-        healthScore={healthScore}
-        profileScore={profileScore}
         analysesRefreshKey={analysesRefreshKey}
         onOpenNotifications={() => setNotificationsOpen(true)}
-        onOpenScoreDetail={() => setScoreSheetOpen(true)}
         sharedSheets={sharedSheets}
       />
     );
@@ -187,7 +152,7 @@ export function HomeTab({ family }: Props) {
           {greet}, {viewerName}.
         </h1>
         <p className="mt-1 text-body text-health-text-secondary">
-          Индекс здоровья стабильно растёт — продолжайте загружать анализы и вести дневник.
+          Загружайте анализы и следите за динамикой — так картина здоровья будет точнее.
         </p>
       </motion.section>
 
@@ -199,7 +164,6 @@ export function HomeTab({ family }: Props) {
           <div className="flex gap-3 overflow-x-auto px-1 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {profiles.map((p) => {
               const active = p.id === activeProfileId;
-              const score = profileScore(p.id);
               return (
                 <button
                   key={p.id}
@@ -208,7 +172,7 @@ export function HomeTab({ family }: Props) {
                     hapticImpact("medium");
                     setActiveProfileId(p.id);
                   }}
-                  className="flex shrink-0 flex-col items-center gap-1.5"
+                  className="flex shrink-0 flex-col items-center gap-1"
                 >
                   <ProfileAvatar
                     src={p.avatarUrl}
@@ -222,7 +186,9 @@ export function HomeTab({ family }: Props) {
                   <span className="max-w-[4.5rem] truncate text-center text-[11px] font-medium text-health-text">
                     {p.displayName}
                   </span>
-                  <span className="text-[10px] text-health-text-secondary">{score}/100</span>
+                  <span className="max-w-[4.5rem] truncate text-center text-[10px] text-health-text-secondary">
+                    {profileKinshipLabelRu(p)}
+                  </span>
                 </button>
               );
             })}
@@ -239,71 +205,6 @@ export function HomeTab({ family }: Props) {
           </div>
         </motion.section>
       ) : null}
-
-      <motion.button
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, delay: 0.14 }}
-        whileTap={{ scale: 0.97 }}
-        type="button"
-        onClick={() => setScoreSheetOpen(true)}
-        className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-health-primary via-teal-700 to-teal-900 p-4 text-left text-white shadow-health-lift ring-1 ring-white/10"
-      >
-        <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute bottom-0 right-12 h-16 w-16 rounded-full bg-[#8dd0e9]/20" />
-        <p className="text-xs font-medium text-[#d4e6e9]">Health Score · нажмите для деталей</p>
-        <div className="mt-2 flex items-end justify-between gap-3">
-          <div>
-            <p className="font-manrope text-4xl font-extrabold leading-none">
-              {healthScore}
-              <span className="text-lg font-semibold text-[#b7eaff]">/100</span>
-            </p>
-            <p className="mt-2 flex items-center gap-1 text-[11px] text-[#d4e6e9]">
-              <MaterialIcon name="trending_up" className="text-[16px]" filled />
-              +2,4% с прошлого месяца
-            </p>
-          </div>
-          <div className="relative h-20 w-20 shrink-0">
-            <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-              <path
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="3"
-              />
-              <path
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke="#b7eaff"
-                strokeDasharray={`${healthScore}, 100`}
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center leading-tight">
-              <span className="text-[9px] text-[#d4e6e9]">Топ</span>
-              <span className="font-manrope text-xs font-bold">15%</span>
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/15 pt-3 text-center text-[11px]">
-          <div>
-            <MaterialIcon name="bedtime" className="mx-auto text-[18px] text-[#b7eaff]" />
-            <p className="mt-1 text-[#d4e6e9]">Сон</p>
-            <p className="font-semibold">7,5 ч</p>
-          </div>
-          <div>
-            <MaterialIcon name="footprint" className="mx-auto text-[18px] text-[#b7eaff]" />
-            <p className="mt-1 text-[#d4e6e9]">Шаги</p>
-            <p className="font-semibold">8 420</p>
-          </div>
-          <div>
-            <MaterialIcon name="local_fire_department" className="mx-auto text-[18px] text-[#b7eaff]" />
-            <p className="mt-1 text-[#d4e6e9]">Калории</p>
-            <p className="font-semibold">1 850</p>
-          </div>
-        </div>
-      </motion.button>
 
       <motion.button
         initial={{ opacity: 0, y: 10 }}
@@ -384,30 +285,11 @@ export function HomeTab({ family }: Props) {
         </div>
       </button>
 
-      <div className="rounded-2xl border border-[#ffdcc0]/80 bg-[#ffdcc0] p-4 text-[#2d1600]">
-        <div className="flex gap-2">
-          <MaterialIcon name="wb_sunny" className="shrink-0 text-[#5c3200]" />
-          <div className="min-w-0">
-            <p className="font-manrope text-sm font-bold">Витамин D ниже целевого</p>
-            <p className="mt-1 text-xs text-[#693c08]">
-              Рекомендуем обсудить дозировку с врачом и повторить анализ через 8–12 недель.
-            </p>
-            <button
-              type="button"
-              className="mt-3 rounded-full bg-[#5c3200] px-4 py-2 text-xs font-semibold text-[#ffead4]"
-            >
-              Посмотреть рекомендации
-            </button>
-          </div>
-        </div>
-      </div>
-
       <section>
         <p className="mb-2 font-manrope text-sm font-bold text-[#191c1d]">План действий</p>
         <ul className="space-y-2">
           {[
             { icon: "science", title: "Сдать ЛПНП натощак", sub: "Утро, 8:00", tag: "Срочно", done: false },
-            { icon: "pill", title: "Витамин D", sub: "После еды", tag: "Сегодня", done: true },
           ].map((task) => (
             <li
               key={task.title}
@@ -432,35 +314,6 @@ export function HomeTab({ family }: Props) {
           ))}
         </ul>
       </section>
-
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={openDiary}
-          className="rounded-2xl border border-[#e7e8e9] bg-white p-3 text-left shadow-sm"
-        >
-          <div className="flex items-center gap-2 text-indigo-600">
-            <MaterialIcon name="hotel_class" className="text-[22px]" filled />
-            <span className="text-xs font-bold text-[#191c1d]">Сон</span>
-          </div>
-          <p className="mt-2 font-manrope text-xl font-extrabold text-[#191c1d]">7,2 ч</p>
-          <p className="text-[10px] text-[#70787d]">Дневник здоровья</p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("analyses")}
-          className="rounded-2xl border border-[#e7e8e9] bg-white p-3 text-left shadow-sm"
-        >
-          <div className="flex items-center gap-2 text-orange-600">
-            <MaterialIcon name="local_fire_department" className="text-[22px]" filled />
-            <span className="text-xs font-bold text-[#191c1d]">Калории</span>
-          </div>
-          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#f3f4f5]">
-            <div className="h-full w-[72%] rounded-full bg-orange-500" />
-          </div>
-          <p className="mt-1 text-[10px] text-[#70787d]">Цель 2200 · Анализы</p>
-        </button>
-      </div>
 
       {sharedSheets}
       </motion.div>
