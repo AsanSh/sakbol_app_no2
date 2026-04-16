@@ -28,7 +28,7 @@ export function SakbolDesktopNav() {
 
   return (
     <aside
-      className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-[#e7e8e9] bg-white/90 backdrop-blur-md lg:flex"
+      className="sticky top-0 flex h-dvh w-56 shrink-0 flex-col border-r border-[#e7e8e9] bg-white shadow-sm"
       aria-label="Меню"
     >
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-4">

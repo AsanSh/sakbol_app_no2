@@ -3,8 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { BottomTabBar } from "@/components/sakbol/bottom-tab-bar";
+import { SakbolDesktopNav } from "@/components/sakbol/desktop-nav";
 import { HealthDiaryScreen } from "@/components/sakbol/health-diary-screen";
-import { MobileBrowserChrome } from "@/components/sakbol/mobile-browser-chrome";
 import { AiTab } from "@/components/sakbol/tabs/ai-tab";
 import { AnalysesTab } from "@/components/sakbol/tabs/analyses-tab";
 import { HomeTab } from "@/components/sakbol/tabs/home-tab";
@@ -73,7 +73,10 @@ function TabPanels({
   );
 }
 
-/** Оболочка приложения: TWA, мобильный браузер или десктоп «телефон по центру». */
+/**
+ * Telegram Mini App и мобильный браузер — один ответ (нижние вкладки, полная ширина).
+ * Десктопный браузер (не TWA, ширина ≥ 1024) — дашборд: боковое меню + широкая область контента.
+ */
 export function SakbolMainClient() {
   const device = useDeviceType();
   const { diaryOpen } = useTabApp();
@@ -82,13 +85,6 @@ export function SakbolMainClient() {
   const { refreshKey: analysesTick, bumpAnalyses } = useAnalysesRefresh();
 
   const isDesktopWeb = device === "desktop-web";
-  const isMobileBrowser = device === "mobile-web";
-  const isTwa = device === "twa";
-
-  const scrollPadBottom =
-    isDesktopWeb || diaryOpen
-      ? undefined
-      : "pb-[calc(7rem+env(safe-area-inset-bottom,0px))]";
 
   const tabPanels = (
     <TabPanels
@@ -102,43 +98,37 @@ export function SakbolMainClient() {
 
   if (isDesktopWeb) {
     return (
-      <div className="flex min-h-dvh justify-center bg-slate-100">
-        <div
-          className={cn(
-            "flex min-h-dvh w-full max-w-[480px] flex-col bg-white shadow-2xl",
-            "overflow-hidden",
-          )}
-        >
-          <div className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto", scrollPadBottom)}>
-            {tabPanels}
-          </div>
-          {!diaryOpen ? (
-            <p className="shrink-0 px-4 pb-1 pt-1 text-center text-[10px] text-[#70787d]">
-              {t(lang, "analyses.disclaimer")}
-            </p>
-          ) : null}
-          {!diaryOpen ? <BottomTabBar dock="embedded" /> : null}
+      <div className="flex min-h-dvh w-full bg-slate-100">
+        {!diaryOpen ? <SakbolDesktopNav /> : null}
+        <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-50/90">
+            <div
+              className={cn(
+                "sakbol-dashboard-main mx-auto min-h-0 w-full max-w-6xl flex-1 overflow-y-auto",
+                "px-4 py-4 md:px-8 md:py-6",
+              )}
+            >
+              {tabPanels}
+            </div>
+            {!diaryOpen ? (
+              <p className="shrink-0 border-t border-slate-200/90 bg-white/70 px-4 py-2 text-center text-[10px] text-[#70787d]">
+                {t(lang, "analyses.disclaimer")}
+              </p>
+            ) : null}
+          </main>
         </div>
       </div>
     );
   }
 
-  /* TWA + mobile web: полная ширина, нижний бар фиксирован к viewport */
+  /* Telegram + мобильный веб: как мини-приложение — нижний бар, без отдельной «сайтовой» шапки */
   return (
-    <div
-      className={cn(
-        "flex min-h-[100dvh] flex-col",
-        isTwa ? "p-0" : null,
-        isMobileBrowser ? "bg-[#f8f9fa]" : null,
-      )}
-    >
-      {isMobileBrowser && !diaryOpen ? <MobileBrowserChrome /> : null}
+    <div className="flex min-h-[100dvh] flex-col bg-[#f8f9fa]">
       <div className="flex min-h-0 flex-1 flex-col">
         <div
           className={cn(
             "flex min-h-0 flex-1 flex-col overflow-y-auto",
-            scrollPadBottom,
-            isTwa && !diaryOpen ? "min-h-0" : null,
+            !diaryOpen && "pb-[calc(7rem+env(safe-area-inset-bottom,0px))]",
           )}
         >
           {tabPanels}

@@ -2,7 +2,11 @@
 
 import { useLayoutEffect, useState } from "react";
 
-/** TYPE 1: TWA · TYPE 2: мобильный браузер · TYPE 3: десктопный браузер */
+/**
+ * `twa` — Telegram Mini App (всегда мобильный UI).
+ * `mobile-web` — браузер на узком экране (меньше 1024px), тот же UI что и в TWA.
+ * `desktop-web` — браузер на широком экране: дашборд с боковым меню.
+ */
 export type DeviceType = "twa" | "mobile-web" | "desktop-web";
 
 const DESKTOP_MIN_PX = 1024;
@@ -22,7 +26,7 @@ function computeDevice(): DeviceType {
 }
 
 /**
- * Три режима отображения: Telegram Mini App, мобильный веб, десктопный веб (колонка «телефон»).
+ * Режим отображения: TWA и мобильный веб делят компактный layout; десктопный веб — отдельный dashboard.
  */
 export function useDeviceType(): DeviceType {
   const [device, setDevice] = useState<DeviceType>("mobile-web");

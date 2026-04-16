@@ -4,9 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Веб (узкий столбец): основные CTA не на всю ширину монитора */
+/* Десктоп-дашборд и узкие колонки: основные CTA не на всю ширину */
 @layer components {
   @media (min-width: 1024px) {
+    .sakbol-dashboard-main .sakbol-web-cta,
     .sakbol-narrow-app .sakbol-web-cta {
       max-width: 20rem;
       margin-left: auto;
