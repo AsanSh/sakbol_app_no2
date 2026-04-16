@@ -107,10 +107,10 @@ export function SakbolMainClient() {
 
   if (isDesktopWeb) {
     return (
-      <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-slate-100">
+      <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-teal-950/5">
         {!diaryOpen ? <SakbolDesktopNav /> : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-50/90">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-br from-[#e8f6f5] via-[#f0f9f8] to-[#eef2f4]">
             <div
               className={cn(
                 "sakbol-dashboard-main mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col",

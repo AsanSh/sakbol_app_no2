@@ -135,6 +135,28 @@ function shouldTryNextGeminiModel(errMsg: string): boolean {
   );
 }
 
+/** Короткое сообщение в модалку загрузки (без простыни JSON). */
+function humanizeGeminiFailureForUser(raw: string): string {
+  const t = raw.trim();
+  if (/\b429\b|quota|Quota exceeded|exceeded your current quota|rate limit|RESOURCE_EXHAUSTED/i.test(t)) {
+    return [
+      "Квота Gemini исчерпана или для ключа не включён доступ к API (часто «limit: 0» на бесплатном плане).",
+      "Откройте Google AI Studio → проверьте биллинг и лимиты, подождите минуту и повторите.",
+      "Документация: https://ai.google.dev/gemini-api/docs/rate-limits",
+    ].join(" ");
+  }
+  if (/\b403\b|PERMISSION_DENIED/i.test(t)) {
+    return "Доступ к Gemini запрещён (403). Проверьте ключ в AI Studio и включённый Generative Language API для проекта.";
+  }
+  if (/\b400\b|API key not valid|API_KEY_INVALID|invalid API key/i.test(t)) {
+    return "Ключ GEMINI_API_KEY недействителен. Создайте новый в Google AI Studio и обновите переменную на сервере.";
+  }
+  if (/\b404\b|NOT_FOUND|is not found for API version/i.test(t)) {
+    return "Указанная модель Gemini недоступна для этого ключа. Задайте GEMINI_MODEL вручную или обновите приложение (автовыбор моделей).";
+  }
+  return `Не удалось разобрать файл через Gemini. ${t.slice(0, 280)}${t.length > 280 ? "…" : ""}`;
+}
+
 async function generateContentWithGeminiModel(
   model: string,
   buffer: Buffer,
@@ -283,9 +305,7 @@ export async function processMedicalDocument(
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[processMedicalDocument] Gemini:", msg);
-      throw new Error(
-        `Gemini не смог разобрать файл. Проверьте GEMINI_API_KEY и GEMINI_MODEL на сервере. ${msg}`,
-      );
+      throw new Error(humanizeGeminiFailureForUser(msg));
     }
   }
 

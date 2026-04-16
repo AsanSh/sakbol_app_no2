@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,15 @@ import { AnalysesPreview } from "@/components/analyses-preview";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { useDeviceType } from "@/hooks/use-device-type";
+import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 
+const PROFILE_EXTRAS_STORAGE_KEY = "sakbol.profile.extras.v1";
+
+type ProfileExtras = {
+  heightCm?: number;
+  weightKg?: number;
+  bloodType?: string;
+};
 
 function greetingRu(hour: number) {
   if (hour < 12) return "Доброе утро";
@@ -39,6 +47,22 @@ export function HomeTab({ family }: Props) {
   const { setTab, openDiary } = useTabApp();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [scoreSheetOpen, setScoreSheetOpen] = useState(false);
+  const [profileExtrasMap, setProfileExtrasMap] = useState<Record<string, ProfileExtras>>({});
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const load = () => {
+      try {
+        const raw = window.localStorage.getItem(PROFILE_EXTRAS_STORAGE_KEY);
+        if (raw) setProfileExtrasMap(JSON.parse(raw) as Record<string, ProfileExtras>);
+      } catch {
+        /* ignore */
+      }
+    };
+    load();
+    window.addEventListener("focus", load);
+    return () => window.removeEventListener("focus", load);
+  }, [activeProfileId]);
 
   const viewerName =
     state.status === "authenticated" ? state.viewer.displayName.split(/\s+/)[0] ?? "друг" : "друг";
@@ -113,10 +137,15 @@ export function HomeTab({ family }: Props) {
       day: "numeric",
       month: "short",
     });
+    const activeProfile = profiles.find((p) => p.id === activeProfileId);
+    const activeAge = activeProfile?.dateOfBirth
+      ? ageYearsFromIsoDob(activeProfile.dateOfBirth)
+      : null;
+    const activeExtras = activeProfileId ? profileExtrasMap[activeProfileId] : undefined;
 
     return (
       <>
-        <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[#eef1f4]">
+        <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
           <SakbolTopBar
             dense
             showBell
@@ -145,23 +174,75 @@ export function HomeTab({ family }: Props) {
 
             {authReady && isAuthenticated ? (
               <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-5">
-                {/* Левая колонка — финтех-панель */}
-                <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden rounded-2xl border border-slate-200/90 bg-gradient-to-b from-white via-white to-slate-50/90 p-5 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.18)]">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {/* Левая колонка — карточки как на мед. дашборде */}
+                <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden rounded-[1.75rem] border border-white/80 bg-white/50 p-5 shadow-[0_20px_50px_-24px_rgba(13,148,136,0.35)] backdrop-blur-md">
+                  <div className="flex flex-wrap items-stretch gap-4 rounded-3xl border border-teal-100/90 bg-gradient-to-br from-white via-white to-teal-50/40 p-4 shadow-[0_12px_40px_-16px_rgba(13,148,136,0.2)]">
+                    <ProfileAvatar
+                      src={activeProfile?.avatarUrl}
+                      name={activeProfile?.displayName ?? viewerName}
+                      size={80}
+                      className="shrink-0 ring-4 ring-white shadow-lg shadow-teal-900/15"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-700/80">
                         {greet}
                       </p>
-                      <h1 className="mt-1 font-manrope text-2xl font-bold tracking-tight text-slate-900 md:text-[1.65rem]">
-                        {viewerName}
-                      </h1>
-                      <p className="mt-1.5 font-mono text-[11px] text-slate-500">{clinicalId}</p>
-                    </div>
-                    <div className="rounded-2xl bg-slate-900 px-4 py-2.5 text-right shadow-lg shadow-slate-900/25">
-                      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                        Сегодня
-                      </p>
-                      <p className="text-sm font-semibold text-white">{todayLabel}</p>
+                      <div className="mt-1 flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <h1 className="font-manrope text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
+                            {activeProfile?.displayName ?? viewerName}
+                          </h1>
+                          <p className="mt-0.5 text-sm text-teal-800/85">
+                            {activeAge != null ? `${activeAge} лет` : "Возраст не указан"} · активный профиль
+                          </p>
+                        </div>
+                        <div className="rounded-2xl bg-gradient-to-br from-teal-600 to-teal-800 px-3 py-2 text-right text-white shadow-md shadow-teal-900/25">
+                          <p className="text-[9px] font-medium uppercase tracking-wider text-teal-100/90">
+                            Сегодня
+                          </p>
+                          <p className="text-xs font-semibold leading-tight">{todayLabel}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+                        {[
+                          {
+                            label: "Группа крови",
+                            value: activeExtras?.bloodType?.trim() || "—",
+                          },
+                          {
+                            label: "Рост",
+                            value:
+                              typeof activeExtras?.heightCm === "number"
+                                ? `${activeExtras.heightCm} см`
+                                : "—",
+                          },
+                          {
+                            label: "Вес",
+                            value:
+                              typeof activeExtras?.weightKg === "number"
+                                ? `${activeExtras.weightKg} кг`
+                                : "—",
+                          },
+                        ].map((cell) => (
+                          <div
+                            key={cell.label}
+                            className="rounded-2xl border border-teal-100/70 bg-white/80 px-2 py-2 text-center shadow-sm"
+                          >
+                            <p className="text-[9px] font-medium uppercase tracking-wide text-slate-500">
+                              {cell.label}
+                            </p>
+                            <p className="mt-0.5 text-sm font-bold tabular-nums text-slate-900">{cell.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-2 font-mono text-[10px] text-slate-400">{clinicalId}</p>
+                      <button
+                        type="button"
+                        onClick={() => setTab("profile")}
+                        className="mt-2 text-[11px] font-semibold text-teal-700 underline decoration-teal-300 underline-offset-2 hover:text-teal-900"
+                      >
+                        Заполнить данные в профиле →
+                      </button>
                     </div>
                   </div>
 
@@ -367,16 +448,27 @@ export function HomeTab({ family }: Props) {
                 </div>
 
                 {/* Правая колонка — анализы */}
-                <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_40px_-12px_rgba(15,23,42,0.15)]">
-                  <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-slate-50/80 to-white px-5 py-4">
-                    <h2 className="font-manrope text-base font-bold tracking-tight text-slate-900">
-                      Анализы
-                    </h2>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Активный профиль · история и загрузка новых бланков
-                    </p>
+                <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/60 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.12)] backdrop-blur-md">
+                  <div className="shrink-0 border-b border-teal-100/60 bg-gradient-to-r from-teal-50/90 via-white to-white px-5 py-4">
+                    <div className="flex flex-wrap items-end justify-between gap-2">
+                      <div>
+                        <h2 className="font-manrope text-base font-bold tracking-tight text-slate-900">
+                          Обследования
+                        </h2>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          История анализов · загрузка PDF и фото
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setTab("analyses")}
+                        className="rounded-full bg-teal-700 px-3 py-1 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-teal-800"
+                      >
+                        Все анализы
+                      </button>
+                    </div>
                   </div>
-                  <div className="min-h-0 flex-1 overflow-hidden bg-slate-50/40 px-3 pb-3 pt-2 md:px-4">
+                  <div className="min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-teal-50/20 to-white/80 px-3 pb-3 pt-2 md:px-4">
                     {profiles.length > 0 ? (
                       <AnalysesPreview
                         profiles={profiles}
