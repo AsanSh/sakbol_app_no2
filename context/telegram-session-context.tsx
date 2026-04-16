@@ -21,7 +21,7 @@ export type TelegramViewer = {
   needsPinCompletion?: boolean;
 };
 
-type TelegramSessionState =
+export type TelegramSessionState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "unauthenticated"; reason?: string }

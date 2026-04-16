@@ -25,6 +25,7 @@ import {
 } from "@/lib/medical-logic";
 import { buildAscvdPercentFromLabs, type AscvdSex } from "@/lib/ascvd-pce";
 import { MedFormulaBlock } from "@/components/med-formula-block";
+import { cn } from "@/lib/utils";
 
 type Props = {
   profiles: ProfileSummary[];
@@ -50,26 +51,26 @@ function RiskCard({
   tone: "ok" | "warn" | "bad";
   icon: typeof HeartPulse;
 }) {
-  const border =
+  const surface =
     tone === "ok"
-      ? "border-emerald-800/25 bg-emerald-900/5"
+      ? "bg-emerald-50/70 ring-emerald-200/70"
       : tone === "warn"
-        ? "border-amber-500/55 bg-amber-500/10"
-        : "border-coral/70 bg-coral/15";
+        ? "bg-amber-50/80 ring-amber-200/70"
+        : "bg-red-50/80 ring-red-200/70";
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border-2 p-3 shadow-sm ${border}`}
+      className={cn("rounded-2xl p-4 shadow-md shadow-slate-900/[0.04] ring-1 transition-shadow duration-300 hover:shadow-lg", surface)}
     >
-      <div className="flex items-start gap-2">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-900 text-mint">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-health-primary text-white shadow-sm">
           <Icon className="h-5 w-5" strokeWidth={2} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-emerald-950">{title}</p>
-          <p className="text-[11px] text-emerald-900/70">{subtitle}</p>
-          <div className="mt-1.5 text-xs font-medium text-emerald-900">{valueLabel}</div>
+          <p className="text-sm font-semibold text-health-text">{title}</p>
+          <p className="text-caption text-health-text-secondary">{subtitle}</p>
+          <div className="mt-1.5 text-xs font-medium text-health-text">{valueLabel}</div>
         </div>
       </div>
     </motion.div>
@@ -84,21 +85,21 @@ function HealthGauge({ value }: { value: number }) {
   return (
     <div className="relative mx-auto h-28 w-28">
       <svg className="-rotate-90" viewBox="0 0 120 120" aria-hidden>
-        <circle cx="60" cy="60" r={r} fill="none" stroke="#e8f5f3" strokeWidth="10" />
+        <circle cx="60" cy="60" r={r} fill="none" stroke="#E2E8F0" strokeWidth="10" />
         <circle
           cx="60"
           cy="60"
           r={r}
           fill="none"
-          stroke="#00695C"
+          stroke="#0F766E"
           strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={`${dash} ${c}`}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-emerald-950">{pct}</span>
-        <span className="text-[10px] font-medium text-emerald-800/80">/ 100</span>
+        <span className="text-2xl font-bold text-health-text">{pct}</span>
+        <span className="text-[10px] font-medium text-health-text-secondary">/ 100</span>
       </div>
     </div>
   );
@@ -203,28 +204,28 @@ export function HealthHubPanel({ profiles, refreshKey = 0 }: Props) {
 
   if (loading && rows == null) {
     return (
-      <p className="text-sm text-emerald-900/70">{t(lang, "analyses.loading")}</p>
+      <p className="text-body text-health-text-secondary">{t(lang, "analyses.loading")}</p>
     );
   }
 
   if (!rows?.length) {
     return (
-      <div className="rounded-2xl border border-emerald-900/15 bg-white/80 p-4 text-sm text-emerald-900/80 shadow-sm">
+      <div className="rounded-2xl bg-slate-50/90 p-4 text-body text-health-text-secondary shadow-sm ring-1 ring-health-border/70">
         {t(lang, "hub.noAnalyses")}
       </div>
     );
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-emerald-900/15 bg-white/85 p-4 shadow-sm backdrop-blur">
+    <section className="space-y-4 rounded-2xl bg-health-surface p-4 shadow-md shadow-slate-900/[0.06] ring-1 ring-health-border/80 backdrop-blur-sm sm:p-5">
       <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-emerald-950">{t(lang, "hub.healthScore")}</h2>
-          <p className="mt-0.5 max-w-xs text-[11px] text-emerald-900/70">
+          <h2 className="font-manrope text-h3 font-semibold text-health-text">{t(lang, "hub.healthScore")}</h2>
+          <p className="mt-1 max-w-xs text-caption leading-relaxed text-health-text-secondary">
             {t(lang, "hub.healthScoreHint")}
           </p>
           {activeProfile?.biologicalSex === "UNKNOWN" ? (
-            <p className="mt-1 text-[10px] text-amber-800/90">{t(lang, "hub.demoSexNote")}</p>
+            <p className="mt-1 text-[10px] font-medium text-health-warning">{t(lang, "hub.demoSexNote")}</p>
           ) : null}
         </div>
         {healthIndex != null ? (

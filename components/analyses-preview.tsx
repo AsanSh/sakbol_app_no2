@@ -33,6 +33,7 @@ import {
 import type { ParsedBiomarker } from "@/types/biomarker";
 import { categoryForBiomarkerKey } from "@/constants/biomarker-categories";
 import { downloadLabPdfClient } from "@/lib/download-lab-pdf";
+import { AnalysisComparePanel } from "@/components/analysis-compare-panel";
 
 function biomarkerCount(data: unknown): number | null {
   if (!data || typeof data !== "object") return null;
@@ -42,18 +43,18 @@ function biomarkerCount(data: unknown): number | null {
 
 function cardTone(worst: MedicalStatus): string {
   if (worst === "critical") {
-    return "border-coral/70 bg-coral/15 shadow-sm";
+    return "bg-red-50/90 shadow-md ring-1 ring-red-200/80";
   }
   if (worst === "warning") {
-    return "border-amber-500/55 bg-amber-500/10 shadow-sm";
+    return "bg-amber-50/70 shadow-md ring-1 ring-amber-200/70";
   }
-  return "border-emerald-800/25 bg-emerald-900/5";
+  return "bg-health-surface shadow-md ring-1 ring-health-border/80";
 }
 
 function statusIndicatorPillClass(st: MedicalStatus): string {
-  if (st === "critical") return "bg-[#FFEBEE] text-red-900";
-  if (st === "warning") return "bg-amber-100 text-amber-950";
-  return "bg-emerald-100 text-[#004d40]";
+  if (st === "critical") return "bg-red-100 text-red-900 ring-1 ring-red-200/70";
+  if (st === "warning") return "bg-amber-100 text-amber-950 ring-1 ring-amber-200/70";
+  return "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200/70";
 }
 
 type Props = {
@@ -65,6 +66,8 @@ type Props = {
   compact?: boolean;
   /** В compact при клике по карточке — перейти к полной вкладке анализов */
   onOpenAnalyses?: () => void;
+  /** Вкладка «Динамика»: только сравнение и графики, без списка карточек. */
+  mode?: "default" | "trends";
 };
 
 export function AnalysesPreview({
@@ -73,9 +76,11 @@ export function AnalysesPreview({
   onRequestUpload,
   compact = false,
   onOpenAnalyses,
+  mode = "default",
 }: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
+  const isTrends = mode === "trends";
   const [rows, setRows] = useState<LabAnalysisRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -84,6 +89,7 @@ export function AnalysesPreview({
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<{ id: string; msg: string } | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | MedicalStatus>("all");
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -94,12 +100,12 @@ export function AnalysesPreview({
   const childProfile = useMemo(() => isProfileChild(activeDob), [activeDob]);
 
   const showNearLabs = useMemo(() => {
-    if (!rows?.length) return false;
+    if (isTrends || !rows?.length) return false;
     return rows.some((a) => {
       const w = analysisWorstStatus(a.data, activeDob);
       return w === "warning" || w === "critical";
     });
-  }, [rows, activeDob]);
+  }, [rows, activeDob, isTrends]);
 
   useEffect(() => {
     if (!activeProfileId) {
@@ -131,52 +137,101 @@ export function AnalysesPreview({
     };
   }, [activeProfileId, refreshKey, lang]);
 
+  useEffect(() => {
+    setStatusFilter("all");
+  }, [activeProfileId, refreshKey]);
+
   const dynamicsKeys = useMemo(
     () => (rows?.length ? listBiomarkersWithDynamics(rows, 2) : []),
     [rows],
   );
 
+  const filteredRows = useMemo(() => {
+    if (!rows?.length) return rows;
+    if (!activeProfileId || compact || statusFilter === "all" || isTrends) return rows;
+    return rows.filter((a) => analysisWorstStatus(a.data, activeDob) === statusFilter);
+  }, [rows, activeProfileId, compact, statusFilter, activeDob, isTrends]);
+
   if (!activeProfileId) return null;
 
-  const rowsForUi = compact ? rows?.slice(0, 2) : rows;
+  const rowsForUi = compact ? filteredRows?.slice(0, 2) : filteredRows;
+
+  const filterKeys = [
+    { id: "all" as const, label: t(lang, "analyses.filterAll") },
+    { id: "critical" as const, label: t(lang, "analyses.filterCritical") },
+    { id: "warning" as const, label: t(lang, "analyses.filterWarning") },
+    { id: "normal" as const, label: t(lang, "analyses.filterNormal") },
+  ];
 
   return (
     <section
       className={cn(
-        "rounded-2xl border border-emerald-200/90 bg-white shadow-md shadow-emerald-900/[0.06] ring-1 ring-emerald-100/80 backdrop-blur-sm",
-        compact ? "flex h-full min-h-0 flex-col overflow-hidden p-2" : "p-4",
+        "transition-shadow duration-300",
+        isTrends && !compact
+          ? "space-y-4 bg-transparent p-0 shadow-none ring-0"
+          : "rounded-2xl bg-health-surface shadow-md shadow-slate-900/[0.06] ring-1 ring-health-border/80 backdrop-blur-sm",
+        compact ? "flex h-full min-h-0 flex-col overflow-hidden p-2" : !isTrends && "p-4 sm:p-5",
       )}
     >
       <h2
         className={cn(
-          "border-coral font-semibold text-emerald-950",
-          compact ? "border-l-2 pl-2 text-xs" : "border-l-4 pl-3 text-sm",
+          "font-manrope font-semibold text-health-text",
+          compact ? "text-xs" : "text-h3",
         )}
       >
-        {t(lang, "analyses.title")}
+        {isTrends ? t(lang, "trends.pageTitle") : t(lang, "analyses.title")}
       </h2>
       {!compact ? (
-        <>
-          <p className="mt-0.5 text-xs text-emerald-700/75">{t(lang, "analyses.subtitle")}</p>
-          <p className="mt-1 text-[10px] leading-snug text-emerald-600/70">{t(lang, "analyses.labsBrands")}</p>
-        </>
+        isTrends ? (
+          <p className="mt-1 text-body text-health-text-secondary">{t(lang, "trends.pageSubtitle")}</p>
+        ) : (
+          <>
+            <p className="mt-1 text-body text-health-text-secondary">{t(lang, "analyses.subtitle")}</p>
+            <p className="mt-1 text-caption leading-relaxed text-health-text-secondary/90">
+              {t(lang, "analyses.labsBrands")}
+            </p>
+          </>
+        )
       ) : (
-        <p className="mt-0.5 truncate text-[10px] text-emerald-700/70">{t(lang, "analyses.subtitle")}</p>
+        <p className="mt-0.5 truncate text-[10px] text-health-text-secondary">{t(lang, "analyses.subtitle")}</p>
       )}
 
+      {!isTrends && !compact && rows && rows.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {filterKeys.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setStatusFilter(id)}
+              className={cn(
+                "rounded-full px-3 py-1.5 text-caption font-semibold transition-all duration-300",
+                statusFilter === id
+                  ? "bg-health-primary text-white shadow-sm"
+                  : "bg-slate-100 text-health-text-secondary hover:bg-slate-200/90",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       {!compact && showNearLabs ? (
-        <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
-          <p className="text-xs font-semibold text-emerald-950">{t(lang, "analyses.nearLabs")}</p>
-          <p className="mt-0.5 text-[11px] text-emerald-900/75">{t(lang, "analyses.nearLabsHint")}</p>
+        <div className="mt-4 rounded-xl bg-amber-50/90 p-3 ring-1 ring-amber-200/70">
+          <p className="text-sm font-semibold text-amber-950">{t(lang, "analyses.nearLabs")}</p>
+          <p className="mt-0.5 text-caption text-amber-900/85">{t(lang, "analyses.nearLabsHint")}</p>
           <ul className="mt-2 space-y-2">
             {BISHKEK_CLINICS.map((c) => (
               <li
                 key={c.name}
-                className="rounded-lg border border-emerald-900/10 bg-white/90 px-2.5 py-2 text-xs text-emerald-950"
+                className="rounded-xl bg-health-surface px-2.5 py-2 text-xs text-health-text shadow-sm ring-1 ring-health-border/60"
               >
                 <span className="font-medium">{c.name}</span>
-                <span className="mt-0.5 block text-emerald-800/80">{c.address}</span>
-                <a className="mt-0.5 inline-block text-emerald-900 underline" href={`tel:${c.phone.replace(/\s/g, "")}`}>
+                <span className="mt-0.5 block text-health-text-secondary">{c.address}</span>
+                <a
+                  className="mt-0.5 inline-block font-medium text-health-primary underline decoration-teal-200 underline-offset-2"
+                  href={`tel:${c.phone.replace(/\s/g, "")}`}
+                >
                   {c.phone}
                 </a>
               </li>
@@ -188,7 +243,7 @@ export function AnalysesPreview({
       {loading ? (
         <AnalysisSkeleton className={compact ? "mt-2" : "mt-3"} />
       ) : error ? (
-        <p className={cn("text-coral", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>{error}</p>
+        <p className={cn("text-health-danger", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>{error}</p>
       ) : rows?.length === 0 ? (
         <div
           className={cn(
@@ -198,12 +253,12 @@ export function AnalysesPreview({
         >
           <div
             className={cn(
-              "flex items-center justify-center rounded-2xl bg-emerald-100/90 shadow-inner",
+              "flex items-center justify-center rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-100/80 shadow-inner ring-1 ring-teal-100/80",
               compact ? "h-10 w-10" : "h-16 w-16",
             )}
           >
             <Stethoscope
-              className="text-emerald-300"
+              className="text-health-primary/70"
               size={compact ? 22 : 36}
               strokeWidth={1.5}
               aria-hidden
@@ -211,7 +266,7 @@ export function AnalysesPreview({
           </div>
           <h3
             className={cn(
-              "font-manrope font-semibold text-emerald-950",
+              "font-manrope font-semibold text-health-text",
               compact ? "mt-2 text-xs" : "mt-4 text-base",
             )}
           >
@@ -219,8 +274,8 @@ export function AnalysesPreview({
           </h3>
           <p
             className={cn(
-              "text-emerald-600/70",
-              compact ? "mt-1 max-w-xs text-[10px]" : "mt-2 max-w-sm text-sm",
+              "text-health-text-secondary",
+              compact ? "mt-1 max-w-xs text-[10px]" : "mt-2 max-w-sm text-body",
             )}
           >
             {t(lang, "analyses.emptySecondary")}
@@ -230,7 +285,7 @@ export function AnalysesPreview({
               type="button"
               onClick={onRequestUpload}
               className={cn(
-                "inline-flex items-center gap-2 rounded-2xl bg-sakbol-cta font-semibold text-white shadow-cta-coral transition-[filter] hover:brightness-[1.04] active:brightness-[0.98]",
+                "inline-flex items-center gap-2 rounded-2xl bg-health-primary font-semibold text-white shadow-md shadow-teal-900/15 transition-all duration-300 hover:bg-teal-700",
                 compact ? "mt-2 px-3 py-1.5 text-[11px]" : "mt-5 px-6 py-3 text-sm",
               )}
             >
@@ -240,14 +295,31 @@ export function AnalysesPreview({
           ) : null}
         </div>
       ) : (
-        <ul
-          className={cn(
-            "grid gap-2",
-            compact
-              ? "mt-2 min-h-0 flex-1 grid-cols-1 overflow-hidden"
-              : "mt-3 grid-cols-1 gap-3 sm:grid-cols-2",
-          )}
-        >
+        <>
+          {!compact && isTrends && rows && rows.length > 0 ? (
+            <div className="mt-4">
+              <AnalysisComparePanel analyses={rows} activeDob={activeDob} refreshKey={refreshKey} />
+            </div>
+          ) : null}
+          {!isTrends && !rowsForUi?.length ? (
+            <div
+              className={cn(
+                "rounded-xl bg-slate-50/90 text-center text-health-text-secondary ring-1 ring-health-border/70",
+                compact ? "mt-2 px-3 py-6 text-xs" : "mt-4 px-4 py-10 text-body",
+              )}
+            >
+              {t(lang, "analyses.filterEmpty")}
+            </div>
+          ) : null}
+          {!isTrends && rowsForUi?.length ? (
+            <ul
+              className={cn(
+                "grid gap-2",
+                compact
+                  ? "mt-2 min-h-0 flex-1 grid-cols-1 overflow-hidden"
+                  : "mt-4 grid-cols-1 gap-3 sm:grid-cols-2",
+              )}
+            >
           {rowsForUi?.map((a, idx) => {
             const n = biomarkerCount(a.data);
             const worst = analysisWorstStatus(a.data, activeDob);
@@ -264,7 +336,7 @@ export function AnalysesPreview({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22, delay: idx * 0.05, ease: "easeOut" }}
                 className={cn(
-                  "rounded-2xl border-2 text-emerald-900 shadow-sm transition-shadow hover:shadow-md",
+                  "rounded-2xl text-health-text transition-all duration-300 hover:shadow-lg",
                   compact ? "px-2.5 py-2 text-xs" : "px-4 py-3 text-sm",
                   cardTone(worst),
                 )}
@@ -284,30 +356,30 @@ export function AnalysesPreview({
                   >
                     <span>
                       <span
-                        className="font-semibold text-slate-900"
+                        className="font-semibold text-health-text"
                         style={{ borderBottom: `2px solid ${getStatusColorHex(worst)}` }}
                       >
                         {a.title ?? t(lang, "analyses.analysis")}
                       </span>
                       {n != null ? (
-                        <span className="ml-2 text-xs text-slate-500">
+                        <span className="ml-2 text-xs text-health-text-secondary">
                           {n} {t(lang, "analyses.indicators")}
                         </span>
                       ) : null}
                       {a.isPrivate ? (
-                        <span className="ml-2 rounded bg-amber-500/20 px-1.5 text-[10px] font-medium text-emerald-900">
+                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-950 ring-1 ring-amber-200/70">
                           {t(lang, "analyses.private")}
                         </span>
                       ) : null}
-                      <span className="mt-1 block text-xs text-emerald-600/70">
+                      <span className="mt-1 block text-xs text-health-text-secondary">
                         {new Date(a.createdAt).toLocaleDateString(lang === "ru" ? "ru-RU" : "ky-KG")}
                       </span>
                     </span>
                     {!compact ? (
                       open ? (
-                        <ChevronUp className="mt-0.5 h-4 w-4 shrink-0 text-emerald-800" />
+                        <ChevronUp className="mt-0.5 h-4 w-4 shrink-0 text-health-primary" />
                       ) : (
-                        <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-emerald-800" />
+                        <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-health-primary" />
                       )
                     ) : null}
                   </button>
@@ -317,7 +389,7 @@ export function AnalysesPreview({
                     title={t(lang, "analyses.delete")}
                     aria-label={t(lang, "analyses.delete")}
                     className={cn(
-                      "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border-2 border-red-400/90 bg-white px-2 py-1.5 text-red-700 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
+                      "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-red-50/90 px-2 py-1.5 text-red-800 ring-1 ring-red-200/80 shadow-sm transition-colors hover:bg-red-100/90 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
                       compact && "min-w-10 px-1.5 py-1",
                     )}
                     onClick={(e) => {
@@ -355,7 +427,7 @@ export function AnalysesPreview({
                 </div>
 
                 {open ? (
-                  <div className="mt-2 border-t border-emerald-900/10 pt-3">
+                  <div className="mt-2 border-t border-health-border/60 pt-3">
                     {payload?.biomarkers && payload.biomarkers.length > 0 ? (
                       <>
                         {(() => {
@@ -428,10 +500,10 @@ export function AnalysesPreview({
                                 className={cn(
                                   "mt-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed",
                                   critical.length > 0
-                                    ? "border border-coral/30 bg-[#fff4f4] text-red-900"
+                                    ? "ring-1 ring-red-200/80 bg-red-50/90 text-red-900"
                                     : warning.length > 0
-                                      ? "border border-amber-400/40 bg-amber-50 text-amber-900"
-                                      : "border border-emerald-800/15 bg-emerald-50/60 text-emerald-900",
+                                      ? "ring-1 ring-amber-200/70 bg-amber-50 text-amber-900"
+                                      : "ring-1 ring-emerald-200/60 bg-emerald-50/70 text-emerald-900",
                                 )}
                               >
                                 <p className="font-semibold">
@@ -465,7 +537,7 @@ export function AnalysesPreview({
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        className="rounded-lg bg-sakbol-cta px-3 py-1.5 text-xs font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05]"
+                        className="rounded-lg bg-health-primary px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-teal-700"
                         onClick={async () => {
                           const res = await createShareToken(a.id);
                           if (!res.ok) return;
@@ -478,7 +550,7 @@ export function AnalysesPreview({
                       <button
                         type="button"
                         disabled={pdfBusyId === a.id}
-                        className="rounded-lg border border-emerald-800/35 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900 disabled:opacity-50"
+                        className="rounded-lg border border-health-border bg-health-surface px-3 py-1.5 text-xs font-medium text-health-text shadow-sm disabled:opacity-50"
                         onClick={() => {
                           setPdfError(null);
                           setPdfBusyId(a.id);
@@ -496,7 +568,7 @@ export function AnalysesPreview({
                           href={BISHKEK_CLINICS[0]?.bookingUrl ?? "#"}
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-lg border border-coral/60 bg-coral/10 px-3 py-1.5 text-xs font-medium text-emerald-950"
+                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 ring-1 ring-red-200/70"
                         >
                           {t(lang, "analyses.findClinic")}
                         </a>
@@ -507,7 +579,7 @@ export function AnalysesPreview({
                       <button
                         type="button"
                         disabled={deleteBusyId === a.id}
-                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-red-400 bg-red-50/90 py-2.5 text-sm font-semibold text-red-800 shadow-sm transition-colors hover:bg-red-100 disabled:opacity-50"
+                        className="mt-3 flex w-full min-h-[48px] items-center justify-center gap-2 rounded-xl bg-red-50 py-2.5 text-sm font-semibold text-red-900 ring-1 ring-red-200/80 shadow-sm transition-colors hover:bg-red-100/90 disabled:opacity-50"
                         onClick={() => {
                           if (!window.confirm(t(lang, "analyses.deleteConfirm"))) return;
                           setDeleteBusyId(a.id);
@@ -537,14 +609,14 @@ export function AnalysesPreview({
                       <p className="mt-2 text-xs text-red-700">{pdfError.msg}</p>
                     ) : null}
                     {activeShare?.recordId === a.id ? (
-                      <div className="mt-3 rounded-xl border border-emerald-900/20 bg-white p-3">
-                        <p className="text-xs font-semibold text-emerald-900">{t(lang, "analyses.qrTitle")}</p>
-                        <p className="text-[11px] text-emerald-800/80">{t(lang, "analyses.qrHint")}</p>
+                      <div className="mt-3 rounded-xl bg-health-surface p-3 ring-1 ring-health-border/80">
+                        <p className="text-xs font-semibold text-health-text">{t(lang, "analyses.qrTitle")}</p>
+                        <p className="text-[11px] text-health-text-secondary">{t(lang, "analyses.qrHint")}</p>
                         <div className="mt-2 flex justify-center rounded-lg bg-white p-2">
                           <QRCodeSVG value={activeShare.url} size={168} level="M" includeMargin />
                         </div>
                         <a
-                          className="mt-2 block break-all text-xs text-emerald-900 underline"
+                          className="mt-2 block break-all text-xs font-medium text-health-primary underline decoration-teal-200 underline-offset-2"
                           href={activeShare.url}
                           target="_blank"
                           rel="noreferrer"
@@ -558,23 +630,25 @@ export function AnalysesPreview({
               </motion.li>
             );
           })}
-        </ul>
+            </ul>
+          ) : null}
+        </>
       )}
 
       {compact && rows && rows.length > 2 && onOpenAnalyses ? (
         <button
           type="button"
           onClick={onOpenAnalyses}
-          className="mt-1.5 shrink-0 rounded-lg border border-emerald-800/25 bg-emerald-50/80 py-1.5 text-center text-[11px] font-medium text-emerald-900 transition-colors hover:bg-emerald-100/90"
+          className="mt-1.5 shrink-0 rounded-xl bg-teal-50 py-2 text-center text-caption font-semibold text-health-primary ring-1 ring-teal-100 transition-colors hover:bg-teal-100/80"
         >
           {t(lang, "analyses.viewAll")}
-          <span className="text-emerald-700/80"> · +{rows.length - 2}</span>
+          <span className="text-health-text-secondary"> · +{rows.length - 2}</span>
         </button>
       ) : null}
 
-      {!compact && rows && rows.length >= 2 && dynamicsKeys.length > 0 ? (
-        <div className="mt-6 space-y-4 border-t border-emerald-900/10 pt-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-800/80">
+      {!compact && isTrends && rows && rows.length >= 2 && dynamicsKeys.length > 0 ? (
+        <div className="mt-6 space-y-4 border-t border-health-border/60 pt-4">
+          <h3 className="text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
             {t(lang, "analyses.dynamics")}
           </h3>
           <div className="flex flex-col gap-4">
@@ -605,8 +679,8 @@ export function AnalysesPreview({
                     normMax={norm?.max ?? null}
                   />
                   {tip ? (
-                    <div className="rounded-xl border border-emerald-800/20 bg-mint/25 px-3 py-2 text-xs leading-snug text-emerald-950">
-                      <span className="font-semibold text-emerald-900">{t(lang, "analyses.aiInsight")} </span>
+                    <div className="rounded-xl bg-teal-50/80 px-3 py-2 text-xs leading-snug text-health-text ring-1 ring-teal-100/80">
+                      <span className="font-semibold text-health-primary">{t(lang, "analyses.aiInsight")} </span>
                       {tip}
                     </div>
                   ) : null}
@@ -618,7 +692,7 @@ export function AnalysesPreview({
       ) : null}
 
       {!compact ? (
-        <p className="mt-4 text-[10px] leading-tight text-emerald-800/55">{t(lang, "analyses.disclaimer")}</p>
+        <p className="mt-4 text-[10px] leading-tight text-health-text-secondary">{t(lang, "analyses.disclaimer")}</p>
       ) : null}
     </section>
   );

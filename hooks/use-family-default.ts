@@ -20,6 +20,9 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
           : typeof p.dateOfBirth === "string"
             ? p.dateOfBirth
             : new Date(p.dateOfBirth as unknown as Date).toISOString(),
+      heightCm: p.heightCm ?? null,
+      weightKg: p.weightKg ?? null,
+      bloodType: p.bloodType ?? null,
     })),
   };
 }

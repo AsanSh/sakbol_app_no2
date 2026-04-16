@@ -30,7 +30,7 @@ export function SakbolTopBar({
     <header
       className={cn(
         "sticky top-0 z-40 flex items-center justify-between gap-3",
-        "border-b border-slate-100 bg-white/80 backdrop-blur-md",
+        "border-b border-health-border/80 bg-health-surface/90 backdrop-blur-md",
         dense ? "shrink-0 px-3 py-2" : "px-4 py-3",
       )}
     >
@@ -40,7 +40,7 @@ export function SakbolTopBar({
             type="button"
             onClick={onBack}
             className={cn(
-              "flex shrink-0 items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c] transition-colors hover:bg-[#e7e8e9]",
+              "flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-health-text-secondary transition-colors hover:bg-slate-200/80",
               dense ? "h-8 w-8" : "h-10 w-10",
             )}
             aria-label="Назад"
@@ -50,7 +50,7 @@ export function SakbolTopBar({
         ) : (
           <div
             className={cn(
-              "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#004253] to-[#005b71] font-extrabold text-white font-manrope",
+              "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-health-primary to-teal-700 font-manrope font-extrabold text-white shadow-sm",
               dense ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm",
             )}
           >
@@ -59,7 +59,7 @@ export function SakbolTopBar({
         )}
         <span
           className={cn(
-            "truncate font-manrope font-extrabold text-[#004253]",
+            "truncate font-manrope font-bold text-health-text",
             dense ? "text-base" : "text-lg",
           )}
         >
@@ -73,7 +73,7 @@ export function SakbolTopBar({
             type="button"
             onClick={onBell}
             className={cn(
-              "relative flex items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c]",
+              "relative flex items-center justify-center rounded-full bg-slate-100 text-health-text-secondary transition-colors hover:bg-slate-200/80",
               dense ? "h-8 w-8" : "h-10 w-10",
             )}
             aria-label="Уведомления"

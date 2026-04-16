@@ -15,7 +15,7 @@ type Props = {
   onAnalysesChanged?: () => void;
 };
 
-export function AnalysesTab({ onAnalysesChanged }: Props) {
+export function TrendsTab({ onAnalysesChanged }: Props) {
   const { lang } = useLanguage();
   const { authReady, isAuthenticated, state } = useTelegramSession();
   const [uploadSignal, setUploadSignal] = useState(0);
@@ -25,7 +25,7 @@ export function AnalysesTab({ onAnalysesChanged }: Props) {
   return (
     <div className="w-full">
       <SakbolTopBar
-        title="Анализы"
+        title={t(lang, "trends.tabTopBar")}
         rightSlot={
           <button
             type="button"
@@ -33,7 +33,7 @@ export function AnalysesTab({ onAnalysesChanged }: Props) {
             className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-health-primary px-4 py-2 text-caption font-semibold text-white shadow-md shadow-teal-900/15 transition-all duration-300 hover:bg-teal-700"
           >
             <Upload className="h-4 w-4" strokeWidth={2.25} aria-hidden />
-            Загрузить
+            {t(lang, "tests.uploadBig")}
           </button>
         }
       />
@@ -48,13 +48,13 @@ export function AnalysesTab({ onAnalysesChanged }: Props) {
       >
         <header>
           <p className="text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
-            Медицинские данные
+            {t(lang, "trends.tabTopBar")}
           </p>
           <h2 className="mt-1 font-manrope text-h2 font-bold tracking-tight text-health-text">
-            Мои анализы
+            {t(lang, "trends.tabHeroTitle")}
           </h2>
           <p className="mt-2 max-w-2xl text-body leading-relaxed text-health-text-secondary">
-            Загрузка PDF и фото, динамика показателей и подсказки по активному профилю семьи.
+            {t(lang, "trends.tabHeroSubtitle")}
           </p>
         </header>
 
@@ -75,8 +75,9 @@ export function AnalysesTab({ onAnalysesChanged }: Props) {
 
         {authReady && isAuthenticated ? (
           <FamilyAnalysesWorkspace
-            showPremiumCta
+            showPremiumCta={false}
             compactUpload={false}
+            variant="trends"
             onAnalysesChanged={onAnalysesChanged}
             uploadSignal={uploadSignal}
           />

@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-/** Минимальный конфиг: только нужные `content` + бренд-цвета (mint/coral и т.д.). */
+/** Дизайн-система Sakbol: медицинский премиум-палитра + типографика. */
 export default {
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
@@ -8,6 +8,18 @@ export default {
   ],
   theme: {
     extend: {
+      fontSize: {
+        /** H1 — 36 bold (классы: text-display + font-bold) */
+        display: ["2.25rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em" }],
+        /** H2 — 28 semibold */
+        h2: ["1.75rem", { lineHeight: "2.25rem", letterSpacing: "-0.02em" }],
+        /** H3 — 22 semibold */
+        h3: ["1.375rem", { lineHeight: "1.75rem", letterSpacing: "-0.01em" }],
+        /** Body — 15 regular */
+        body: ["0.9375rem", { lineHeight: "1.5rem" }],
+        /** Caption — 12 medium */
+        caption: ["0.75rem", { lineHeight: "1rem" }],
+      },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
         manrope: ["var(--font-manrope)", "var(--font-inter)", "system-ui", "sans-serif"],
@@ -31,8 +43,23 @@ export default {
       },
       boxShadow: {
         "cta-coral": "0 10px 28px -6px rgba(207, 95, 82, 0.35), 0 4px 12px -4px rgba(0, 66, 83, 0.2)",
+        "health-soft":
+          "0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 10px 24px -8px rgba(15, 118, 110, 0.12)",
+        "health-lift": "0 18px 40px -12px rgba(15, 23, 42, 0.12), 0 8px 16px -8px rgba(15, 118, 110, 0.08)",
       },
       colors: {
+        health: {
+          primary: "#0F766E",
+          secondary: "#14B8A6",
+          positive: "#22C55E",
+          warning: "#F59E0B",
+          danger: "#EF4444",
+          bg: "#F8FAFC",
+          surface: "#FFFFFF",
+          text: "#0F172A",
+          "text-secondary": "#64748B",
+          border: "#E2E8F0",
+        },
         emerald: {
           50: "#e8f5f3",
           100: "#c8ebe4",

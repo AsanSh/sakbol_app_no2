@@ -119,6 +119,9 @@ export async function getFamilyMembers() {
       managedRole: true,
       dateOfBirth: true,
       biologicalSex: true,
+      heightCm: true,
+      weightKg: true,
+      bloodType: true,
     },
   });
 }

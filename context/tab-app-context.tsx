@@ -12,9 +12,9 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export type MainTab = "home" | "analyses" | "risks" | "ai" | "profile";
+export type MainTab = "home" | "analyses" | "trends" | "risks" | "ai" | "profile";
 
-const VALID_TABS = new Set<string>(["home", "analyses", "risks", "ai", "profile"]);
+const VALID_TABS = new Set<string>(["home", "analyses", "trends", "risks", "ai", "profile"]);
 
 type TabAppContextValue = {
   tab: MainTab;

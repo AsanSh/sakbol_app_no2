@@ -18,12 +18,11 @@
 
 @layer base {
   body {
-    background-color: #faf9f6;
+    background-color: #f8fafc;
     background-image:
-      radial-gradient(ellipse 130% 70% at 50% -25%, rgba(52, 211, 153, 0.28), transparent 58%),
-      radial-gradient(ellipse 55% 45% at 100% 0%, rgba(253, 224, 200, 0.45), transparent 52%),
-      radial-gradient(ellipse 50% 40% at 0% 100%, rgba(110, 231, 183, 0.18), transparent 50%),
-      linear-gradient(165deg, #f8fafc 0%, #ecfdf5 38%, #fffbeb 100%);
+      radial-gradient(ellipse 120% 80% at 50% -30%, rgba(20, 184, 166, 0.14), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(15, 118, 110, 0.06), transparent 50%),
+      radial-gradient(ellipse 45% 35% at 0% 100%, rgba(148, 163, 184, 0.08), transparent 48%);
     background-attachment: fixed;
   }
 }

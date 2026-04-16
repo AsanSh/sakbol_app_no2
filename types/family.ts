@@ -10,6 +10,9 @@ export type ProfileSummary = {
   managedRole: ManagedRelationRole | null;
   dateOfBirth: string | null;
   biologicalSex: BiologicalSex;
+  heightCm: number | null;
+  weightKg: number | null;
+  bloodType: string | null;
 };
 
 export type FamilyWithProfiles = {

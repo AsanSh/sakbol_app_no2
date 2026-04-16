@@ -1,32 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
-import { Crown, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { ProfileAvatar } from "@/components/ui/avatar";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useTabApp } from "@/context/tab-app-context";
+import { useLanguage } from "@/context/language-context";
+import { t } from "@/lib/i18n";
 import type { FamilyWithProfiles } from "@/types/family";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { AnalysesPreview } from "@/components/analyses-preview";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { useDeviceType } from "@/hooks/use-device-type";
-import { ageYearsFromIsoDob } from "@/lib/risk-scores";
-
-const PROFILE_EXTRAS_STORAGE_KEY = "sakbol.profile.extras.v1";
-
-type ProfileExtras = {
-  heightCm?: number;
-  weightKg?: number;
-  bloodType?: string;
-};
+import { HomeTabDesktop } from "@/components/sakbol/tabs/home-tab-desktop";
 
 function greetingRu(hour: number) {
   if (hour < 12) return "Доброе утро";
@@ -39,6 +33,7 @@ type Props = {
 };
 
 export function HomeTab({ family }: Props) {
+  const { lang } = useLanguage();
   const { refreshKey: analysesRefreshKey } = useAnalysesRefresh();
   const device = useDeviceType();
   const isDesktopWeb = device === "desktop-web";
@@ -47,22 +42,6 @@ export function HomeTab({ family }: Props) {
   const { setTab, openDiary } = useTabApp();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [scoreSheetOpen, setScoreSheetOpen] = useState(false);
-  const [profileExtrasMap, setProfileExtrasMap] = useState<Record<string, ProfileExtras>>({});
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const load = () => {
-      try {
-        const raw = window.localStorage.getItem(PROFILE_EXTRAS_STORAGE_KEY);
-        if (raw) setProfileExtrasMap(JSON.parse(raw) as Record<string, ProfileExtras>);
-      } catch {
-        /* ignore */
-      }
-    };
-    load();
-    window.addEventListener("focus", load);
-    return () => window.removeEventListener("focus", load);
-  }, [activeProfileId]);
 
   const viewerName =
     state.status === "authenticated" ? state.viewer.displayName.split(/\s+/)[0] ?? "друг" : "друг";
@@ -132,364 +111,26 @@ export function HomeTab({ family }: Props) {
   );
 
   if (isDesktopWeb) {
-    const todayLabel = new Date().toLocaleDateString("ru-RU", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    });
-    const activeProfile = profiles.find((p) => p.id === activeProfileId);
-    const activeAge = activeProfile?.dateOfBirth
-      ? ageYearsFromIsoDob(activeProfile.dateOfBirth)
-      : null;
-    const activeExtras = activeProfileId ? profileExtrasMap[activeProfileId] : undefined;
-
     return (
-      <>
-        <div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
-          <SakbolTopBar
-            dense
-            showBell
-            bellUnread
-            onBell={() => setNotificationsOpen(true)}
-          />
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-3 pb-3 pt-2 md:px-5 md:pb-4">
-            {authReady && !isAuthenticated ? (
-              <div className="shrink-0 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 shadow-sm shadow-amber-900/5">
-                <p className="font-semibold tracking-tight">Вход</p>
-                <p className="mt-1 text-xs text-amber-900/85">
-                  {state.status === "unauthenticated" && state.reason === "web_login_required"
-                    ? "Откройте /login или Telegram."
-                    : "Требуется авторизация."}
-                </p>
-                {state.status === "unauthenticated" && state.reason === "web_login_required" ? (
-                  <Link
-                    href="/login"
-                    className="mt-3 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
-                  >
-                    Кирүү
-                  </Link>
-                ) : null}
-              </div>
-            ) : null}
-
-            {authReady && isAuthenticated ? (
-              <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-5">
-                {/* Левая колонка — карточки как на мед. дашборде */}
-                <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden rounded-[1.75rem] border border-white/80 bg-white/50 p-5 shadow-[0_20px_50px_-24px_rgba(13,148,136,0.35)] backdrop-blur-md">
-                  <div className="flex flex-wrap items-stretch gap-4 rounded-3xl border border-teal-100/90 bg-gradient-to-br from-white via-white to-teal-50/40 p-4 shadow-[0_12px_40px_-16px_rgba(13,148,136,0.2)]">
-                    <ProfileAvatar
-                      src={activeProfile?.avatarUrl}
-                      name={activeProfile?.displayName ?? viewerName}
-                      size={80}
-                      className="shrink-0 ring-4 ring-white shadow-lg shadow-teal-900/15"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-teal-700/80">
-                        {greet}
-                      </p>
-                      <div className="mt-1 flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <h1 className="font-manrope text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-                            {activeProfile?.displayName ?? viewerName}
-                          </h1>
-                          <p className="mt-0.5 text-sm text-teal-800/85">
-                            {activeAge != null ? `${activeAge} лет` : "Возраст не указан"} · активный профиль
-                          </p>
-                        </div>
-                        <div className="rounded-2xl bg-gradient-to-br from-teal-600 to-teal-800 px-3 py-2 text-right text-white shadow-md shadow-teal-900/25">
-                          <p className="text-[9px] font-medium uppercase tracking-wider text-teal-100/90">
-                            Сегодня
-                          </p>
-                          <p className="text-xs font-semibold leading-tight">{todayLabel}</p>
-                        </div>
-                      </div>
-                      <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-                        {[
-                          {
-                            label: "Группа крови",
-                            value: activeExtras?.bloodType?.trim() || "—",
-                          },
-                          {
-                            label: "Рост",
-                            value:
-                              typeof activeExtras?.heightCm === "number"
-                                ? `${activeExtras.heightCm} см`
-                                : "—",
-                          },
-                          {
-                            label: "Вес",
-                            value:
-                              typeof activeExtras?.weightKg === "number"
-                                ? `${activeExtras.weightKg} кг`
-                                : "—",
-                          },
-                        ].map((cell) => (
-                          <div
-                            key={cell.label}
-                            className="rounded-2xl border border-teal-100/70 bg-white/80 px-2 py-2 text-center shadow-sm"
-                          >
-                            <p className="text-[9px] font-medium uppercase tracking-wide text-slate-500">
-                              {cell.label}
-                            </p>
-                            <p className="mt-0.5 text-sm font-bold tabular-nums text-slate-900">{cell.value}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="mt-2 font-mono text-[10px] text-slate-400">{clinicalId}</p>
-                      <button
-                        type="button"
-                        onClick={() => setTab("profile")}
-                        className="mt-2 text-[11px] font-semibold text-teal-700 underline decoration-teal-300 underline-offset-2 hover:text-teal-900"
-                      >
-                        Заполнить данные в профиле →
-                      </button>
-                    </div>
-                  </div>
-
-                  {profiles.length > 0 ? (
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                        Семья
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {profiles.map((p, i) => {
-                          const active = p.id === activeProfileId;
-                          const score = 72 + (i % 5) * 4;
-                          const isAdmin = p.familyRole === "ADMIN";
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => {
-                                hapticImpact("medium");
-                                setActiveProfileId(p.id);
-                              }}
-                              className={cn(
-                                "group relative flex min-w-[5.5rem] flex-col items-center gap-1 rounded-2xl border-2 px-2.5 pb-2 pt-2.5 text-center transition-all",
-                                isAdmin
-                                  ? "border-amber-400/90 bg-gradient-to-b from-amber-50 to-amber-100/50 shadow-sm shadow-amber-900/10"
-                                  : "border-sky-400/80 bg-gradient-to-b from-sky-50 to-sky-100/40 shadow-sm shadow-sky-900/8",
-                                active && "ring-2 ring-slate-900 ring-offset-2",
-                              )}
-                            >
-                              {isAdmin ? (
-                                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow ring-2 ring-white">
-                                  <Crown size={11} strokeWidth={2.5} aria-hidden />
-                                </span>
-                              ) : null}
-                              <ProfileAvatar
-                                src={p.avatarUrl}
-                                name={p.displayName}
-                                size={44}
-                                className="border-2 border-white shadow-md shadow-slate-900/10"
-                              />
-                              <span className="max-w-[4.5rem] truncate text-center text-[11px] font-semibold text-slate-800">
-                                {p.displayName}
-                              </span>
-                              <span
-                                className={cn(
-                                  "rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide",
-                                  isAdmin
-                                    ? "bg-amber-200/90 text-amber-950"
-                                    : "bg-sky-200/90 text-sky-950",
-                                )}
-                              >
-                                {isAdmin ? "Админ" : "Участник"}
-                              </span>
-                              <span className="text-[10px] font-medium tabular-nums text-slate-500">
-                                {score} pts
-                              </span>
-                            </button>
-                          );
-                        })}
-                        <button
-                          type="button"
-                          onClick={() => setTab("profile")}
-                          className="flex min-w-[5.5rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/80 px-2 py-3 text-slate-500 transition-colors hover:border-slate-400 hover:bg-white"
-                        >
-                          <div className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white">
-                            <UserPlus size={20} strokeWidth={1.5} aria-hidden />
-                          </div>
-                          <span className="text-[10px] font-semibold">Добавить</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={() => setScoreSheetOpen(true)}
-                    className="relative shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 text-left text-white shadow-xl shadow-slate-900/30 ring-1 ring-white/10 transition-[transform,filter] hover:brightness-[1.03] active:brightness-[0.98]"
-                  >
-                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-400/20 blur-2xl" />
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
-                      Health Score
-                    </p>
-                    <div className="mt-2 flex items-center justify-between gap-3">
-                      <p className="font-manrope text-3xl font-bold tabular-nums leading-none tracking-tight">
-                        {healthScore}
-                        <span className="text-lg font-semibold text-cyan-200/90">/100</span>
-                      </p>
-                      <div className="relative h-16 w-16 shrink-0">
-                        <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.12)"
-                            strokeWidth="3"
-                          />
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="rgb(165,243,252)"
-                            strokeDasharray={`${healthScore}, 100`}
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-3 text-center text-[10px]">
-                      <div>
-                        <p className="text-slate-400">Сон</p>
-                        <p className="font-semibold tabular-nums">7,5 ч</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400">Шаги</p>
-                        <p className="font-semibold tabular-nums">8k</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400">Ккал</p>
-                        <p className="font-semibold tabular-nums">1850</p>
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTab("analyses")}
-                    className="flex shrink-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-sm shadow-slate-900/5 transition-colors hover:border-slate-300 hover:bg-slate-50/80"
-                  >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
-                      <MaterialIcon name="cloud_upload" className="text-[22px]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold tracking-tight text-slate-900">Загрузить анализ</p>
-                      <p className="text-xs text-slate-500">PDF или фото бланка · безопасная обработка</p>
-                    </div>
-                    <MaterialIcon name="chevron_right" className="text-slate-400" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTab("risks")}
-                    className="shrink-0 rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-sm shadow-slate-900/5 transition-colors hover:bg-slate-50/90"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs font-bold uppercase tracking-wide text-slate-900">
-                        Риски здоровья
-                      </p>
-                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                        Обзор
-                      </span>
-                    </div>
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {[
-                        { icon: "cardiology", label: "Сердце" },
-                        { icon: "bloodtype", label: "Диабет" },
-                        { icon: "radiology", label: "Онко" },
-                      ].map((c) => (
-                        <div
-                          key={c.label}
-                          className="rounded-xl border border-slate-100 bg-slate-50/90 p-2 text-center"
-                        >
-                          <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-700 shadow-sm">
-                            <MaterialIcon name={c.icon} className="text-[18px]" />
-                          </div>
-                          <p className="mt-1 text-[10px] font-semibold text-slate-800">{c.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </button>
-
-                  <div className="rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50/80 p-3 shadow-sm">
-                    <div className="flex gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
-                        <MaterialIcon name="wb_sunny" className="text-[20px]" />
-                      </div>
-                      <p className="text-xs leading-snug text-amber-950">
-                        <span className="font-semibold">Витамин D</span> ниже целевого — обсудите дозу с врачом.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid shrink-0 grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={openDiary}
-                      className="rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition-colors hover:bg-slate-50"
-                    >
-                      <MaterialIcon name="hotel_class" className="text-[20px] text-indigo-600" filled />
-                      <p className="mt-2 font-manrope text-xl font-bold tabular-nums text-slate-900">7,2 ч</p>
-                      <p className="text-[11px] font-medium text-slate-500">Сон</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setTab("analyses")}
-                      className="rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm transition-colors hover:bg-slate-50"
-                    >
-                      <MaterialIcon name="local_fire_department" className="text-[20px] text-orange-500" filled />
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-orange-400 to-amber-400" />
-                      </div>
-                      <p className="mt-2 text-[11px] font-medium text-slate-500">Ккал · цель</p>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Правая колонка — анализы */}
-                <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-white/80 bg-white/60 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.12)] backdrop-blur-md">
-                  <div className="shrink-0 border-b border-teal-100/60 bg-gradient-to-r from-teal-50/90 via-white to-white px-5 py-4">
-                    <div className="flex flex-wrap items-end justify-between gap-2">
-                      <div>
-                        <h2 className="font-manrope text-base font-bold tracking-tight text-slate-900">
-                          Обследования
-                        </h2>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          История анализов · загрузка PDF и фото
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setTab("analyses")}
-                        className="rounded-full bg-teal-700 px-3 py-1 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-teal-800"
-                      >
-                        Все анализы
-                      </button>
-                    </div>
-                  </div>
-                  <div className="min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-teal-50/20 to-white/80 px-3 pb-3 pt-2 md:px-4">
-                    {profiles.length > 0 ? (
-                      <AnalysesPreview
-                        profiles={profiles}
-                        refreshKey={analysesRefreshKey}
-                        onRequestUpload={() => setTab("analyses")}
-                        compact
-                        onOpenAnalyses={() => setTab("analyses")}
-                      />
-                    ) : (
-                      <div className="flex h-full min-h-[12rem] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-600">
-                        Добавьте профиль семьи
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-        {sharedSheets}
-      </>
+      <HomeTabDesktop
+        family={family}
+        authReady={authReady}
+        isAuthenticated={isAuthenticated}
+        state={state}
+        activeProfileId={activeProfileId}
+        setActiveProfileId={setActiveProfileId}
+        setTab={setTab}
+        openDiary={openDiary}
+        viewerName={viewerName}
+        greet={greet}
+        clinicalId={clinicalId}
+        healthScore={healthScore}
+        profileScore={profileScore}
+        analysesRefreshKey={analysesRefreshKey}
+        onOpenNotifications={() => setNotificationsOpen(true)}
+        onOpenScoreDetail={() => setScoreSheetOpen(true)}
+        sharedSheets={sharedSheets}
+      />
     );
   }
 
@@ -507,9 +148,9 @@ export function HomeTab({ family }: Props) {
         transition={{ duration: 0.3 }}
       >
       {authReady && !isAuthenticated ? (
-        <div className="rounded-2xl border border-[#ffdcc0] bg-[#ffdcc0]/50 px-4 py-3 text-sm text-[#2d1600]">
-          <p className="font-medium">Вход через Telegram Mini App</p>
-          <p className="mt-1 text-xs text-[#693c08]">
+        <div className="rounded-2xl bg-amber-50/95 px-4 py-3 text-sm text-amber-950 shadow-sm ring-1 ring-amber-200/80">
+          <p className="font-semibold">Вход через Telegram Mini App</p>
+          <p className="mt-1 text-caption text-amber-900/90">
             {state.status === "unauthenticated" && state.reason === "web_login_required"
               ? "Сессия в браузере жок. Кирүү үчүн /login бетин ачыңыз же Telegram аркылуу кирүү."
               : state.status === "unauthenticated" && state.reason === "no_init_data"
@@ -521,7 +162,7 @@ export function HomeTab({ family }: Props) {
           {state.status === "unauthenticated" && state.reason === "web_login_required" ? (
             <Link
               href="/login"
-              className="mt-3 inline-flex rounded-xl bg-[#5c3200] px-4 py-2 text-xs font-semibold text-[#ffead4]"
+              className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-health-text px-4 py-2 text-caption font-semibold text-health-surface"
             >
               Страница входа
             </Link>
@@ -539,26 +180,26 @@ export function HomeTab({ family }: Props) {
       ) : null}
 
       <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#70787d]">
+        <p className="text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
           Профиль: {clinicalId} · Бишкек
         </p>
-        <h1 className="mt-1 font-manrope text-2xl font-extrabold text-[#191c1d]">
+        <h1 className="mt-1 font-manrope text-h2 font-bold tracking-tight text-health-text sm:text-display sm:leading-[2.5rem]">
           {greet}, {viewerName}.
         </h1>
-        <p className="mt-1 text-sm text-[#40484c]">
-          Показатели стабильны — продолжайте отслеживать анализы и сон.
+        <p className="mt-1 text-body text-health-text-secondary">
+          Индекс здоровья стабильно растёт — продолжайте загружать анализы и вести дневник.
         </p>
       </motion.section>
 
       {profiles.length > 0 ? (
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-          <p className="mb-2 border-l-4 border-coral pl-2 text-xs font-semibold text-[#40484c]">
+          <p className="mb-2 text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
             Семья
           </p>
           <div className="flex gap-3 overflow-x-auto px-1 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {profiles.map((p, i) => {
+            {profiles.map((p) => {
               const active = p.id === activeProfileId;
-              const score = 72 + (i % 5) * 4;
+              const score = profileScore(p.id);
               return (
                 <button
                   key={p.id}
@@ -574,26 +215,26 @@ export function HomeTab({ family }: Props) {
                     name={p.displayName}
                     size={56}
                     className={cn(
-                      "border-2",
-                      active ? "border-[#004253] shadow-sm" : "border-transparent",
+                      "ring-2 ring-offset-2 ring-offset-health-bg transition-shadow",
+                      active ? "ring-health-primary shadow-md" : "ring-transparent",
                     )}
                   />
-                  <span className="max-w-[4.5rem] truncate text-center text-[11px] font-medium text-[#40484c]">
+                  <span className="max-w-[4.5rem] truncate text-center text-[11px] font-medium text-health-text">
                     {p.displayName}
                   </span>
-                  <span className="text-[10px] text-[#70787d]">{score}/100</span>
+                  <span className="text-[10px] text-health-text-secondary">{score}/100</span>
                 </button>
               );
             })}
             <button
               type="button"
-              onClick={() => setTab("analyses")}
-              className="flex shrink-0 flex-col items-center gap-1.5 opacity-80"
+              onClick={() => setTab("profile")}
+              className="flex shrink-0 flex-col items-center gap-1.5 opacity-90"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-[#bfc8cc] text-[#70787d]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-health-border bg-health-surface text-health-text-secondary shadow-sm">
                 <UserPlus size={22} strokeWidth={1.5} aria-hidden />
               </div>
-              <span className="text-[11px] text-[#70787d]">Добавить</span>
+              <span className="text-[11px] font-medium text-health-text-secondary">Добавить</span>
             </button>
           </div>
         </motion.section>
@@ -606,7 +247,7 @@ export function HomeTab({ family }: Props) {
         whileTap={{ scale: 0.97 }}
         type="button"
         onClick={() => setScoreSheetOpen(true)}
-        className="sakbol-web-cta relative w-full overflow-hidden rounded-2xl bg-sakbol-cta p-4 text-left text-white shadow-cta-coral"
+        className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-health-primary via-teal-700 to-teal-900 p-4 text-left text-white shadow-health-lift ring-1 ring-white/10"
       >
         <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute bottom-0 right-12 h-16 w-16 rounded-full bg-[#8dd0e9]/20" />
@@ -671,9 +312,9 @@ export function HomeTab({ family }: Props) {
         whileTap={{ scale: 0.97 }}
         type="button"
         onClick={() => setTab("analyses")}
-        className="sakbol-web-cta flex w-full items-center gap-3 rounded-2xl border border-emerald-900/10 bg-white/80 p-4 text-left shadow-sm transition-shadow hover:shadow-md"
+        className="flex w-full min-h-[52px] items-center gap-3 rounded-2xl bg-health-surface p-4 text-left shadow-md shadow-slate-900/[0.06] ring-1 ring-health-border/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
       >
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#004253] to-[#005b71] text-white">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-health-primary to-teal-700 text-white shadow-md">
           <MaterialIcon name="cloud_upload" className="text-[26px]" />
         </div>
         <div className="min-w-0 flex-1">
@@ -682,6 +323,27 @@ export function HomeTab({ family }: Props) {
         </div>
         <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
       </motion.button>
+
+      {authReady && isAuthenticated && profiles.length > 0 ? (
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, delay: 0.05 }}
+          whileTap={{ scale: 0.97 }}
+          type="button"
+          onClick={() => setTab("trends")}
+          className="flex w-full min-h-[52px] items-center gap-3 rounded-2xl bg-teal-50/90 p-4 text-left shadow-md shadow-slate-900/[0.05] ring-1 ring-teal-100/90 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-md">
+            <MaterialIcon name="trending_up" className="text-[26px]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-manrope font-bold text-slate-900">{t(lang, "home.trendsCtaTitle")}</p>
+            <p className="text-xs text-slate-600">{t(lang, "home.trendsCtaSubtitle")}</p>
+          </div>
+          <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
+        </motion.button>
+      ) : null}
 
       {authReady && isAuthenticated && profiles.length > 0 ? (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>

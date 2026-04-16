@@ -44,6 +44,69 @@ export async function updateProfileBiologicalSex(
   return { ok: true as const };
 }
 
+export async function updateProfileVitals(
+  profileId: string,
+  input: {
+    heightCm: number | null;
+    weightKg: number | null;
+    bloodType: string | null;
+  },
+) {
+  const session = getSession();
+  if (!session) {
+    return { ok: false as const, error: "Unauthorized." };
+  }
+
+  const actor = await prisma.profile.findFirst({
+    where: { id: session.profileId, familyId: session.familyId },
+  });
+  if (!actor) {
+    return { ok: false as const, error: "Actor not found." };
+  }
+
+  const target = await prisma.profile.findFirst({
+    where: { id: profileId, familyId: session.familyId },
+  });
+  if (!target) {
+    return { ok: false as const, error: "Profile not found." };
+  }
+
+  const isSelf = target.id === actor.id;
+  const isAdmin = actor.familyRole === FamilyRole.ADMIN;
+  if (!isSelf && !isAdmin) {
+    return { ok: false as const, error: "Only admin or self can update." };
+  }
+
+  const heightCm = input.heightCm;
+  const weightKg = input.weightKg;
+  if (heightCm != null) {
+    if (!Number.isFinite(heightCm) || heightCm < 40 || heightCm > 272) {
+      return { ok: false as const, error: "Рост: укажите значение 40–272 см." };
+    }
+  }
+  if (weightKg != null) {
+    if (!Number.isFinite(weightKg) || weightKg < 15 || weightKg > 500) {
+      return { ok: false as const, error: "Вес: укажите значение 15–500 кг." };
+    }
+  }
+
+  const bloodRaw = input.bloodType?.trim() ?? "";
+  const bloodType = bloodRaw.length > 0 ? bloodRaw.slice(0, 32) : null;
+
+  await prisma.profile.update({
+    where: { id: profileId },
+    data: {
+      heightCm,
+      weightKg,
+      bloodType,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/profile");
+  return { ok: true as const };
+}
+
 export async function updateOwnProfileBasics(input: {
   displayName: string;
   ageYears: number | null;

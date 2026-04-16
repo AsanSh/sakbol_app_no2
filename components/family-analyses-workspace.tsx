@@ -29,6 +29,9 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
           : typeof p.dateOfBirth === "string"
             ? p.dateOfBirth
             : new Date(p.dateOfBirth as unknown as Date).toISOString(),
+      heightCm: p.heightCm ?? null,
+      weightKg: p.weightKg ?? null,
+      bloodType: p.bloodType ?? null,
     })),
   };
 }
@@ -42,6 +45,8 @@ type Props = {
   onAnalysesChanged?: () => void;
   /** Инкремент открывает модалку загрузки (кнопка в шапке вкладки). */
   uploadSignal?: number;
+  /** Вкладка «Динамика»: без Health Hub, только сравнение и графики. */
+  variant?: "default" | "trends";
 };
 
 export function FamilyAnalysesWorkspace({
@@ -50,7 +55,9 @@ export function FamilyAnalysesWorkspace({
   compactUpload: _compactUpload = false,
   onAnalysesChanged,
   uploadSignal = 0,
+  variant = "default",
 }: Props) {
+  const isTrends = variant === "trends";
   const { lang } = useLanguage();
   const { authReady, isAuthenticated } = useTelegramSession();
   const { activeProfileId } = useActiveProfile();
@@ -110,9 +117,9 @@ export function FamilyAnalysesWorkspace({
 
   if (error) {
     return (
-      <p className="rounded-2xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-emerald-950">
+      <div className="rounded-2xl bg-red-50/90 px-4 py-3 text-sm text-red-900 shadow-sm ring-1 ring-red-200/80">
         {error}
-      </p>
+      </div>
     );
   }
 
@@ -126,7 +133,7 @@ export function FamilyAnalysesWorkspace({
         <button
           type="button"
           onClick={() => setPaywallOpen(true)}
-          className="w-full rounded-2xl border border-amber-500/60 bg-amber-500/15 px-3 py-2 text-sm font-medium text-emerald-950"
+          className="w-full rounded-2xl bg-amber-50/95 px-4 py-3 text-sm font-semibold text-amber-950 shadow-sm ring-1 ring-amber-200/80 transition-all duration-300 hover:bg-amber-100/90"
         >
           {t(lang, "dashboard.premiumCta")}
         </button>
@@ -140,13 +147,13 @@ export function FamilyAnalysesWorkspace({
 
       {/* Подсказка + кнопка «Добавить члена» (компактная) */}
       {activeProfileId ? (
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[11px] text-emerald-800/75">{t(lang, "dashboard.quickUploadHint")}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-caption text-health-text-secondary">{t(lang, "dashboard.quickUploadHint")}</p>
           {admin ? (
             <button
               type="button"
               onClick={() => setAddOpen(true)}
-              className="shrink-0 rounded-xl border border-emerald-800/30 bg-white/80 px-3 py-1.5 text-[11px] font-semibold text-emerald-900 shadow-sm transition-colors hover:bg-emerald-900/5"
+              className="shrink-0 rounded-xl bg-health-surface px-3 py-2 text-caption font-semibold text-health-primary shadow-sm ring-1 ring-health-border/80 transition-all duration-300 hover:shadow-md"
             >
               {t(lang, "family.addMemberShort")}
             </button>
@@ -159,12 +166,15 @@ export function FamilyAnalysesWorkspace({
         <UploadFab onClick={() => setUploadOpen(true)} mobileOnly={false} />
       ) : null}
 
-      <HealthHubPanel profiles={family.profiles} refreshKey={analysesRefresh} />
+      {isTrends ? null : (
+        <HealthHubPanel profiles={family.profiles} refreshKey={analysesRefresh} />
+      )}
 
       <AnalysesPreview
         profiles={family.profiles}
         refreshKey={analysesRefresh}
         onRequestUpload={() => setUploadOpen(true)}
+        mode={isTrends ? "trends" : "default"}
       />
 
       <AddMemberModal

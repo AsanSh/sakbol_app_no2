@@ -43,7 +43,7 @@ export function FamilySwitcher({
 
   return (
     <div className={cn("w-full", className)}>
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-emerald-800/70">
+      <p className="mb-2 text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
         {t(lang, "family.switcherTitle")}
       </p>
       <ul className="flex gap-3 overflow-x-auto overflow-y-visible px-1 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -59,8 +59,8 @@ export function FamilySwitcher({
                   switchProfile(p.id);
                 }}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-2xl px-1 pt-1 outline-none ring-emerald-600 focus-visible:ring-2",
-                  active ? "opacity-100" : "opacity-80 hover:opacity-100",
+                  "flex flex-col items-center gap-1 rounded-2xl px-1 pt-1 outline-none ring-health-primary focus-visible:ring-2",
+                  active ? "opacity-100" : "opacity-85 hover:opacity-100",
                 )}
                 aria-pressed={active}
                 aria-label={`${t(lang, "profile.title")}: ${p.displayName}`}
@@ -70,14 +70,14 @@ export function FamilySwitcher({
                   name={p.displayName}
                   size={56}
                   className={cn(
-                    "border-2 transition-colors",
-                    active ? "border-amber-500 shadow-md" : "border-emerald-700/40",
+                    "ring-2 ring-offset-2 ring-offset-health-bg transition-shadow",
+                    active ? "ring-health-primary shadow-md" : "ring-transparent",
                   )}
                 />
                 <span
                   className={cn(
                     "max-w-[4.5rem] truncate text-center text-[11px] font-medium leading-tight",
-                    active ? "text-emerald-950" : "text-emerald-900/75",
+                    active ? "text-health-text" : "text-health-text-secondary",
                   )}
                 >
                   {p.displayName}
@@ -92,13 +92,13 @@ export function FamilySwitcher({
               type="button"
               whileTap={{ scale: 0.96 }}
               onClick={onAddMember}
-              className="flex flex-col items-center gap-1 rounded-2xl px-1 pt-1 outline-none ring-emerald-600 focus-visible:ring-2"
+              className="flex flex-col items-center gap-1 rounded-2xl px-1 pt-1 outline-none ring-health-primary focus-visible:ring-2"
               aria-label={t(lang, "profile.addMember")}
             >
-              <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-emerald-700/50 bg-white text-emerald-900">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-health-border bg-health-surface text-health-primary">
                 <Plus className="h-6 w-6" strokeWidth={2} />
               </span>
-              <span className="max-w-[4.5rem] text-center text-[11px] font-medium text-emerald-900/75">
+              <span className="max-w-[4.5rem] text-center text-[11px] font-medium text-health-text-secondary">
                 {t(lang, "family.addMemberShort")}
               </span>
             </motion.button>
@@ -106,8 +106,8 @@ export function FamilySwitcher({
         ) : null}
       </ul>
       {activeClinical ? (
-        <p className="mt-2 text-center font-mono text-[10px] leading-snug text-emerald-900/80">
-          <span className="font-sans text-emerald-800/70">{t(lang, "profile.clinicalIdShort")}: </span>
+        <p className="mt-2 text-center font-mono text-[10px] leading-snug text-health-text-secondary">
+          <span className="font-sans text-health-text-secondary/90">{t(lang, "profile.clinicalIdShort")}: </span>
           {activeClinical}
         </p>
       ) : null}

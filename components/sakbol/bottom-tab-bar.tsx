@@ -3,6 +3,7 @@
 import {
   LayoutDashboard,
   Stethoscope,
+  TrendingUp,
   HeartPulse,
   BotMessageSquare,
   UserCircle,
@@ -18,11 +19,12 @@ type Dock = "fixed" | "embedded";
 type NavItem = { id: MainTab; label: string; Icon: LucideIcon };
 
 const ITEMS: NavItem[] = [
-  { id: "home",     label: "Главная",  Icon: LayoutDashboard  },
-  { id: "analyses", label: "Анализы",  Icon: Stethoscope       },
-  { id: "risks",    label: "Риски",    Icon: HeartPulse         },
-  { id: "ai",       label: "ИИ",       Icon: BotMessageSquare  },
-  { id: "profile",  label: "Профиль",  Icon: UserCircle        },
+  { id: "home", label: "Главная", Icon: LayoutDashboard },
+  { id: "analyses", label: "Анализы", Icon: Stethoscope },
+  { id: "trends", label: "Динамика", Icon: TrendingUp },
+  { id: "risks", label: "Риски", Icon: HeartPulse },
+  { id: "ai", label: "ИИ", Icon: BotMessageSquare },
+  { id: "profile", label: "Профиль", Icon: UserCircle },
 ];
 
 type TabBarProps = {
@@ -36,8 +38,8 @@ export function BottomTabBar({ dock = "fixed" }: TabBarProps) {
   return (
     <nav
       className={cn(
-        "z-50 border-t border-emerald-200/70",
-        "bg-gradient-to-t from-white/95 via-emerald-50/35 to-white/90 shadow-[0_-10px_40px_rgba(6,95,70,0.12)] backdrop-blur-xl",
+        "z-50 border-t border-health-border/80",
+        "bg-gradient-to-t from-health-surface/98 via-teal-50/40 to-health-surface/95 shadow-[0_-12px_40px_-8px_rgba(15,118,110,0.12)] backdrop-blur-xl",
         "rounded-t-[1.5rem]",
         "[padding-bottom:max(0.5rem,env(safe-area-inset-bottom,0px))]",
         dock === "fixed"
@@ -58,10 +60,10 @@ export function BottomTabBar({ dock = "fixed" }: TabBarProps) {
                   setTab(id);
                 }}
                 className={cn(
-                  "flex w-full flex-col items-center gap-0.5 rounded-2xl px-1 py-2 text-[11px] font-medium transition-colors",
+                  "flex w-full min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 text-[11px] font-semibold transition-all duration-300",
                   active
-                    ? "bg-cyan-50/80 text-[#004253]"
-                    : "text-slate-400 hover:bg-slate-50/80",
+                    ? "bg-teal-50 text-health-primary shadow-sm"
+                    : "text-health-text-secondary hover:bg-slate-50/90",
                 )}
               >
                 <Icon

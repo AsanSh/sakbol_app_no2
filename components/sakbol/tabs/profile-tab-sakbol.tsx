@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex } from "@prisma/client";
 import { AddMemberModal } from "@/components/add-member-modal";
@@ -19,6 +19,7 @@ import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import {
   updateOwnProfileBasics,
   updateProfileBiologicalSex,
+  updateProfileVitals,
 } from "@/app/actions/profile";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 import { cn } from "@/lib/utils";
@@ -54,7 +55,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [extrasByProfile, setExtrasByProfile] = useState<Record<string, ProfileExtras>>({});
+  const localVitalsMigratedRef = useRef(false);
 
   const viewer = state.status === "authenticated" ? state.viewer : null;
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
@@ -68,40 +69,84 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   };
 
   const clinical = viewer ? formatClinicalAnonymId(viewer.id) : "—";
-  const selfExtras = viewer ? extrasByProfile[viewer.id] : undefined;
 
   useEffect(() => {
+    if (typeof window === "undefined" || localVitalsMigratedRef.current) return;
+    if (!viewer?.id || !selfProfile) return;
+
+    const hasServer =
+      selfProfile.heightCm != null ||
+      selfProfile.weightKg != null ||
+      Boolean(selfProfile.bloodType?.trim());
+
+    if (hasServer) {
+      localVitalsMigratedRef.current = true;
+      return;
+    }
+
+    let local: ProfileExtras | undefined;
     try {
       const raw = window.localStorage.getItem(PROFILE_EXTRAS_STORAGE_KEY);
-      if (!raw) return;
+      if (!raw) {
+        localVitalsMigratedRef.current = true;
+        return;
+      }
       const parsed = JSON.parse(raw) as Record<string, ProfileExtras>;
-      setExtrasByProfile(parsed);
+      local = parsed[viewer.id];
     } catch {
-      /* ignore parse/storage errors */
+      return;
     }
-  }, []);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(PROFILE_EXTRAS_STORAGE_KEY, JSON.stringify(extrasByProfile));
-    } catch {
-      /* ignore storage errors */
+    if (!local) {
+      localVitalsMigratedRef.current = true;
+      return;
     }
-  }, [extrasByProfile]);
+
+    const h = local.heightCm;
+    const w = local.weightKg;
+    const b = local.bloodType?.trim() || null;
+    const hasLocal =
+      (typeof h === "number" && h > 0) ||
+      (typeof w === "number" && w > 0) ||
+      Boolean(b);
+
+    if (!hasLocal) {
+      localVitalsMigratedRef.current = true;
+      return;
+    }
+
+    localVitalsMigratedRef.current = true;
+    void updateProfileVitals(viewer.id, {
+      heightCm: typeof h === "number" && h > 0 ? h : null,
+      weightKg: typeof w === "number" && w > 0 ? w : null,
+      bloodType: b || null,
+    }).then((res) => {
+      if (res.ok) reload();
+      else localVitalsMigratedRef.current = false;
+    });
+  }, [viewer?.id, selfProfile, reload]);
 
   useEffect(() => {
     if (!dataOpen) return;
     setNameInput(selfProfile?.displayName ?? viewer?.displayName ?? "");
     setAgeInput(age != null ? String(age) : "");
     setHeightInput(
-      typeof selfExtras?.heightCm === "number" ? String(selfExtras.heightCm) : "",
+      typeof selfProfile?.heightCm === "number" ? String(selfProfile.heightCm) : "",
     );
     setWeightInput(
-      typeof selfExtras?.weightKg === "number" ? String(selfExtras.weightKg) : "",
+      typeof selfProfile?.weightKg === "number" ? String(selfProfile.weightKg) : "",
     );
-    setBloodTypeInput(selfExtras?.bloodType ?? "");
+    setBloodTypeInput(selfProfile?.bloodType?.trim() ? selfProfile.bloodType : "");
     setSaveError(null);
-  }, [dataOpen, selfProfile?.displayName, viewer?.displayName, age, selfExtras?.heightCm, selfExtras?.weightKg, selfExtras?.bloodType]);
+  }, [
+    dataOpen,
+    selfProfile?.displayName,
+    selfProfile?.heightCm,
+    selfProfile?.weightKg,
+    selfProfile?.bloodType,
+    viewer?.displayName,
+    age,
+  ]);
 
   const bmiPreview = (() => {
     const h = Number.parseFloat(heightInput);
@@ -111,9 +156,9 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
     return (w / (m * m)).toFixed(1);
   })();
 
-  const bmiFromSavedExtras = (() => {
-    const h = selfExtras?.heightCm;
-    const w = selfExtras?.weightKg;
+  const bmiFromProfile = (() => {
+    const h = selfProfile?.heightCm;
+    const w = selfProfile?.weightKg;
     if (typeof h !== "number" || typeof w !== "number" || h <= 0 || w <= 0) return null;
     const m = h / 100;
     return (w / (m * m)).toFixed(1);
@@ -123,21 +168,20 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
     setSaveError(null);
     setSavingBasics(true);
     try {
-      // Локальные данные (рост/вес/группа крови) сохраняем ВСЕГДА — независимо от сервера.
-      if (viewer) {
-        const h = Number.parseFloat(heightInput);
-        const w = Number.parseFloat(weightInput);
-        setExtrasByProfile((prev) => ({
-          ...prev,
-          [viewer.id]: {
-            heightCm: Number.isFinite(h) && h > 0 ? h : undefined,
-            weightKg: Number.isFinite(w) && w > 0 ? w : undefined,
-            bloodType: bloodTypeInput.trim() || undefined,
-          },
-        }));
+      if (!viewer) return;
+
+      const h = Number.parseFloat(heightInput);
+      const w = Number.parseFloat(weightInput);
+      const vitalsRes = await updateProfileVitals(viewer.id, {
+        heightCm: Number.isFinite(h) && h > 0 ? h : null,
+        weightKg: Number.isFinite(w) && w > 0 ? w : null,
+        bloodType: bloodTypeInput.trim() || null,
+      });
+      if (!vitalsRes.ok) {
+        setSaveError(vitalsRes.error);
+        return;
       }
 
-      // Серверное сохранение имени и возраста — независимо от локального.
       const ageYearsRaw = ageInput.trim();
       const ageYears =
         ageYearsRaw === "" ? null : Number.parseInt(ageYearsRaw, 10);
@@ -147,10 +191,9 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
       });
       if (!res.ok) {
         setSaveError(res.error);
-        // Не выходим: локальные данные уже сохранены, закрываем sheet всё равно.
-      } else {
-        await syncViewerFromServer();
+        return;
       }
+      await syncViewerFromServer();
       reload();
       setDataOpen(false);
     } finally {
@@ -237,7 +280,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">
-                      BMI {bmiFromSavedExtras ?? "—"}
+                      BMI {bmiFromProfile ?? "—"}
                     </span>
                     <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">
                       Score 78
@@ -271,15 +314,25 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 {
                   icon: "height",
                   label: "Рост",
-                  val: selfExtras?.heightCm ? `${selfExtras.heightCm} см` : "—",
+                  val:
+                    typeof selfProfile?.heightCm === "number"
+                      ? `${selfProfile.heightCm} см`
+                      : "—",
                 },
                 {
                   icon: "monitor_weight",
                   label: "Вес",
-                  val: selfExtras?.weightKg ? `${selfExtras.weightKg} кг` : "—",
+                  val:
+                    typeof selfProfile?.weightKg === "number"
+                      ? `${selfProfile.weightKg} кг`
+                      : "—",
                 },
-                { icon: "monitor_heart", label: "BMI", val: bmiFromSavedExtras ?? "—" },
-                { icon: "bloodtype", label: "Группа", val: selfExtras?.bloodType ?? "—" },
+                { icon: "monitor_heart", label: "BMI", val: bmiFromProfile ?? "—" },
+                {
+                  icon: "bloodtype",
+                  label: "Группа",
+                  val: selfProfile?.bloodType?.trim() || "—",
+                },
               ].map((c) => (
                 <div
                   key={c.label}
@@ -435,7 +488,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
       <BottomSheet open={dataOpen} title="Личные данные" onClose={() => setDataOpen(false)}>
         <p className="text-xs text-[#70787d]">
-          Имя и возраст сохраняются в профиль. Рост/вес используются для локального расчёта BMI.
+          Данные сохраняются в профиль на сервере — одинаково в вебе и в Telegram. BMI считается из
+          роста и веса.
         </p>
         <div className="mt-3 space-y-2 rounded-xl bg-[#f3f4f5] p-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)]">
           <input
@@ -474,7 +528,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             className="w-full rounded-lg border border-[#e7e8e9] bg-white px-3 py-2 text-sm"
           />
           <p className="text-xs text-[#40484c]">
-            BMI: {bmiPreview ?? "—"} {bmiPreview ? "(локальный расчёт)" : ""}
+            BMI: {bmiPreview ?? "—"} {bmiPreview ? "(по введённым значениям)" : ""}
           </p>
           {saveError ? <p className="text-xs text-coral">{saveError}</p> : null}
         </div>

@@ -40,6 +40,11 @@ model Profile {
   dateOfBirth DateTime?
   biologicalSex  BiologicalSex @default(UNKNOWN)
 
+  /// Антропометрия и группа крови — хранятся на сервере для синхронизации веб/Telegram.
+  heightCm   Float?
+  weightKg   Float?
+  bloodType  String?
+
   healthRecords  HealthRecord[]
   medications   Medication[]
 
