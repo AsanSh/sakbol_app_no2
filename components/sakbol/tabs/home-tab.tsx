@@ -357,12 +357,12 @@ export function HomeTab({ family }: Props) {
 
       <button
         type="button"
-        onClick={() => setTab("risks")}
+        onClick={() => setTab("analyses")}
         className="sakbol-web-cta w-full rounded-2xl border border-[#e7e8e9] bg-white p-4 text-left shadow-sm"
       >
         <div className="flex items-center justify-between gap-2">
           <p className="font-manrope text-base font-bold text-[#191c1d]">Оценка рисков</p>
-          <span className="text-xs font-semibold text-[#004253]">Подробнее</span>
+          <span className="text-xs font-semibold text-[#004253]">Анализы · индекс</span>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {[

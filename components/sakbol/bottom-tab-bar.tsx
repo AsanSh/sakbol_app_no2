@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Stethoscope,
   TrendingUp,
-  HeartPulse,
   BotMessageSquare,
   UserCircle,
 } from "lucide-react";
@@ -22,7 +21,6 @@ const ITEMS: NavItem[] = [
   { id: "home", label: "Главная", Icon: LayoutDashboard },
   { id: "analyses", label: "Анализы", Icon: Stethoscope },
   { id: "trends", label: "Динамика", Icon: TrendingUp },
-  { id: "risks", label: "Риски", Icon: HeartPulse },
   { id: "ai", label: "ИИ", Icon: BotMessageSquare },
   { id: "profile", label: "Профиль", Icon: UserCircle },
 ];

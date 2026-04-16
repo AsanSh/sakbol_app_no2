@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex } from "@prisma/client";
 import { AddMemberModal } from "@/components/add-member-modal";
@@ -10,6 +10,7 @@ import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useLanguage } from "@/context/language-context";
+import { useActiveProfile } from "@/context/active-profile-context";
 import { useTabApp } from "@/context/tab-app-context";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import type { FamilyWithProfiles } from "@/types/family";
@@ -17,6 +18,7 @@ import { t } from "@/lib/i18n";
 import { ProfileAvatar } from "@/components/ui/avatar";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import {
+  updateMemberProfileBasics,
   updateOwnProfileBasics,
   updateProfileBiologicalSex,
   updateProfileVitals,
@@ -40,6 +42,7 @@ type Props = {
 
 export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const { lang } = useLanguage();
+  const { activeProfileId } = useActiveProfile();
   const { authReady, isAuthenticated, state, syncViewerFromServer } = useTelegramSession();
   const { openDiary } = useTabApp();
   const [addOpen, setAddOpen] = useState(false);
@@ -59,25 +62,35 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
   const viewer = state.status === "authenticated" ? state.viewer : null;
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
-  const selfProfile = viewer ? family?.profiles.find((p) => p.id === viewer.id) : null;
-  const age = selfProfile?.dateOfBirth ? ageYearsFromIsoDob(selfProfile.dateOfBirth) : null;
+  const viewerOwnProfile = viewer ? family?.profiles.find((p) => p.id === viewer.id) : null;
 
-  const canEditSex = (profileId: string) => {
+  const editTarget = useMemo(() => {
+    if (!family?.profiles?.length || !viewer) return null;
+    const id =
+      activeProfileId && family.profiles.some((p) => p.id === activeProfileId)
+        ? activeProfileId
+        : viewer.id;
+    return family.profiles.find((p) => p.id === id) ?? null;
+  }, [family, viewer, activeProfileId]);
+
+  const age = editTarget?.dateOfBirth ? ageYearsFromIsoDob(editTarget.dateOfBirth) : null;
+
+  const canEditMember = (profileId: string) => {
     if (!viewer) return false;
     if (viewer.id === profileId) return true;
     return viewer.familyRole === "ADMIN";
   };
 
-  const clinical = viewer ? formatClinicalAnonymId(viewer.id) : "—";
+  const clinical = editTarget ? formatClinicalAnonymId(editTarget.id) : viewer ? formatClinicalAnonymId(viewer.id) : "—";
 
   useEffect(() => {
     if (typeof window === "undefined" || localVitalsMigratedRef.current) return;
-    if (!viewer?.id || !selfProfile) return;
+    if (!viewer?.id || !viewerOwnProfile) return;
 
     const hasServer =
-      selfProfile.heightCm != null ||
-      selfProfile.weightKg != null ||
-      Boolean(selfProfile.bloodType?.trim());
+      viewerOwnProfile.heightCm != null ||
+      viewerOwnProfile.weightKg != null ||
+      Boolean(viewerOwnProfile.bloodType?.trim());
 
     if (hasServer) {
       localVitalsMigratedRef.current = true;
@@ -124,26 +137,26 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
       if (res.ok) reload();
       else localVitalsMigratedRef.current = false;
     });
-  }, [viewer?.id, selfProfile, reload]);
+  }, [viewer?.id, viewerOwnProfile, reload]);
 
   useEffect(() => {
     if (!dataOpen) return;
-    setNameInput(selfProfile?.displayName ?? viewer?.displayName ?? "");
+    setNameInput(editTarget?.displayName ?? viewer?.displayName ?? "");
     setAgeInput(age != null ? String(age) : "");
     setHeightInput(
-      typeof selfProfile?.heightCm === "number" ? String(selfProfile.heightCm) : "",
+      typeof editTarget?.heightCm === "number" ? String(editTarget.heightCm) : "",
     );
     setWeightInput(
-      typeof selfProfile?.weightKg === "number" ? String(selfProfile.weightKg) : "",
+      typeof editTarget?.weightKg === "number" ? String(editTarget.weightKg) : "",
     );
-    setBloodTypeInput(selfProfile?.bloodType?.trim() ? selfProfile.bloodType : "");
+    setBloodTypeInput(editTarget?.bloodType?.trim() ? editTarget.bloodType : "");
     setSaveError(null);
   }, [
     dataOpen,
-    selfProfile?.displayName,
-    selfProfile?.heightCm,
-    selfProfile?.weightKg,
-    selfProfile?.bloodType,
+    editTarget?.displayName,
+    editTarget?.heightCm,
+    editTarget?.weightKg,
+    editTarget?.bloodType,
     viewer?.displayName,
     age,
   ]);
@@ -157,8 +170,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   })();
 
   const bmiFromProfile = (() => {
-    const h = selfProfile?.heightCm;
-    const w = selfProfile?.weightKg;
+    const h = editTarget?.heightCm;
+    const w = editTarget?.weightKg;
     if (typeof h !== "number" || typeof w !== "number" || h <= 0 || w <= 0) return null;
     const m = h / 100;
     return (w / (m * m)).toFixed(1);
@@ -168,11 +181,15 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
     setSaveError(null);
     setSavingBasics(true);
     try {
-      if (!viewer) return;
+      if (!viewer || !editTarget) return;
+      if (!canEditMember(editTarget.id)) {
+        setSaveError("Нет прав на редактирование этого профиля.");
+        return;
+      }
 
       const h = Number.parseFloat(heightInput);
       const w = Number.parseFloat(weightInput);
-      const vitalsRes = await updateProfileVitals(viewer.id, {
+      const vitalsRes = await updateProfileVitals(editTarget.id, {
         heightCm: Number.isFinite(h) && h > 0 ? h : null,
         weightKg: Number.isFinite(w) && w > 0 ? w : null,
         bloodType: bloodTypeInput.trim() || null,
@@ -185,15 +202,23 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
       const ageYearsRaw = ageInput.trim();
       const ageYears =
         ageYearsRaw === "" ? null : Number.parseInt(ageYearsRaw, 10);
-      const res = await updateOwnProfileBasics({
-        displayName: nameInput,
-        ageYears,
-      });
+      const res =
+        editTarget.id === viewer.id
+          ? await updateOwnProfileBasics({
+              displayName: nameInput,
+              ageYears,
+            })
+          : await updateMemberProfileBasics(editTarget.id, {
+              displayName: nameInput,
+              ageYears,
+            });
       if (!res.ok) {
         setSaveError(res.error);
         return;
       }
-      await syncViewerFromServer();
+      if (editTarget.id === viewer.id) {
+        await syncViewerFromServer();
+      }
       reload();
       setDataOpen(false);
     } finally {
@@ -205,14 +230,16 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
     <div className="w-full">
       <SakbolTopBar
         rightSlot={
-          <button
-            type="button"
-            onClick={() => setDataOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c]"
-            aria-label="Редактировать"
-          >
-            <MaterialIcon name="edit" className="text-[20px]" />
-          </button>
+          editTarget && canEditMember(editTarget.id) ? (
+            <button
+              type="button"
+              onClick={() => setDataOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c]"
+              aria-label="Редактировать"
+            >
+              <MaterialIcon name="edit" className="text-[20px]" />
+            </button>
+          ) : null
         }
       />
       <div className="mx-auto max-w-2xl space-y-4 px-4 pb-4 pt-2">
@@ -257,8 +284,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             <div className="overflow-visible rounded-2xl bg-gradient-to-br from-[#004253] to-[#005b71] p-4 text-white shadow-lg">
               <div className="flex items-start gap-3">
                 {(() => {
-                  const url = selfProfile?.avatarUrl ?? viewer.avatarUrl ?? null;
-                  const displayName = selfProfile?.displayName ?? viewer.displayName;
+                  const url = editTarget?.avatarUrl ?? viewer.avatarUrl ?? null;
+                  const displayName = editTarget?.displayName ?? viewer.displayName;
                   return (
                     <div className="flex shrink-0 items-center justify-center">
                       <ProfileAvatar
@@ -273,8 +300,13 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-[#d4e6e9]">ID {clinical}</p>
                   <p className="font-manrope text-lg font-extrabold">
-                    {selfProfile?.displayName ?? viewer.displayName}
+                    {editTarget?.displayName ?? viewer.displayName}
                   </p>
+                  {editTarget && viewer && editTarget.id !== viewer.id ? (
+                    <p className="mt-0.5 text-[10px] text-[#b7eaff]/90">
+                      Активный профиль (анализы и расчёты) — не ваш аккаунт. Редактирование: админ семьи.
+                    </p>
+                  ) : null}
                   <p className="text-xs text-[#b7eaff]">
                     {age != null ? `${age} лет` : "Возраст не указан"} · Бишкек
                   </p>
@@ -315,23 +347,23 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                   icon: "height",
                   label: "Рост",
                   val:
-                    typeof selfProfile?.heightCm === "number"
-                      ? `${selfProfile.heightCm} см`
+                    typeof editTarget?.heightCm === "number"
+                      ? `${editTarget.heightCm} см`
                       : "—",
                 },
                 {
                   icon: "monitor_weight",
                   label: "Вес",
                   val:
-                    typeof selfProfile?.weightKg === "number"
-                      ? `${selfProfile.weightKg} кг`
+                    typeof editTarget?.weightKg === "number"
+                      ? `${editTarget.weightKg} кг`
                       : "—",
                 },
                 { icon: "monitor_heart", label: "BMI", val: bmiFromProfile ?? "—" },
                 {
                   icon: "bloodtype",
                   label: "Группа",
-                  val: selfProfile?.bloodType?.trim() || "—",
+                  val: editTarget?.bloodType?.trim() || "—",
                 },
               ].map((c) => (
                 <div
@@ -410,7 +442,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                           label={t(lang, "profile.copyId")}
                         />
                       </div>
-                      {canEditSex(p.id) ? (
+                      {canEditMember(p.id) ? (
                         <label className="mt-2 flex flex-col gap-0.5 text-[11px] text-[#40484c]">
                           <span>{t(lang, "profile.biologicalSex")}</span>
                           <select
@@ -446,17 +478,27 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
             <ul className="space-y-1 rounded-2xl border border-[#e7e8e9] bg-white p-2 shadow-sm">
               {[
-                { label: "Личные данные", onClick: () => setDataOpen(true) },
-                { label: "Уведомления", onClick: () => setNotifyOpen(true) },
-                { label: "Конфиденциальность", onClick: () => setPrivacyOpen(true) },
-                { label: "Язык", onClick: () => {} },
-                { label: "Поддержка", onClick: () => setSupportOpen(true) },
+                {
+                  label: "Личные данные",
+                  onClick: () => {
+                    if (editTarget && canEditMember(editTarget.id)) setDataOpen(true);
+                  },
+                  disabled: !editTarget || !canEditMember(editTarget.id),
+                },
+                { label: "Уведомления", onClick: () => setNotifyOpen(true), disabled: false },
+                { label: "Конфиденциальность", onClick: () => setPrivacyOpen(true), disabled: false },
+                { label: "Язык", onClick: () => {}, disabled: false },
+                { label: "Поддержка", onClick: () => setSupportOpen(true), disabled: false },
               ].map((item) => (
                 <li key={item.label}>
                   <button
                     type="button"
                     onClick={item.onClick}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#191c1d] hover:bg-[#f8f9fa]"
+                    disabled={"disabled" in item ? item.disabled : false}
+                    className={cn(
+                      "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm text-[#191c1d] hover:bg-[#f8f9fa]",
+                      "disabled" in item && item.disabled ? "cursor-not-allowed opacity-45 hover:bg-transparent" : "",
+                    )}
                   >
                     {item.label}
                     <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
@@ -486,10 +528,14 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
         </button>
       </BottomSheet>
 
-      <BottomSheet open={dataOpen} title="Личные данные" onClose={() => setDataOpen(false)}>
+      <BottomSheet
+        open={dataOpen}
+        title={editTarget ? `Данные: ${editTarget.displayName}` : "Личные данные"}
+        onClose={() => setDataOpen(false)}
+      >
         <p className="text-xs text-[#70787d]">
-          Данные сохраняются в профиль на сервере — одинаково в вебе и в Telegram. BMI считается из
-          роста и веса.
+          Сохраняется в профиль на сервере (веб и Telegram). BMI — из роста и веса. Чей профиль
+          редактируется, совпадает с активным в переключателе семьи на главной / анализах.
         </p>
         <div className="mt-3 space-y-2 rounded-xl bg-[#f3f4f5] p-3 pb-[calc(env(safe-area-inset-bottom,0px)+12px)]">
           <input

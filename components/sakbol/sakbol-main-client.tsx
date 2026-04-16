@@ -10,7 +10,6 @@ import { AnalysesTab } from "@/components/sakbol/tabs/analyses-tab";
 import { TrendsTab } from "@/components/sakbol/tabs/trends-tab";
 import { HomeTab } from "@/components/sakbol/tabs/home-tab";
 import { ProfileTabSakbol } from "@/components/sakbol/tabs/profile-tab-sakbol";
-import { RisksTab } from "@/components/sakbol/tabs/risks-tab";
 import { useTabApp } from "@/context/tab-app-context";
 import { useLanguage } from "@/context/language-context";
 import { useFamilyDefault } from "@/hooks/use-family-default";
@@ -22,14 +21,12 @@ function TabPanels({
   family,
   loading,
   reload,
-  analysesTick,
   bumpAnalyses,
   desktopWeb,
 }: {
   family: ReturnType<typeof useFamilyDefault>["family"];
   loading: boolean;
   reload: () => void;
-  analysesTick: number;
   bumpAnalyses: () => void;
   desktopWeb: boolean;
 }) {
@@ -70,13 +67,6 @@ function TabPanels({
                 }}
               />
             ) : null}
-            {tab === "risks" ? (
-              <RisksTab
-                family={family}
-                familyLoading={loading}
-                analysesRefreshKey={analysesTick}
-              />
-            ) : null}
             {tab === "ai" ? <AiTab /> : null}
             {tab === "profile" ? (
               <ProfileTabSakbol family={family} loading={loading} reload={reload} />
@@ -97,7 +87,7 @@ export function SakbolMainClient() {
   const { diaryOpen, tab } = useTabApp();
   const { lang } = useLanguage();
   const { family, loading, reload } = useFamilyDefault();
-  const { refreshKey: analysesTick, bumpAnalyses } = useAnalysesRefresh();
+  const { bumpAnalyses } = useAnalysesRefresh();
 
   const isDesktopWeb = device === "desktop-web";
 
@@ -106,7 +96,6 @@ export function SakbolMainClient() {
       family={family}
       loading={loading}
       reload={reload}
-      analysesTick={analysesTick}
       bumpAnalyses={bumpAnalyses}
       desktopWeb={isDesktopWeb}
     />

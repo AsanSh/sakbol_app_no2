@@ -347,7 +347,7 @@ export function HomeTabDesktop({
                 <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
                   <button
                     type="button"
-                    onClick={() => setTab("risks")}
+                    onClick={() => setTab("analyses")}
                     className="rounded-2xl bg-health-surface p-4 text-left shadow-md shadow-slate-900/[0.05] ring-1 ring-health-border/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -355,7 +355,7 @@ export function HomeTabDesktop({
                         Риски и профилактика
                       </p>
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-health-text-secondary">
-                        Обзор
+                        В анализах
                       </span>
                     </div>
                     <div className="mt-3 grid grid-cols-3 gap-2">

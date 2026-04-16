@@ -6,7 +6,6 @@ import {
   TrendingUp,
   Users,
   BotMessageSquare,
-  HeartPulse,
   Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -23,7 +22,6 @@ const ITEMS: NavItem[] = [
   { id: "trends", label: "Динамика", Icon: TrendingUp },
   { id: "profile", label: "Семья", Icon: Users },
   { id: "ai", label: "ИИ-врач", Icon: BotMessageSquare },
-  { id: "risks", label: "Риски", Icon: HeartPulse },
 ];
 
 /**

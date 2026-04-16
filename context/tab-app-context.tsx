@@ -12,9 +12,9 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export type MainTab = "home" | "analyses" | "trends" | "risks" | "ai" | "profile";
+export type MainTab = "home" | "analyses" | "trends" | "ai" | "profile";
 
-const VALID_TABS = new Set<string>(["home", "analyses", "trends", "risks", "ai", "profile"]);
+const VALID_TABS = new Set<string>(["home", "analyses", "trends", "ai", "profile"]);
 
 type TabAppContextValue = {
   tab: MainTab;
@@ -27,6 +27,7 @@ type TabAppContextValue = {
 const TabAppContext = createContext<TabAppContextValue | null>(null);
 
 function parseTab(raw: string | null): MainTab {
+  if (raw === "risks") return "home";
   if (raw && VALID_TABS.has(raw)) return raw as MainTab;
   return "home";
 }
