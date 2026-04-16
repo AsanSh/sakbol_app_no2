@@ -68,6 +68,7 @@ export async function POST() {
         avatarUrl: admin.avatarUrl,
         familyRole: admin.familyRole,
         familyId: admin.familyId,
+        needsPinCompletion: admin.pinAnchor == null,
       },
     });
     res.cookies.set(sessionCookieName(), token, sessionCookieOptions());

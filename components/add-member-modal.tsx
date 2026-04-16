@@ -24,6 +24,7 @@ export function AddMemberModal({ open, onClose, onCreated }: Props) {
   );
   const [dob, setDob] = useState("");
   const [biologicalSex, setBiologicalSex] = useState<BiologicalSex>(BiologicalSex.UNKNOWN);
+  const [pin, setPin] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -38,10 +39,12 @@ export function AddMemberModal({ open, onClose, onCreated }: Props) {
         managedRole,
         dateOfBirth: dob.trim() || null,
         biologicalSex,
+        pin,
       });
       if (res.ok) {
         setName("");
         setDob("");
+        setPin("");
         setManagedRole(ManagedRelationRole.CHILD);
         setBiologicalSex(BiologicalSex.UNKNOWN);
         onCreated();
@@ -127,6 +130,24 @@ export function AddMemberModal({ open, onClose, onCreated }: Props) {
           </div>
           <div>
             <label className="block text-xs font-medium text-emerald-900/80">
+              ПИН / ИНН (КР) — милдеттүү, 10–20 сан
+            </label>
+            <input
+              inputMode="numeric"
+              autoComplete="off"
+              className="mt-1 w-full rounded-xl border border-emerald-900/20 px-3 py-2 text-sm tracking-wider text-emerald-950 outline-none ring-emerald-600 focus-visible:ring-2"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 20))}
+              required
+              disabled={pending}
+              placeholder="Сан гана, пробелсиз"
+            />
+            <p className="mt-1 text-[10px] text-emerald-800/65">
+              Ачык ПИН сакталбайт — серверде гана корголгон идентификатор.
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-emerald-900/80">
               Туулган күнү (милдеттүү эмес)
             </label>
             <input
@@ -155,7 +176,7 @@ export function AddMemberModal({ open, onClose, onCreated }: Props) {
             </button>
             <button
               type="submit"
-              disabled={pending || !name.trim()}
+              disabled={pending || !name.trim() || pin.length < 10}
               className="rounded-xl bg-sakbol-cta px-4 py-2 text-sm font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05] disabled:opacity-50"
             >
               {pending ? "Сакталууда…" : "Кошуу"}

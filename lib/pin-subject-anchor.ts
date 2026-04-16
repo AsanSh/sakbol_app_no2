@@ -18,9 +18,27 @@
 
 import { createHmac } from "crypto";
 
-/** Убрать пробелы, привести к одному регистру цифр/латиницы по необходимости */
+/** Секрет для HMAC якоря ПИН. В production обязателен в env. */
+export function getPinAnchorPepper(): string {
+  const p = process.env.PIN_ANCHOR_PEPPER?.trim();
+  if (p && p.length >= 16) return p;
+  if (process.env.NODE_ENV !== "production") {
+    return "dev-only-pin-pepper-min16!!";
+  }
+  throw new Error("PIN_ANCHOR_PEPPER must be set (min 16 characters).");
+}
+
+/** Убрать пробелы; ПИН в КР обычно только цифры */
 export function normalizeKgPinInput(raw: string): string {
   return raw.replace(/\s+/g, "").trim();
+}
+
+/** Допустимая длина цифрового ПИН/ИНН (запас под разные форматы). */
+export function assertValidPinFormat(normalized: string): string | null {
+  if (!/^\d{10,20}$/.test(normalized)) {
+    return "ПИН/ИНН: введите от 10 до 20 цифр без пробелов.";
+  }
+  return null;
 }
 
 /**
@@ -34,4 +52,11 @@ export function pinAnchorFromNormalizedPin(normalizedPin: string, pepper: string
     throw new Error("PIN_ANCHOR_PEPPER must be set (min 16 chars)");
   }
   return createHmac("sha256", pepper).update(p, "utf8").digest("hex");
+}
+
+export function pinAnchorFromUserInput(rawPin: string): string {
+  const n = normalizeKgPinInput(rawPin);
+  const fmt = assertValidPinFormat(n);
+  if (fmt) throw new Error(fmt);
+  return pinAnchorFromNormalizedPin(n, getPinAnchorPepper());
 }

@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { FREE_MAX_PROFILES, getFamilyTier } from "@/lib/premium";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
 
 export type CreateManagedProfileInput = {
   displayName: string;
@@ -17,6 +18,8 @@ export type CreateManagedProfileInput = {
   dateOfBirth?: string | null;
   avatarUrl?: string | null;
   biologicalSex?: BiologicalSex;
+  /** ПИН/ИНН (КР), обязателен — на сервер сохраняется только HMAC-якорь */
+  pin: string;
 };
 
 export async function createManagedProfile(input: CreateManagedProfileInput) {
@@ -65,11 +68,30 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
     dateOfBirth = d;
   }
 
+  let pinAnchor: string;
+  try {
+    pinAnchor = pinAnchorFromUserInput(input.pin);
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Некорректный ПИН.",
+    };
+  }
+
+  const taken = await prisma.profile.findFirst({
+    where: { pinAnchor },
+    select: { id: true },
+  });
+  if (taken) {
+    return { ok: false as const, error: "Этот ПИН уже используется в системе." };
+  }
+
   const profile = await prisma.profile.create({
     data: {
       familyId: session.familyId,
       displayName: name,
       avatarUrl: input.avatarUrl?.trim() || null,
+      pinAnchor,
       isManaged: true,
       telegramUserId: null,
       familyRole: FamilyRole.MEMBER,

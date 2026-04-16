@@ -5,10 +5,12 @@ import { ActiveProfileProvider } from "@/context/active-profile-context";
 import { AnalysesRefreshProvider } from "@/context/analyses-refresh-context";
 import { LanguageProvider } from "@/context/language-context";
 import { TelegramSessionProvider } from "@/context/telegram-session-context";
+import { TelegramPinGates } from "@/components/telegram-pin-gates";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <TelegramSessionProvider>
+      <TelegramPinGates />
       <LanguageProvider>
         <AnalysesRefreshProvider>
           <ActiveProfileProvider>{children}</ActiveProfileProvider>

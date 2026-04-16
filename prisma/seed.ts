@@ -5,6 +5,10 @@ import {
   ManagedRelationRole,
   PrismaClient,
 } from "@prisma/client";
+import {
+  getPinAnchorPepper,
+  pinAnchorFromNormalizedPin,
+} from "../lib/pin-subject-anchor";
 
 const prisma = new PrismaClient();
 
@@ -21,6 +25,9 @@ async function main() {
     data: { name: "Demo үй-бүлө" },
   });
 
+  const adminPin = pinAnchorFromNormalizedPin("100000000100001", getPinAnchorPepper());
+  const childPin = pinAnchorFromNormalizedPin("100000000100002", getPinAnchorPepper());
+
   const admin = await prisma.profile.create({
     data: {
       familyId: family.id,
@@ -30,6 +37,7 @@ async function main() {
       isManaged: false,
       avatarUrl: null,
       biologicalSex: BiologicalSex.FEMALE,
+      pinAnchor: adminPin,
     },
   });
 
@@ -43,6 +51,7 @@ async function main() {
       managedRole: ManagedRelationRole.CHILD,
       dateOfBirth: new Date("2020-05-15"),
       biologicalSex: BiologicalSex.MALE,
+      pinAnchor: childPin,
     },
   });
 

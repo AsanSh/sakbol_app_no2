@@ -29,6 +29,9 @@ model Profile {
   telegramUserId String?    @unique
   avatarUrl      String?
 
+  /// HMAC-якорь ПИН/ИНН (КР); сырой ПИН в БД не хранится. Обязателен для всех профилей после миграции.
+  pinAnchor      String?    @unique
+
   isManaged      Boolean    @default(false)
   familyRole     FamilyRole @default(MEMBER)
 
