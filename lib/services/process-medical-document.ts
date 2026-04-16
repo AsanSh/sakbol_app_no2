@@ -108,14 +108,24 @@ function biomarkersFromLlmJsonText(text: string): ParsedBiomarker[] {
   return out;
 }
 
-/** Имена моделей для AI Studio REST v1beta (без префикса models/). */
+/**
+ * Имена моделей для AI Studio REST (без префикса models/).
+ * Порядок: сначала актуальные flash, затем стабильные версии с суффиксами.
+ */
 function geminiModelCandidates(): string[] {
   const fromEnv = process.env.GEMINI_MODEL?.trim();
   const fallbacks = [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
     "gemini-2.0-flash",
     "gemini-2.0-flash-001",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash-002",
     "gemini-1.5-flash-8b",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro-latest",
     "gemini-1.5-pro",
+    "gemini-1.5-pro-002",
   ];
   const raw = (fromEnv ? [fromEnv, ...fallbacks] : fallbacks).filter(Boolean);
   const seen = new Set<string>();
@@ -151,23 +161,30 @@ function humanizeGeminiFailureForUser(raw: string): string {
   if (/\b400\b|API key not valid|API_KEY_INVALID|invalid API key/i.test(t)) {
     return "Ключ GEMINI_API_KEY недействителен. Создайте новый в Google AI Studio и обновите переменную на сервере.";
   }
-  if (/\b404\b|NOT_FOUND|is not found for API version/i.test(t)) {
-    return "Указанная модель Gemini недоступна для этого ключа. Задайте GEMINI_MODEL вручную или обновите приложение (автовыбор моделей).";
+  if (/\b404\b|NOT_FOUND|is not found for API version|ни одна модель не подошла/i.test(t)) {
+    return [
+      "Ни одна из встроенных моделей Gemini не ответила для вашего ключа (404 или нет доступа).",
+      "Откройте Google AI Studio → раздел моделей, скопируйте точное имя (например gemini-2.5-flash) и задайте GEMINI_MODEL в .env / Vercel.",
+      "Список: https://ai.google.dev/gemini-api/docs/models",
+    ].join(" ");
   }
   return `Не удалось разобрать файл через Gemini. ${t.slice(0, 280)}${t.length > 280 ? "…" : ""}`;
 }
+
+const GEMINI_API_VERSIONS = ["v1beta", "v1"] as const;
 
 async function generateContentWithGeminiModel(
   model: string,
   buffer: Buffer,
   mimeType: string,
   key: string,
+  apiVersion: (typeof GEMINI_API_VERSIONS)[number],
 ): Promise<ParsedBiomarker[]> {
   const b64 = buffer.toString("base64");
   const userPrompt =
     "Чыгарып бер: лабораториялык көрсөткүчтөрдүн JSON массиви гана, башка текст жок.";
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${encodeURIComponent(model)}:generateContent`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": key },
@@ -188,7 +205,7 @@ async function generateContentWithGeminiModel(
 
   const bodyText = await res.text();
   if (!res.ok) {
-    throw new Error(`Gemini ${res.status} (${model}): ${bodyText.slice(0, 400)}`);
+    throw new Error(`Gemini ${res.status} [${apiVersion}/${model}]: ${bodyText.slice(0, 400)}`);
   }
 
   const json = JSON.parse(bodyText) as {
@@ -221,19 +238,21 @@ async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<Parsed
   const models = geminiModelCandidates();
   let lastErr = "";
   for (const model of models) {
-    try {
-      return await generateContentWithGeminiModel(model, buffer, mimeType, key);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      lastErr = msg;
-      if (shouldTryNextGeminiModel(msg)) {
-        continue;
+    for (const apiVersion of GEMINI_API_VERSIONS) {
+      try {
+        return await generateContentWithGeminiModel(model, buffer, mimeType, key, apiVersion);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        lastErr = msg;
+        if (shouldTryNextGeminiModel(msg)) {
+          continue;
+        }
+        throw e;
       }
-      throw e;
     }
   }
   throw new Error(
-    `Gemini: ни одна модель не подошла (${models.join(", ")}). Последняя ошибка: ${lastErr.slice(0, 280)}`,
+    `Gemini: ни одна модель не подошла (${models.join(", ")}; пробовали API v1beta и v1). Последняя ошибка: ${lastErr.slice(0, 320)}`,
   );
 }
 
