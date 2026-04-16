@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { askLabAssistantFromBook } from "@/app/actions/lab-assistant";
+import { useActiveProfile } from "@/context/active-profile-context";
 
 type Msg = { id: string; role: "user" | "assistant"; text: string; time: string };
 
@@ -19,6 +20,7 @@ function nowTime() {
 }
 
 export function AiTab() {
+  const { activeProfileId } = useActiveProfile();
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: "0",
@@ -40,14 +42,14 @@ export function AiTab() {
     setInput("");
 
     startTransition(async () => {
-      const res = await askLabAssistantFromBook(trimmed);
+      const res = await askLabAssistantFromBook(trimmed, activeProfileId);
       const reply = res.ok ? res.answer : res.error;
       setMessages((m) => [
         ...m,
         { id: crypto.randomUUID(), role: "assistant", text: reply, time: nowTime() },
       ]);
     });
-  }, [pending]);
+  }, [pending, activeProfileId]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -78,7 +80,9 @@ export function AiTab() {
                   Справочник Хиггинс
                 </span>
               </div>
-              <p className="text-xs text-[#70787d]">Поиск по книге на сервере, без облачного ИИ</p>
+              <p className="text-xs text-[#70787d]">
+                Поиск по книге; к запросу подмешивается последний анализ выбранного профиля (семья)
+              </p>
             </div>
           </div>
         </div>
