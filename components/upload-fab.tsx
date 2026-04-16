@@ -29,8 +29,8 @@ export function UploadFab({ onClick, mobileOnly = true }: Props) {
       whileTap={{ scale: 0.9 }}
       className={
         mobileOnly
-          ? "md:hidden fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#004253] to-[#00695c] text-white shadow-[0_6px_32px_rgba(0,66,83,0.4)] ring-2 ring-white/30"
-          : "fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#004253] to-[#00695c] text-white shadow-[0_6px_32px_rgba(0,66,83,0.4)] ring-2 ring-white/30 md:bottom-6 md:right-6"
+          ? "md:hidden fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-sakbol-cta text-white shadow-cta-coral ring-2 ring-white/40 transition-[filter] hover:brightness-[1.06] active:brightness-[0.97]"
+          : "fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-sakbol-cta text-white shadow-cta-coral ring-2 ring-white/40 transition-[filter] hover:brightness-[1.06] active:brightness-[0.97] md:bottom-6 md:right-6"
       }
     >
       {/* Пульсирующее кольцо */}

@@ -22,6 +22,16 @@ export default {
       animation: {
         "sakbol-scan": "sakbol-scan 2.1s ease-in-out infinite",
       },
+      backgroundImage: {
+        /** Основной CTA: изумруд → коралл, без заливки всего экрана */
+        "sakbol-cta":
+          "linear-gradient(105deg, #004253 0%, #0d6b5c 52%, #cf5f52 100%)",
+        "sakbol-cta-soft":
+          "linear-gradient(105deg, #005b71 0%, #1a7a6a 45%, #e07a6f 100%)",
+      },
+      boxShadow: {
+        "cta-coral": "0 10px 28px -6px rgba(207, 95, 82, 0.35), 0 4px 12px -4px rgba(0, 66, 83, 0.2)",
+      },
       colors: {
         emerald: {
           50: "#e8f5f3",
@@ -48,8 +58,12 @@ export default {
           DEFAULT: "#FFC107",
         },
         coral: {
-          DEFAULT: "#F28B82",
+          DEFAULT: "#E86B5E",
+          /** Акцент для CTA / hover */
+          deep: "#c75a52",
           soft: "#F28B82",
+          /** Лёгкий фон под коралловые блоки */
+          mist: "#fde8e5",
         },
         sakbol: {
           primary: "#004253",

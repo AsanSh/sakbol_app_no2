@@ -392,7 +392,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
         </p>
         <button
           type="button"
-          className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#004253] to-[#005b71] py-3 font-semibold text-white"
+          className="mt-4 w-full rounded-xl bg-sakbol-cta py-3 font-semibold text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.04]"
         >
           Активировать
         </button>

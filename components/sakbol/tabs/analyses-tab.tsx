@@ -24,7 +24,7 @@ export function AnalysesTab({ onAnalysesChanged }: Props) {
           <button
             type="button"
             onClick={() => setUploadSignal((n) => n + 1)}
-            className="rounded-full bg-gradient-to-r from-[#004253] to-[#005b71] px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm"
+            className="rounded-full bg-sakbol-cta px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm shadow-coral/30"
           >
             + Загрузить
           </button>

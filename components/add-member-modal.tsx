@@ -156,7 +156,7 @@ export function AddMemberModal({ open, onClose, onCreated }: Props) {
             <button
               type="submit"
               disabled={pending || !name.trim()}
-              className="rounded-xl bg-emerald-900 px-4 py-2 text-sm font-medium text-mint disabled:opacity-50"
+              className="rounded-xl bg-sakbol-cta px-4 py-2 text-sm font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05] disabled:opacity-50"
             >
               {pending ? "Сакталууда…" : "Кошуу"}
             </button>

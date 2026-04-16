@@ -52,7 +52,7 @@ export function PaywallModal({
               type="button"
               disabled={phase === "paying"}
               onClick={() => void payMbank()}
-              className="w-full rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-900 px-4 py-3.5 text-sm font-semibold text-mint shadow-lg transition-opacity hover:opacity-95 disabled:opacity-50"
+              className="w-full rounded-2xl bg-sakbol-cta px-4 py-3.5 text-sm font-semibold text-white shadow-cta-coral transition-[filter] hover:brightness-[1.05] disabled:opacity-50"
             >
               {phase === "paying" ? t(lang, "paywall.paying") : t(lang, "paywall.mbank")}
             </button>

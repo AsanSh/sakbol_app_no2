@@ -460,7 +460,7 @@ export function HealthDiaryScreen() {
                 setMoodSaved(true);
                 window.setTimeout(() => setMoodSaved(false), 2000);
               }}
-              className="w-full rounded-xl bg-gradient-to-r from-[#004253] to-[#005b71] py-3 font-semibold text-white"
+              className="w-full rounded-xl bg-sakbol-cta py-3 font-semibold text-white shadow-sm shadow-coral/30 transition-[filter] hover:brightness-[1.04]"
             >
               {moodSaved ? "Сохранено ✓" : "Сохранить заметку"}
             </button>

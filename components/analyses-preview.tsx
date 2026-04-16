@@ -132,7 +132,9 @@ export function AnalysesPreview({
 
   return (
     <section className="rounded-2xl border border-emerald-200/90 bg-white p-4 shadow-md shadow-emerald-900/[0.06] ring-1 ring-emerald-100/80 backdrop-blur-sm">
-      <h2 className="text-sm font-semibold text-emerald-950">{t(lang, "analyses.title")}</h2>
+      <h2 className="border-l-4 border-coral pl-3 text-sm font-semibold text-emerald-950">
+        {t(lang, "analyses.title")}
+      </h2>
       <p className="mt-0.5 text-xs text-emerald-700/75">{t(lang, "analyses.subtitle")}</p>
       <p className="mt-1 text-[10px] leading-snug text-emerald-600/70">{t(lang, "analyses.labsBrands")}</p>
 
@@ -181,7 +183,7 @@ export function AnalysesPreview({
             <button
               type="button"
               onClick={onRequestUpload}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#004253] to-[#005b71] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-emerald-900/20"
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-sakbol-cta px-6 py-3 text-sm font-semibold text-white shadow-cta-coral transition-[filter] hover:brightness-[1.04] active:brightness-[0.98]"
             >
               <PlusCircle size={16} strokeWidth={2} aria-hidden />
               {t(lang, "tests.uploadBig")}
@@ -355,7 +357,7 @@ export function AnalysesPreview({
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        className="rounded-lg bg-emerald-900 px-3 py-1.5 text-xs font-medium text-mint"
+                        className="rounded-lg bg-sakbol-cta px-3 py-1.5 text-xs font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05]"
                         onClick={async () => {
                           const res = await createShareToken(a.id);
                           if (!res.ok) return;

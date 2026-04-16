@@ -108,7 +108,9 @@ export function HomeTab({ family }: Props) {
 
       {profiles.length > 0 ? (
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-          <p className="mb-2 text-xs font-semibold text-[#40484c]">Семья</p>
+          <p className="mb-2 border-l-4 border-coral pl-2 text-xs font-semibold text-[#40484c]">
+            Семья
+          </p>
           <div className="flex gap-3 overflow-x-auto px-1 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {profiles.map((p, i) => {
               const active = p.id === activeProfileId;
@@ -160,7 +162,7 @@ export function HomeTab({ family }: Props) {
         whileTap={{ scale: 0.97 }}
         type="button"
         onClick={() => setScoreSheetOpen(true)}
-        className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-[#004253] to-[#005b71] p-4 text-left text-white shadow-md"
+        className="relative w-full overflow-hidden rounded-2xl bg-sakbol-cta p-4 text-left text-white shadow-cta-coral"
       >
         <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute bottom-0 right-12 h-16 w-16 rounded-full bg-[#8dd0e9]/20" />

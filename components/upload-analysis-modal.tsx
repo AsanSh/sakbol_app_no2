@@ -254,7 +254,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
           </button>
           <button
             type="button"
-            className="rounded-xl bg-emerald-900 px-4 py-2 text-sm font-medium text-mint disabled:opacity-45"
+            className="rounded-xl bg-sakbol-cta px-4 py-2 text-sm font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05] disabled:opacity-45"
             disabled={phase !== "anonymized" || !maskedBlob}
             onClick={() => void submit()}
           >
