@@ -534,7 +534,12 @@ export function AnalysesPreview({
                       </p>
                     )}
 
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div
+                      className={cn(
+                        "mt-3 flex flex-wrap gap-2",
+                        !compact && "pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] sm:pb-2",
+                      )}
+                    >
                       <button
                         type="button"
                         className="rounded-lg bg-health-primary px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-teal-700"
