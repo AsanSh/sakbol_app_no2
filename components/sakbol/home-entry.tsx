@@ -1,8 +1,26 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { SakbolLanding } from "@/components/sakbol/sakbol-landing";
 import { SakbolMainClient } from "@/components/sakbol/sakbol-main-client";
 import { useTelegramSession } from "@/context/telegram-session-context";
+import { clientLooksLikeTelegramWebApp } from "@/lib/client-twa-detection";
+
+function subscribeNoop() {
+  return () => {};
+}
+
+function snapshotLooksLikeTwa() {
+  return clientLooksLikeTelegramWebApp();
+}
+
+function serverSnapshotTwa() {
+  return false;
+}
+
+function useHydratedLooksLikeTwa() {
+  return useSyncExternalStore(subscribeNoop, snapshotLooksLikeTwa, serverSnapshotTwa);
+}
 
 /**
  * Главная «/»: для гостя — посадочная с описанием сервиса; после входа — полное приложение.
@@ -10,6 +28,7 @@ import { useTelegramSession } from "@/context/telegram-session-context";
  */
 export function HomeEntry() {
   const { authReady, isAuthenticated, state } = useTelegramSession();
+  const looksLikeTwa = useHydratedLooksLikeTwa();
 
   if (!authReady) {
     return (
@@ -31,6 +50,9 @@ export function HomeEntry() {
   }
 
   if (state.status === "unauthenticated" && state.reason === "telegram_init_data_missing") {
+    if (!looksLikeTwa) {
+      return <SakbolLanding />;
+    }
     return <SakbolMainClient />;
   }
 

@@ -84,8 +84,8 @@ function LoginPageContent() {
           <SakbolMark size="lg" className="ring-[#004253]/20 shadow-md" />
           <h1 className="mt-4 font-manrope text-2xl font-extrabold text-[#004253]">{APP_NAME}</h1>
           <p className="mt-2 text-sm text-slate-600">
-            Кирүү үчүн Telegram аркылуу атыңызды ырастаңыз. Браузерде демо-профиль автоматтык түрдө
-            ачылбайт.
+            Вход в веб-версию: подтвердите аккаунт кнопкой ниже — вы остаётесь на этом сайте. Это не открытие
+            мини-приложения в Telegram, а обычная авторизация для браузера.
           </p>
         </div>
 
@@ -102,11 +102,11 @@ function LoginPageContent() {
           {botUser && widgetAuthUrl ? (
             <div className="flex flex-col gap-3 rounded-2xl border border-[#229ED9]/35 bg-gradient-to-b from-[#229ED9]/[0.07] to-white p-4 shadow-sm">
               <p className="text-center text-sm font-semibold text-[#004253]">
-                Вход в браузере
+                Вход на сайте (веб)
               </p>
               <p className="text-center text-[11px] leading-relaxed text-slate-600">
-                Кирүү үчүн төмөнкү баскычты басыңыз — сиз ушул бетте калып, Telegram каттоосу аркылуу
-                киресиз (келечекте колдонмо ачылбайт). / Нажмите кнопку ниже — вы останетесь на сайте.
+                Нажмите кнопку Telegram — откроется подтверждение; после успеха вы снова на этой вкладке,
+                в веб-версии сервиса.
               </p>
               <div className="flex min-h-[44px] w-full items-center justify-center [&_iframe]:rounded-xl">
                 <Script
@@ -123,17 +123,23 @@ function LoginPageContent() {
           ) : null}
 
           {tgUrl && botUser ? (
-            <div className="space-y-2 border-t border-slate-100 pt-4">
-              <p className="text-center text-[11px] font-medium text-slate-500">
-                Другие варианты / Башка жолдор
+            <details className="group space-y-2 border-t border-slate-100 pt-4">
+              <summary className="cursor-pointer list-none text-center text-[11px] font-medium text-slate-500 marker:content-none [&::-webkit-details-marker]:hidden">
+                <span className="underline decoration-slate-300 underline-offset-2 group-open:no-underline">
+                  Не сработал виджет — открыть Telegram (не веб-вход)
+                </span>
+              </summary>
+              <p className="text-center text-[10px] text-slate-500">
+                Для полноценного веб-входа используйте кнопку выше. Ниже — если нужен чат с ботом или вход
+                через клиент Telegram.
               </p>
               <a
                 href={`https://web.telegram.org/k/#@${botUser}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex w-full max-w-xs mx-auto items-center justify-center rounded-2xl border-2 border-[#229ED9] bg-white px-4 py-3 text-sm font-semibold text-[#229ED9] shadow-sm transition-colors hover:bg-[#229ED9]/5"
+                className="flex w-full max-w-xs mx-auto items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-[#229ED9] shadow-sm transition-colors hover:bg-slate-50"
               >
-                Telegram Web (браузер)
+                Telegram Web
               </a>
               <motion.a
                 href={tgUrl}
@@ -143,12 +149,12 @@ function LoginPageContent() {
                 className="flex w-full max-w-xs mx-auto items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
               >
                 <Send className="h-5 w-5 shrink-0 text-[#229ED9]" strokeWidth={2} aria-hidden />
-                Приложение Telegram / t.me
+                Открыть бота (t.me)
               </motion.a>
               <p className="text-center text-[10px] text-slate-400">
-                Ссылка t.me часто открывает установленный Telegram, а не вкладку браузера.
+                t.me часто открывает приложение Telegram, а не страницу входа на сайте.
               </p>
-            </div>
+            </details>
           ) : !tgUrl ? (
             <p className="rounded-xl bg-amber-50 px-3 py-2 text-center text-xs text-amber-900">
               Коюм: <code className="font-mono">NEXT_PUBLIC_TELEGRAM_BOT_USERNAME</code> (боттун
@@ -157,8 +163,8 @@ function LoginPageContent() {
           ) : null}
 
           <p className="text-center text-[11px] text-slate-500">
-            Мини-апп: ботто ачылгандан кийин сессия ушул браузерге жайгашат. Кирүү үчүн алгач жогорудагы
-            виджетти колдонуңуз.
+            Если вы уже пользуетесь мини-приложением в Telegram, сессия может подтянуться в этот браузер
+            после входа через виджет. Для веб-версии начните с кнопки выше.
           </p>
 
           {showDevLogin ? (

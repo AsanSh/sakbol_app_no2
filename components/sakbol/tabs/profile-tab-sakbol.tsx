@@ -426,19 +426,20 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             <p className="font-medium">{t(lang, "dashboard.authTitle")}</p>
             <p className="mt-1 text-xs text-[#693c08]">
               {state.status === "unauthenticated" && state.reason === "web_login_required"
-                ? "Кирүү үчүн /login бетин ачыңыз же Telegram аркылуу кирүү."
+                ? "Откройте страницу входа на сайте — веб-версия, подтверждение через виджет."
                 : state.status === "unauthenticated" && state.reason === "no_init_data"
                   ? t(lang, "dashboard.authBodyNoTg")
                   : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
-                    ? t(lang, "dashboard.authTelegramRetry")
+                    ? `${t(lang, "dashboard.authTelegramRetry")} Либо войдите через сайт в браузере.`
                     : t(lang, "dashboard.authBody")}
             </p>
-            {state.status === "unauthenticated" && state.reason === "web_login_required" ? (
+            {state.status === "unauthenticated" &&
+            (state.reason === "web_login_required" || state.reason === "telegram_init_data_missing") ? (
               <Link
                 href="/login"
                 className="mt-3 inline-flex rounded-xl bg-[#5c3200] px-4 py-2 text-xs font-semibold text-[#ffead4]"
               >
-                Кирүү
+                Войти на сайте
               </Link>
             ) : null}
             {state.status === "unauthenticated" &&

@@ -79,18 +79,23 @@ export function HomeTabDesktop({
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pb-4 pt-1">
           {authReady && !isAuthenticated ? (
             <div className="shrink-0 rounded-2xl bg-amber-50/95 px-4 py-3 text-sm text-amber-950 shadow-sm ring-1 ring-amber-200/80">
-              <p className="font-semibold tracking-tight">Вход</p>
+              <p className="font-semibold tracking-tight">Нужен вход</p>
               <p className="mt-1 text-caption text-amber-900/90">
                 {state.status === "unauthenticated" && state.reason === "web_login_required"
-                  ? "Откройте /login или Telegram."
-                  : "Требуется авторизация."}
+                  ? "Сессия в этом браузере не найдена. Откройте страницу входа — веб-версия на сайте."
+                  : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
+                    ? "Мини-приложение: закройте и откройте снова из бота. Или войдите через сайт в браузере."
+                    : state.status === "unauthenticated" && state.reason === "no_init_data"
+                      ? "Откройте сервис в Telegram или используйте dev-вход на /login."
+                      : "Требуется авторизация."}
               </p>
-              {state.status === "unauthenticated" && state.reason === "web_login_required" ? (
+              {state.status === "unauthenticated" &&
+              (state.reason === "web_login_required" || state.reason === "telegram_init_data_missing") ? (
                 <Link
                   href="/login"
                   className="mt-3 inline-flex rounded-xl bg-health-text px-4 py-2 text-caption font-semibold text-health-surface"
                 >
-                  Кирүү
+                  Войти на сайте
                 </Link>
               ) : null}
             </div>

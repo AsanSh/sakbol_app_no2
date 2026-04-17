@@ -135,22 +135,23 @@ export function HomeTab({ family, reloadFamily }: Props) {
       >
       {authReady && !isAuthenticated ? (
         <div className="rounded-2xl bg-amber-50/95 px-4 py-3 text-sm text-amber-950 shadow-sm ring-1 ring-amber-200/80">
-          <p className="font-semibold">Вход через Telegram Mini App</p>
+          <p className="font-semibold">Нужен вход</p>
           <p className="mt-1 text-caption text-amber-900/90">
             {state.status === "unauthenticated" && state.reason === "web_login_required"
-              ? "Сессия в браузере жок. Кирүү үчүн /login бетин ачыңыз же Telegram аркылуу кирүү."
+              ? "Сессия в этом браузере не найдена. Откройте страницу входа на сайте — веб-версия, без мини-приложения."
               : state.status === "unauthenticated" && state.reason === "no_init_data"
                 ? "Откройте приложение в Telegram. Демо-вход в браузере: ALLOW_DEV_LOGIN на сервере и кнопка на /login."
                 : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
-                  ? "Закройте мини-приложение полностью и откройте снова из бота."
+                  ? "Если вы в мини-приложении Telegram — полностью закройте его и откройте снова из бота. Либо войдите через сайт в браузере (кнопка ниже)."
                   : "Требуется авторизация для загрузки анализов и семейного профиля. Проверьте TELEGRAM_BOT_TOKEN, SESSION_SECRET и DATABASE_URL на сервере."}
           </p>
-          {state.status === "unauthenticated" && state.reason === "web_login_required" ? (
+          {state.status === "unauthenticated" &&
+          (state.reason === "web_login_required" || state.reason === "telegram_init_data_missing") ? (
             <Link
               href="/login"
               className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-health-text px-4 py-2 text-caption font-semibold text-health-surface"
             >
-              Страница входа
+              Войти на сайте
             </Link>
           ) : null}
           {state.status === "unauthenticated" &&
