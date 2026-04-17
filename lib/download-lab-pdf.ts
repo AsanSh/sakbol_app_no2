@@ -63,7 +63,7 @@ export async function downloadLabPdfClient(recordId: string): Promise<{ ok: true
     }
     if (res.status === 401) {
       message =
-        "Нужна сессия в этом браузере. Откройте сайт, войдите через Telegram (виджет на странице входа) или откройте мини-апп.";
+        "Нужна сессия в этом браузере. Войдите на сайте (код из Telegram или email) или откройте мини-приложение.";
     }
     return { ok: false, error: message };
   }

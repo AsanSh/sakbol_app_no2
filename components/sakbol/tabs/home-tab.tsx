@@ -138,7 +138,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
           <p className="font-semibold">Нужен вход</p>
           <p className="mt-1 text-caption text-amber-900/90">
             {state.status === "unauthenticated" && state.reason === "web_login_required"
-              ? "Сессия в этом браузере не найдена. Откройте страницу входа на сайте — веб-версия, без мини-приложения."
+              ? "Сессия в этом браузере не найдена. Откройте страницу входа: код из Telegram или email и пароль."
               : state.status === "unauthenticated" && state.reason === "no_init_data"
                 ? "Откройте приложение в Telegram. Демо-вход в браузере: ALLOW_DEV_LOGIN на сервере и кнопка на /login."
                 : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"

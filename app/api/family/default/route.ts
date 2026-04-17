@@ -21,6 +21,7 @@ export async function GET() {
             id: true,
             displayName: true,
             avatarUrl: true,
+            email: true,
             familyRole: true,
             isManaged: true,
             telegramUserId: true,

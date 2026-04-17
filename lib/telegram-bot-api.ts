@@ -45,3 +45,21 @@ export async function telegramSendOtpMessage(
   }
   return { ok: true };
 }
+
+export async function telegramSendPlainMessage(
+  chatId: string,
+  text: string,
+): Promise<{ ok: true } | { ok: false; description: string }> {
+  const j = await tgCall<unknown>("sendMessage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+    }),
+  });
+  if (!j.ok) {
+    return { ok: false, description: j.description ?? "sendMessage failed" };
+  }
+  return { ok: true };
+}

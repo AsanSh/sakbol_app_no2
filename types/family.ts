@@ -4,6 +4,7 @@ export type ProfileSummary = {
   id: string;
   displayName: string;
   avatarUrl: string | null;
+  email: string | null;
   familyRole: FamilyRole;
   isManaged: boolean;
   telegramUserId: string | null;

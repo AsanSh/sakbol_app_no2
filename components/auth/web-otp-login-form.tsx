@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { EmailAuthPanel } from "@/components/auth/email-auth-panel";
 import { SakbolMark } from "@/components/sakbol/sakbol-mark";
 import { APP_NAME } from "@/constants";
 import { useTelegramSession } from "@/context/telegram-session-context";
@@ -22,6 +23,7 @@ export function WebOtpLoginForm({ urlBannerError }: Props) {
   const [devBusy, setDevBusy] = useState(false);
   const [devErr, setDevErr] = useState<string | null>(null);
   const showDevLogin = process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true";
+  const [authMode, setAuthMode] = useState<"otp" | "email">("otp");
 
   const requestCode = useCallback(async () => {
     setErr(null);
@@ -106,9 +108,32 @@ export function WebOtpLoginForm({ urlBannerError }: Props) {
           Вход с сайта
         </p>
         <p className="mt-2 text-sm text-slate-600">
-          Введите ваш Telegram (@username или числовой id). Одноразовый код придёт в чат с ботом — откройте
-          бота и нажмите <span className="font-medium">Start</span>, если ещё не нажимали.
+          Один аккаунт в базе: войдите по коду из Telegram (если уже регистрировались в боте) или по email и
+          паролю.
         </p>
+      </div>
+
+      <div className="mt-4 flex rounded-xl bg-slate-100 p-1 text-[11px] font-semibold">
+        <button
+          type="button"
+          className={`flex-1 rounded-lg py-2 ${authMode === "otp" ? "bg-white shadow-sm text-[#004253]" : "text-slate-600"}`}
+          onClick={() => {
+            setAuthMode("otp");
+            setErr(null);
+          }}
+        >
+          Код в Telegram
+        </button>
+        <button
+          type="button"
+          className={`flex-1 rounded-lg py-2 ${authMode === "email" ? "bg-white shadow-sm text-[#004253]" : "text-slate-600"}`}
+          onClick={() => {
+            setAuthMode("email");
+            setErr(null);
+          }}
+        >
+          Email и пароль
+        </button>
       </div>
 
       {urlBannerError ? (
@@ -123,6 +148,13 @@ export function WebOtpLoginForm({ urlBannerError }: Props) {
       ) : null}
 
       <div className="mt-6 space-y-4">
+        {authMode === "email" ? (
+          <EmailAuthPanel />
+        ) : (
+          <>
+        <p className="text-center text-[11px] text-slate-500">
+          Telegram: @username или id. Бот должен быть открыт и нажат Start.
+        </p>
         <label className="block text-left text-xs font-medium text-slate-600">
           Telegram
           <input
@@ -184,6 +216,8 @@ export function WebOtpLoginForm({ urlBannerError }: Props) {
             >
               Другой Telegram / новый код (не чаще раза в минуту)
             </button>
+          </>
+        )}
           </>
         )}
 

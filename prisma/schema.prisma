@@ -25,6 +25,10 @@ model Profile {
   family         Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   displayName    String
+  /// Вход с сайта без Telegram; уникален среди заполненных.
+  email          String?    @unique
+  /// scrypt-хеш пароля (только для email-аккаунтов).
+  passwordHash   String?
   /// Set when the person uses the Telegram Mini App; null for managed relatives.
   telegramUserId String?    @unique
   avatarUrl      String?
@@ -47,12 +51,27 @@ model Profile {
 
   healthRecords  HealthRecord[]
   medications   Medication[]
+  telegramLinkCodes TelegramLinkCode[]
 
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
   @@index([familyId])
   @@index([familyId, familyRole])
+}
+
+/// Временный код: веб «Привязать Telegram» → пользователь /start КОД у бота.
+model TelegramLinkCode {
+  id         String    @id @default(cuid())
+  profileId  String
+  profile    Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  code       String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([code, expiresAt])
+  @@index([profileId, createdAt])
 }
 
 model HealthRecord {

@@ -82,7 +82,7 @@ export function HomeTabDesktop({
               <p className="font-semibold tracking-tight">Нужен вход</p>
               <p className="mt-1 text-caption text-amber-900/90">
                 {state.status === "unauthenticated" && state.reason === "web_login_required"
-                  ? "Сессия в этом браузере не найдена. Откройте страницу входа — веб-версия на сайте."
+                  ? "Сессия не найдена. Откройте вход: код из Telegram или email и пароль."
                   : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
                     ? "Мини-приложение: закройте и откройте снова из бота. Или войдите через сайт в браузере."
                     : state.status === "unauthenticated" && state.reason === "no_init_data"

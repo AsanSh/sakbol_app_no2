@@ -13,6 +13,7 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
     ...f,
     profiles: f.profiles.map((p) => ({
       ...p,
+      email: p.email ?? null,
       biologicalSex: p.biologicalSex ?? BiologicalSex.UNKNOWN,
       dateOfBirth:
         p.dateOfBirth == null

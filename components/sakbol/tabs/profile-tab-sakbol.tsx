@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
 import { ChevronDown } from "lucide-react";
+import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -329,6 +330,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const viewer = state.status === "authenticated" ? state.viewer : null;
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
   const viewerOwnProfile = viewer ? family?.profiles.find((p) => p.id === viewer.id) : null;
+  const sessionProfile =
+    viewer && family?.profiles ? (family.profiles.find((p) => p.id === viewer.id) ?? null) : null;
 
   const editTarget = useMemo(() => {
     if (!family?.profiles?.length || !viewer) return null;
@@ -426,7 +429,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             <p className="font-medium">{t(lang, "dashboard.authTitle")}</p>
             <p className="mt-1 text-xs text-[#693c08]">
               {state.status === "unauthenticated" && state.reason === "web_login_required"
-                ? "Откройте страницу входа на сайте — веб-версия, подтверждение через виджет."
+                ? "Откройте страницу входа: код из Telegram или email и пароль."
                 : state.status === "unauthenticated" && state.reason === "no_init_data"
                   ? t(lang, "dashboard.authBodyNoTg")
                   : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
@@ -496,6 +499,10 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 </div>
               </div>
             </div>
+
+            {sessionProfile && !sessionProfile.telegramUserId ? (
+              <LinkTelegramCard onReload={() => reload()} />
+            ) : null}
 
             <button
               type="button"
