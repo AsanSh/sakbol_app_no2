@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, ArrowRight, Bot, HeartPulse, Shield, TrendingUp, Users } from "lucide-react";
+import { Activity, ArrowRight, Bot, HeartPulse, Send, Shield, TrendingUp, Users } from "lucide-react";
 import { SakbolMark } from "@/components/sakbol/sakbol-mark";
 import { APP_NAME } from "@/constants";
 import { cn } from "@/lib/utils";
+import { telegramMiniAppStartUrlFromEnv } from "@/lib/telegram-public-urls";
 
 const FEATURES = [
   {
@@ -31,6 +32,8 @@ const FEATURES = [
 ];
 
 export function SakbolLanding() {
+  const telegramAppUrl = telegramMiniAppStartUrlFromEnv();
+
   return (
     <div className="min-h-dvh bg-gradient-to-b from-health-bg via-teal-50/30 to-health-bg">
       <header className="sticky top-0 z-30 border-b border-health-border/70 bg-health-surface/90 backdrop-blur-md">
@@ -48,7 +51,7 @@ export function SakbolLanding() {
             href="/login"
             className="shrink-0 rounded-full bg-health-primary px-4 py-2 text-caption font-semibold text-white shadow-md shadow-teal-900/15 transition-colors hover:bg-teal-700"
           >
-            Войти
+            Вход с сайта
           </Link>
         </div>
       </header>
@@ -67,18 +70,28 @@ export function SakbolLanding() {
             Понятный сервис для анализов и динамики показателей всей семьи
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-body leading-relaxed text-health-text-secondary">
-            {APP_NAME} — веб-сервис для расшифровок и динамики показателей семьи. Загрузка PDF и фото,
-            несколько профилей, ориентиры по анализам. Вход с этого сайта — на странице «Войти»: вы остаётесь
-            в браузере, подтверждение через виджет Telegram (как веб-вход, не мини-приложение).
+            {APP_NAME} — веб-сервис для расшифровок и динамики показателей семьи. В браузере вход по
+            одноразовому коду из чата с ботом; в Telegram — отдельно, через мини-приложение бота.
           </p>
           <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/login"
               className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-health-primary px-6 py-3 text-caption font-semibold text-white shadow-lg shadow-teal-900/20 transition-colors hover:bg-teal-700"
             >
-              Войти или зарегистрироваться на сайте
+              Вход с сайта (браузер)
               <ArrowRight className="h-4 w-4" strokeWidth={2.25} aria-hidden />
             </Link>
+            {telegramAppUrl ? (
+              <a
+                href={telegramAppUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border-2 border-health-border bg-health-surface px-6 py-3 text-caption font-semibold text-health-text shadow-sm transition-colors hover:bg-teal-50/80"
+              >
+                <Send className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+                Вход в приложении Telegram
+              </a>
+            ) : null}
           </div>
         </motion.section>
 
@@ -122,9 +135,8 @@ export function SakbolLanding() {
             <div>
               <h3 className="font-manrope text-sm font-bold text-health-text">Платформа</h3>
               <p className="mt-2 text-caption leading-relaxed text-health-text-secondary">
-                Основной сценарий — браузер на телефоне или компьютере. Та же учётная запись доступна и в
-                мини-приложении Telegram, если вы откроете его из бота; для первого знакомства удобнее зайти
-                с сайта.
+                Сайт и Telegram — одна учётная запись, но разные экраны входа: в браузере откройте «Вход с
+                сайта», в Telegram — кнопку «Вход в приложении Telegram» выше или меню бота.
               </p>
             </div>
           </div>

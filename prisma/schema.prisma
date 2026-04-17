@@ -99,6 +99,20 @@ model ShareToken {
   @@index([token, expiresAt])
 }
 
+/// Одноразовый код для входа с сайта (отправляется в Telegram через бота).
+model WebOtpChallenge {
+  id             String    @id @default(cuid())
+  telegramUserId String
+  codeHash       String
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  attempts       Int       @default(0)
+  createdAt      DateTime  @default(now())
+
+  @@index([telegramUserId, createdAt])
+  @@index([expiresAt])
+}
+
 model Medication {
   id         String   @id @default(cuid())
   profileId  String

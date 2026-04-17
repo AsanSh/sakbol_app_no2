@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { hasTelegramWebAppBridge } from "@/lib/client-twa-detection";
 
 export type TelegramViewer = {
   id: string;
@@ -110,6 +111,23 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
     async function authenticate() {
       setState({ status: "loading" });
       pendingInitDataRef.current = null;
+
+      /** Обычный браузер (Chrome, Safari): без моста Telegram не трогаем SDK — только cookie-сессия. */
+      if (typeof window !== "undefined" && !hasTelegramWebAppBridge()) {
+        const sessionRes = await fetch("/api/auth/session", { credentials: "same-origin" });
+        if (cancelled) return;
+        if (sessionRes.ok) {
+          const data = (await sessionRes.json()) as { profile: TelegramViewer };
+          setState({ status: "authenticated", viewer: data.profile });
+          setAuthReady(true);
+          return;
+        }
+        if (!cancelled) {
+          setState({ status: "unauthenticated", reason: "web_login_required" });
+          setAuthReady(true);
+        }
+        return;
+      }
 
       type WebAppType = Awaited<typeof import("@twa-dev/sdk")>["default"];
       let WebApp: WebAppType | null = null;
