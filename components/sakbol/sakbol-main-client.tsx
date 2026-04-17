@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { BottomTabBar } from "@/components/sakbol/bottom-tab-bar";
 import { SakbolDesktopSidebar } from "@/components/sakbol/sakbol-desktop-sidebar";
-import { HealthDiaryScreen } from "@/components/sakbol/health-diary-screen";
 import { AiTab } from "@/components/sakbol/tabs/ai-tab";
 import { AnalysesTab } from "@/components/sakbol/tabs/analyses-tab";
 import { TrendsTab } from "@/components/sakbol/tabs/trends-tab";
@@ -30,13 +29,13 @@ function TabPanels({
   bumpAnalyses: () => void;
   desktopWeb: boolean;
 }) {
-  const { tab, diaryOpen } = useTabApp();
-  const homeOneScreen = desktopWeb && !diaryOpen && tab === "home";
+  const { tab } = useTabApp();
+  const homeOneScreen = desktopWeb && tab === "home";
 
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key={diaryOpen ? "diary" : tab}
+        key={tab}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
@@ -46,34 +45,28 @@ function TabPanels({
           homeOneScreen ? "overflow-hidden" : "overflow-y-auto",
         )}
       >
-        {diaryOpen ? (
-          <HealthDiaryScreen />
-        ) : (
-          <>
-            {tab === "home" ? <HomeTab family={family} /> : null}
-            {tab === "analyses" ? (
-              <AnalysesTab
-                family={family}
-                onAnalysesChanged={() => {
-                  bumpAnalyses();
-                  reload();
-                }}
-              />
-            ) : null}
-            {tab === "trends" ? (
-              <TrendsTab
-                onAnalysesChanged={() => {
-                  bumpAnalyses();
-                  reload();
-                }}
-              />
-            ) : null}
-            {tab === "ai" ? <AiTab /> : null}
-            {tab === "profile" ? (
-              <ProfileTabSakbol family={family} loading={loading} reload={reload} />
-            ) : null}
-          </>
-        )}
+        {tab === "home" ? <HomeTab family={family} /> : null}
+        {tab === "analyses" ? (
+          <AnalysesTab
+            family={family}
+            onAnalysesChanged={() => {
+              bumpAnalyses();
+              reload();
+            }}
+          />
+        ) : null}
+        {tab === "trends" ? (
+          <TrendsTab
+            onAnalysesChanged={() => {
+              bumpAnalyses();
+              reload();
+            }}
+          />
+        ) : null}
+        {tab === "ai" ? <AiTab /> : null}
+        {tab === "profile" ? (
+          <ProfileTabSakbol family={family} loading={loading} reload={reload} />
+        ) : null}
       </motion.div>
     </AnimatePresence>
   );
@@ -85,7 +78,7 @@ function TabPanels({
  */
 export function SakbolMainClient() {
   const device = useDeviceType();
-  const { diaryOpen, tab } = useTabApp();
+  const { tab } = useTabApp();
   const { lang } = useLanguage();
   const { family, loading, reload } = useFamilyDefault();
   const { bumpAnalyses } = useAnalysesRefresh();
@@ -102,12 +95,12 @@ export function SakbolMainClient() {
     />
   );
 
-  const desktopHomeNoScroll = isDesktopWeb && !diaryOpen && tab === "home";
+  const desktopHomeNoScroll = isDesktopWeb && tab === "home";
 
   if (isDesktopWeb) {
     return (
       <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-health-bg">
-        {!diaryOpen ? <SakbolDesktopSidebar /> : null}
+        <SakbolDesktopSidebar />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-health-bg">
             <div
@@ -119,11 +112,9 @@ export function SakbolMainClient() {
             >
               {tabPanels}
             </div>
-            {!diaryOpen ? (
-              <p className="shrink-0 border-t border-health-border/80 bg-health-surface/90 px-4 py-2 text-center text-[10px] text-health-text-secondary">
-                {t(lang, "analyses.disclaimer")}
-              </p>
-            ) : null}
+            <p className="shrink-0 border-t border-health-border/80 bg-health-surface/90 px-4 py-2 text-center text-[10px] text-health-text-secondary">
+              {t(lang, "analyses.disclaimer")}
+            </p>
           </main>
         </div>
       </div>
@@ -137,20 +128,18 @@ export function SakbolMainClient() {
         <div
           className={cn(
             "flex min-h-0 flex-1 flex-col overflow-y-auto",
-            !diaryOpen && "pb-[calc(7rem+env(safe-area-inset-bottom,0px))]",
+            "pb-[calc(7rem+env(safe-area-inset-bottom,0px))]",
           )}
         >
           {tabPanels}
         </div>
       </div>
 
-      {!diaryOpen ? (
-        <p className="mx-auto max-w-2xl shrink-0 px-4 pb-1 text-center text-[10px] text-health-text-secondary">
-          {t(lang, "analyses.disclaimer")}
-        </p>
-      ) : null}
+      <p className="mx-auto max-w-2xl shrink-0 px-4 pb-1 text-center text-[10px] text-health-text-secondary">
+        {t(lang, "analyses.disclaimer")}
+      </p>
 
-      {!diaryOpen ? <BottomTabBar dock="fixed" /> : null}
+      <BottomTabBar dock="fixed" />
     </div>
   );
 }

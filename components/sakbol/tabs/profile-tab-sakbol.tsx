@@ -12,7 +12,6 @@ import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useLanguage } from "@/context/language-context";
 import { useActiveProfile } from "@/context/active-profile-context";
-import { useTabApp } from "@/context/tab-app-context";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import type { FamilyWithProfiles, ProfileSummary } from "@/types/family";
 import { t, type Lang } from "@/lib/i18n";
@@ -318,7 +317,6 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
   const { authReady, isAuthenticated, state, syncViewerFromServer } = useTelegramSession();
-  const { openDiary } = useTabApp();
   const [addOpen, setAddOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
@@ -552,18 +550,6 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 </div>
               ))}
             </div>
-
-            <button
-              type="button"
-              onClick={openDiary}
-              className="flex w-full items-center justify-between rounded-2xl border border-[#e7e8e9] bg-white px-4 py-3 text-left shadow-sm"
-            >
-              <span className="flex items-center gap-2 font-medium text-[#191c1d]">
-                <MaterialIcon name="menu_book" className="text-[#004253]" />
-                Дневник здоровья
-              </span>
-              <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
-            </button>
 
             <section
               id="profile-family-section"

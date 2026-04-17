@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -46,8 +46,13 @@ export function HomeTab({ family }: Props) {
   const viewerName =
     state.status === "authenticated" ? state.viewer.displayName.split(/\s+/)[0] ?? "друг" : "друг";
 
-  const hour = useMemo(() => new Date().getHours(), []);
-  const greet = greetingRu(hour);
+  const [greet, setGreet] = useState(() => greetingRu(new Date().getHours()));
+  useEffect(() => {
+    const tick = () => setGreet(greetingRu(new Date().getHours()));
+    tick();
+    const id = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const clinicalId =
     state.status === "authenticated" ? formatClinicalAnonymId(state.viewer.id) : "—";
@@ -255,65 +260,6 @@ export function HomeTab({ family }: Props) {
         />
         </motion.div>
       ) : null}
-
-      <button
-        type="button"
-        onClick={() => setTab("analyses")}
-        className="sakbol-web-cta w-full rounded-2xl border border-[#e7e8e9] bg-white p-4 text-left shadow-sm"
-      >
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-manrope text-base font-bold text-[#191c1d]">Оценка рисков</p>
-          <span className="text-xs font-semibold text-[#004253]">Анализы · индекс</span>
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {[
-            { icon: "cardiology", label: "Сердце", level: "средний", tone: "text-amber-700" },
-            { icon: "bloodtype", label: "Диабет", level: "низкий", tone: "text-emerald-700" },
-            { icon: "radiology", label: "Онкология", level: "низкий", tone: "text-emerald-700" },
-            { icon: "pulmonology", label: "Дыхание", level: "низкий", tone: "text-emerald-700" },
-            { icon: "monitor_weight", label: "Ожирение", level: "средний", tone: "text-amber-700" },
-            { icon: "psychology", label: "Нервы", level: "низкий", tone: "text-emerald-700" },
-          ].map((c) => (
-            <div key={c.label} className="rounded-xl bg-[#f8f9fa] p-2 text-center">
-              <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-lg bg-[#d4e6e9]/80 text-[#004253]">
-                <MaterialIcon name={c.icon} className="text-[18px]" />
-              </div>
-              <p className="mt-1 text-[10px] font-semibold text-[#191c1d]">{c.label}</p>
-              <p className={cn("text-[10px]", c.tone)}>{c.level}</p>
-            </div>
-          ))}
-        </div>
-      </button>
-
-      <section>
-        <p className="mb-2 font-manrope text-sm font-bold text-[#191c1d]">План действий</p>
-        <ul className="space-y-2">
-          {[
-            { icon: "science", title: "Сдать ЛПНП натощак", sub: "Утро, 8:00", tag: "Срочно", done: false },
-          ].map((task) => (
-            <li
-              key={task.title}
-              className={cn(
-                "flex items-center gap-3 rounded-2xl border border-[#e7e8e9] bg-white p-3 shadow-sm",
-                task.done && "opacity-55",
-              )}
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f3f4f5] text-[#004253]">
-                <MaterialIcon name={task.icon} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className={cn("font-medium text-[#191c1d]", task.done && "line-through")}>
-                  {task.title}
-                </p>
-                <p className="text-xs text-[#70787d]">{task.sub}</p>
-              </div>
-              <span className="shrink-0 rounded-full bg-[#ffdcc0]/90 px-2 py-0.5 text-[10px] font-semibold text-[#693c08]">
-                {task.tag}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
 
       {sharedSheets}
       </motion.div>
