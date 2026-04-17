@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { FamilyRole } from "@prisma/client";
-import { Upload } from "lucide-react";
 import { FamilyAnalysesWorkspace } from "@/components/family-analyses-workspace";
 import { FamilySwitcher } from "@/components/family-switcher";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
@@ -22,7 +21,6 @@ type Props = {
 export function AnalysesTab({ family, onAnalysesChanged }: Props) {
   const { lang } = useLanguage();
   const { authReady, isAuthenticated, state } = useTelegramSession();
-  const [uploadSignal, setUploadSignal] = useState(0);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const device = useDeviceType();
   const isDesktopWeb = device === "desktop-web";
@@ -44,20 +42,7 @@ export function AnalysesTab({ family, onAnalysesChanged }: Props) {
 
   return (
     <div className="w-full">
-      <SakbolTopBar
-        title="Анализы"
-        centerSlot={headerSwitcher}
-        rightSlot={
-          <button
-            type="button"
-            onClick={() => setUploadSignal((n) => n + 1)}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-health-primary px-4 py-2 text-caption font-semibold text-white shadow-md shadow-teal-900/15 transition-all duration-300 hover:bg-teal-700"
-          >
-            <Upload className="h-4 w-4" strokeWidth={2.25} aria-hidden />
-            Загрузить
-          </button>
-        }
-      />
+      <SakbolTopBar title="Анализы" centerSlot={headerSwitcher} />
       <motion.div
         className={cn(
           "mx-auto space-y-4 px-4 pb-6 pt-2",
@@ -95,17 +80,14 @@ export function AnalysesTab({ family, onAnalysesChanged }: Props) {
         ) : null}
 
         {authReady && isAuthenticated ? (
-          <>
-            <FamilyAnalysesWorkspace
-              showPremiumCta
-              compactUpload={false}
-              onAnalysesChanged={onAnalysesChanged}
-              uploadSignal={uploadSignal}
-              hideFamilySwitcher
-              addMemberModalOpen={addMemberOpen}
-              onAddMemberModalOpenChange={setAddMemberOpen}
-            />
-          </>
+          <FamilyAnalysesWorkspace
+            showPremiumCta
+            compactUpload={false}
+            onAnalysesChanged={onAnalysesChanged}
+            hideFamilySwitcher
+            addMemberModalOpen={addMemberOpen}
+            onAddMemberModalOpenChange={setAddMemberOpen}
+          />
         ) : null}
       </motion.div>
     </div>

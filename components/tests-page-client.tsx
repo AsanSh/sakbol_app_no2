@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { FamilyAnalysesWorkspace } from "@/components/family-analyses-workspace";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
@@ -16,29 +15,17 @@ export function TestsPageClient() {
   const { lang } = useLanguage();
   const { authReady, isAuthenticated, state } = useTelegramSession();
   const { bumpAnalyses } = useAnalysesRefresh();
-  const [uploadSignal, setUploadSignal] = useState(0);
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#f8f9fa] pb-[calc(7rem+env(safe-area-inset-bottom,0px))] md:pb-6">
-      <SakbolTopBar
-        title="Анализы"
-        rightSlot={
-          <button
-            type="button"
-            onClick={() => setUploadSignal((n) => n + 1)}
-            className="rounded-full bg-sakbol-cta px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm shadow-coral/30"
-          >
-            Загрузить
-          </button>
-        }
-      />
+      <SakbolTopBar title="Анализы" />
       <div className="mx-auto w-full max-w-2xl space-y-4 px-4 pb-4 pt-2">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-[#70787d]">Лаборатория</p>
           <h1 className="font-manrope text-xl font-extrabold text-[#191c1d]">Загрузка анализов</h1>
           <p className="mt-1 text-sm text-[#40484c]">
-            Выберите PDF или фото — показатели извлекаются через Gemini (нужен GEMINI_API_KEY на сервере).
-            При ошибке API запись не создаётся, текст ошибки покажется в модалке.
+            Выберите PDF или фото — показатели извлекаются автоматически. При ошибке текст подсказки появится в
+            окне загрузки.
           </p>
         </div>
 
@@ -61,7 +48,6 @@ export function TestsPageClient() {
           <FamilyAnalysesWorkspace
             showPremiumCta
             compactUpload={false}
-            uploadSignal={uploadSignal}
             onAnalysesChanged={bumpAnalyses}
           />
         ) : null}

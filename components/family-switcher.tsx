@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import type { ProfileSummary } from "@/types/family";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useLanguage } from "@/context/language-context";
+import { useDeviceType } from "@/hooks/use-device-type";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,8 @@ type FamilySwitcherProps = {
   variant?: "default" | "header";
 };
 
+const STACK_AVATAR = 36;
+
 export function FamilySwitcher({
   profiles,
   className,
@@ -30,7 +33,9 @@ export function FamilySwitcher({
   variant = "default",
 }: FamilySwitcherProps) {
   const { lang } = useLanguage();
+  const device = useDeviceType();
   const { activeProfileId, setActiveProfileId, switchProfile } = useActiveProfile();
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (profiles.length === 0) return;
@@ -45,9 +50,71 @@ export function FamilySwitcher({
   const activeClinical =
     activeProfileId != null ? formatClinicalAnonymId(activeProfileId) : null;
   const isHeader = variant === "header";
+  const overlapStack = isHeader && device !== "desktop-web";
   const avatarSize = isHeader ? 40 : 56;
   const addBtnClass = isHeader ? "h-10 w-10" : "h-14 w-14";
   const plusClass = isHeader ? "h-5 w-5" : "h-6 w-6";
+
+  function pickProfile(id: string) {
+    hapticImpact("medium");
+    switchProfile(id);
+    if (overlapStack) setExpanded(false);
+  }
+
+  if (overlapStack && !expanded) {
+    return (
+      <div className={cn("flex w-full min-w-0 items-center justify-end gap-1", className)}>
+        <button
+          type="button"
+          onClick={() => {
+            hapticImpact("light");
+            setExpanded(true);
+          }}
+          className="flex max-w-full items-center gap-0.5 rounded-full border border-health-border/70 bg-health-surface/95 py-1 pl-1 pr-1.5 shadow-sm outline-none ring-health-primary focus-visible:ring-2"
+          aria-expanded={false}
+          aria-label={t(lang, "family.switcherTitle")}
+        >
+          <span className="flex items-center pl-0.5">
+            {profiles.map((p, i) => {
+              const active = p.id === activeProfileId;
+              return (
+                <span
+                  key={p.id}
+                  className={cn("relative rounded-full ring-2 ring-health-bg", i > 0 && "-ml-2.5")}
+                  style={{ zIndex: active ? 50 : 10 + i }}
+                >
+                  <ProfileAvatar
+                    src={p.avatarUrl}
+                    name={p.displayName}
+                    size={STACK_AVATAR}
+                    className={cn(
+                      "ring-2 ring-offset-0 ring-offset-health-bg",
+                      active ? "ring-health-primary shadow-md" : "ring-white/90",
+                    )}
+                  />
+                </span>
+              );
+            })}
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-health-text-secondary" aria-hidden />
+        </button>
+        {canAddMember && onAddMember ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              hapticImpact("medium");
+              onAddMember();
+            }}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-health-border bg-health-surface text-health-primary shadow-sm outline-none ring-health-primary focus-visible:ring-2"
+            aria-label={t(lang, "profile.addMember")}
+          >
+            <Plus className="h-5 w-5" strokeWidth={2} />
+          </button>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className={cn(isHeader ? "w-max max-w-full" : "w-full", className)}>
@@ -55,6 +122,18 @@ export function FamilySwitcher({
         <p className="mb-2 text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
           {t(lang, "family.switcherTitle")}
         </p>
+      ) : overlapStack && expanded ? (
+        <button
+          type="button"
+          onClick={() => {
+            hapticImpact("light");
+            setExpanded(false);
+          }}
+          className="mb-1 flex w-full items-center justify-end gap-1 text-[10px] font-semibold text-health-primary"
+        >
+          <ChevronDown className="h-4 w-4 rotate-180" aria-hidden />
+          {t(lang, "family.collapseSwitcher")}
+        </button>
       ) : null}
       <ul
         className={cn(
@@ -69,10 +148,7 @@ export function FamilySwitcher({
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.96 }}
-                onClick={() => {
-                  hapticImpact("medium");
-                  switchProfile(p.id);
-                }}
+                onClick={() => pickProfile(p.id)}
                 className={cn(
                   "flex flex-col items-center gap-0.5 rounded-xl px-0.5 pt-0.5 outline-none ring-health-primary focus-visible:ring-2",
                   active ? "opacity-100" : "opacity-85 hover:opacity-100",

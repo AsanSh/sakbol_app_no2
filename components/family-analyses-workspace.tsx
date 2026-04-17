@@ -42,8 +42,6 @@ type Props = {
   compactUpload?: boolean;
   /** После загрузки / демо — обновить зависимые экраны (риски и т.д.). */
   onAnalysesChanged?: () => void;
-  /** Инкремент открывает модалку загрузки (кнопка в шапке вкладки). */
-  uploadSignal?: number;
   /** Вкладка «Динамика»: без Health Hub, только сравнение и графики. */
   variant?: "default" | "trends";
   /** Не показывать свитчер семьи (родитель — в шапке страницы). */
@@ -58,7 +56,6 @@ export function FamilyAnalysesWorkspace({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   compactUpload: _compactUpload = false,
   onAnalysesChanged,
-  uploadSignal = 0,
   variant = "default",
   hideFamilySwitcher = false,
   addMemberModalOpen: addMemberModalOpenProp,
@@ -113,10 +110,6 @@ export function FamilyAnalysesWorkspace({
     }
     load();
   }, [authReady, isAuthenticated, load]);
-
-  useEffect(() => {
-    if (uploadSignal > 0) setUploadOpen(true);
-  }, [uploadSignal]);
 
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
 

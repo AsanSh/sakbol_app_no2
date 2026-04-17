@@ -45,7 +45,7 @@ function TabPanels({
           homeOneScreen ? "overflow-hidden" : "overflow-y-auto",
         )}
       >
-        {tab === "home" ? <HomeTab family={family} /> : null}
+        {tab === "home" ? <HomeTab family={family} reloadFamily={reload} /> : null}
         {tab === "analyses" ? (
           <AnalysesTab
             family={family}
@@ -57,13 +57,14 @@ function TabPanels({
         ) : null}
         {tab === "trends" ? (
           <TrendsTab
+            family={family}
             onAnalysesChanged={() => {
               bumpAnalyses();
               reload();
             }}
           />
         ) : null}
-        {tab === "ai" ? <AiTab /> : null}
+        {tab === "ai" ? <AiTab family={family} reloadFamily={reload} /> : null}
         {tab === "profile" ? (
           <ProfileTabSakbol family={family} loading={loading} reload={reload} />
         ) : null}

@@ -1,42 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload } from "lucide-react";
+import { FamilyRole } from "@prisma/client";
 import { FamilyAnalysesWorkspace } from "@/components/family-analyses-workspace";
+import { FamilySwitcher } from "@/components/family-switcher";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useLanguage } from "@/context/language-context";
 import { useDeviceType } from "@/hooks/use-device-type";
+import type { FamilyWithProfiles } from "@/types/family";
 import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type Props = {
+  family: FamilyWithProfiles | null;
   onAnalysesChanged?: () => void;
 };
 
-export function TrendsTab({ onAnalysesChanged }: Props) {
+export function TrendsTab({ family, onAnalysesChanged }: Props) {
   const { lang } = useLanguage();
   const { authReady, isAuthenticated, state } = useTelegramSession();
-  const [uploadSignal, setUploadSignal] = useState(0);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const device = useDeviceType();
   const isDesktopWeb = device === "desktop-web";
 
+  const admin = useMemo(
+    () => family?.profiles.find((p) => p.familyRole === FamilyRole.ADMIN),
+    [family?.profiles],
+  );
+
+  const headerSwitcher =
+    authReady && isAuthenticated && family?.profiles?.length ? (
+      <FamilySwitcher
+        variant="header"
+        profiles={family.profiles}
+        canAddMember={!!admin}
+        onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+      />
+    ) : null;
+
   return (
     <div className="w-full">
-      <SakbolTopBar
-        title={t(lang, "trends.tabTopBar")}
-        rightSlot={
-          <button
-            type="button"
-            onClick={() => setUploadSignal((n) => n + 1)}
-            className="inline-flex min-h-[40px] items-center gap-1.5 rounded-full bg-health-primary px-4 py-2 text-caption font-semibold text-white shadow-md shadow-teal-900/15 transition-all duration-300 hover:bg-teal-700"
-          >
-            <Upload className="h-4 w-4" strokeWidth={2.25} aria-hidden />
-            {t(lang, "tests.uploadBig")}
-          </button>
-        }
-      />
+      <SakbolTopBar title={t(lang, "trends.tabTopBar")} centerSlot={headerSwitcher} />
       <motion.div
         className={cn(
           "mx-auto space-y-4 px-4 pb-6 pt-2",
@@ -79,7 +85,9 @@ export function TrendsTab({ onAnalysesChanged }: Props) {
             compactUpload={false}
             variant="trends"
             onAnalysesChanged={onAnalysesChanged}
-            uploadSignal={uploadSignal}
+            hideFamilySwitcher
+            addMemberModalOpen={addMemberOpen}
+            onAddMemberModalOpenChange={setAddMemberOpen}
           />
         ) : null}
       </motion.div>

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { FamilyRole } from "@prisma/client";
+import { AddMemberModal } from "@/components/add-member-modal";
+import { FamilySwitcher } from "@/components/family-switcher";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
-import { UserPlus } from "lucide-react";
-import { ProfileAvatar } from "@/components/ui/avatar";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
@@ -17,11 +17,9 @@ import { t } from "@/lib/i18n";
 import type { FamilyWithProfiles } from "@/types/family";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { AnalysesPreview } from "@/components/analyses-preview";
-import { hapticImpact } from "@/lib/telegram-haptics";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { useDeviceType } from "@/hooks/use-device-type";
 import { HomeTabDesktop } from "@/components/sakbol/tabs/home-tab-desktop";
-import { profileKinshipLabelRu } from "@/lib/profile-kinship";
 
 function greetingRu(hour: number) {
   if (hour < 12) return "Доброе утро";
@@ -31,9 +29,10 @@ function greetingRu(hour: number) {
 
 type Props = {
   family: FamilyWithProfiles | null;
+  reloadFamily: () => void;
 };
 
-export function HomeTab({ family }: Props) {
+export function HomeTab({ family, reloadFamily }: Props) {
   const { lang } = useLanguage();
   const { refreshKey: analysesRefreshKey } = useAnalysesRefresh();
   const device = useDeviceType();
@@ -42,6 +41,22 @@ export function HomeTab({ family }: Props) {
   const { activeProfileId, setActiveProfileId } = useActiveProfile();
   const { setTab } = useTabApp();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+
+  const admin = useMemo(
+    () => family?.profiles.find((p) => p.familyRole === FamilyRole.ADMIN),
+    [family?.profiles],
+  );
+
+  const headerSwitcher =
+    authReady && isAuthenticated && family?.profiles?.length ? (
+      <FamilySwitcher
+        variant="header"
+        profiles={family.profiles}
+        canAddMember={!!admin}
+        onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+      />
+    ) : null;
 
   const viewerName =
     state.status === "authenticated" ? state.viewer.displayName.split(/\s+/)[0] ?? "друг" : "друг";
@@ -110,6 +125,7 @@ export function HomeTab({ family }: Props) {
         showBell
         bellUnread
         onBell={() => setNotificationsOpen(true)}
+        centerSlot={headerSwitcher}
       />
       <motion.div
         className="mx-auto max-w-2xl space-y-4 px-4 pb-4 pt-2"
@@ -161,75 +177,6 @@ export function HomeTab({ family }: Props) {
         </p>
       </motion.section>
 
-      {profiles.length > 0 ? (
-        <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-          <p className="mb-2 text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
-            Семья
-          </p>
-          <div className="flex gap-3 overflow-x-auto px-1 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {profiles.map((p) => {
-              const active = p.id === activeProfileId;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    hapticImpact("medium");
-                    setActiveProfileId(p.id);
-                  }}
-                  className="flex shrink-0 flex-col items-center gap-1"
-                >
-                  <ProfileAvatar
-                    src={p.avatarUrl}
-                    name={p.displayName}
-                    size={56}
-                    className={cn(
-                      "ring-1 ring-offset-1 ring-offset-health-bg transition-shadow",
-                      active ? "ring-health-primary/90 shadow-sm" : "ring-transparent",
-                    )}
-                  />
-                  <span className="max-w-[4.5rem] truncate text-center text-[11px] font-medium text-health-text">
-                    {p.displayName}
-                  </span>
-                  <span className="max-w-[4.5rem] truncate text-center text-[10px] text-health-text-secondary">
-                    {profileKinshipLabelRu(p)}
-                  </span>
-                </button>
-              );
-            })}
-            <button
-              type="button"
-              onClick={() => setTab("profile")}
-              className="flex shrink-0 flex-col items-center gap-1.5 opacity-90"
-            >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-health-border bg-health-surface text-health-text-secondary shadow-sm">
-                <UserPlus size={22} strokeWidth={1.5} aria-hidden />
-              </div>
-              <span className="text-[11px] font-medium text-health-text-secondary">Добавить</span>
-            </button>
-          </div>
-        </motion.section>
-      ) : null}
-
-      <motion.button
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, delay: 0.21 }}
-        whileTap={{ scale: 0.97 }}
-        type="button"
-        onClick={() => setTab("analyses")}
-        className="flex w-full min-h-[52px] items-center gap-3 rounded-2xl bg-health-surface p-4 text-left shadow-md shadow-slate-900/[0.06] ring-1 ring-health-border/80 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
-      >
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-health-primary to-teal-700 text-white shadow-md">
-          <MaterialIcon name="cloud_upload" className="text-[26px]" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-manrope font-bold text-slate-900">Загрузить анализы</p>
-          <p className="text-xs text-slate-500">PDF, фото или ссылка из лаборатории</p>
-        </div>
-        <MaterialIcon name="chevron_right" className="text-[#bfc8cc]" />
-      </motion.button>
-
       {authReady && isAuthenticated && profiles.length > 0 ? (
         <motion.button
           initial={{ opacity: 0, y: 10 }}
@@ -262,6 +209,15 @@ export function HomeTab({ family }: Props) {
       ) : null}
 
       {sharedSheets}
+
+      <AddMemberModal
+        open={addMemberOpen}
+        onClose={() => setAddMemberOpen(false)}
+        onCreated={() => {
+          reloadFamily();
+          setAddMemberOpen(false);
+        }}
+      />
       </motion.div>
     </div>
   );

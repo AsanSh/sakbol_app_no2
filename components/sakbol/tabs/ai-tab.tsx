@@ -1,11 +1,16 @@
 "use client";
 
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { FamilyRole } from "@prisma/client";
+import { AddMemberModal } from "@/components/add-member-modal";
+import { FamilySwitcher } from "@/components/family-switcher";
 import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { askLabAssistantFromBook } from "@/app/actions/lab-assistant";
 import { useActiveProfile } from "@/context/active-profile-context";
+import { useTelegramSession } from "@/context/telegram-session-context";
+import type { FamilyWithProfiles } from "@/types/family";
 
 type Msg = { id: string; role: "user" | "assistant"; text: string; time: string };
 
@@ -19,13 +24,23 @@ function nowTime() {
   return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
 
-export function AiTab() {
+const INTRO_ASSISTANT =
+  "Здравствуйте! Я помогу разобраться с формулировками из анализов и подскажу в бытовых вопросах — с опорой на последнюю загрузку того профиля, который выбран сейчас. Точные статусы и нормы смотрите на вкладке «Анализы» по вашему бланку. Это не диагноз и не замена приёму у врача.";
+
+type Props = {
+  family: FamilyWithProfiles | null;
+  reloadFamily: () => void;
+};
+
+export function AiTab({ family, reloadFamily }: Props) {
   const { activeProfileId } = useActiveProfile();
+  const { authReady, isAuthenticated } = useTelegramSession();
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: "0",
       role: "assistant",
-      text: "Здравствуйте! Ответы готовит нейросеть (Gemini), если на сервере задан GEMINI_API_KEY — с учётом последнего анализа выбранного профиля. Статусы по бланку смотрите на вкладке «Анализы». Это не диагноз и не замена врачу.",
+      text: INTRO_ASSISTANT,
       time: nowTime(),
     },
   ]);
@@ -33,28 +48,47 @@ export function AiTab() {
   const [pending, startTransition] = useTransition();
   const taRef = useRef<HTMLTextAreaElement>(null);
 
-  const send = useCallback((text: string) => {
-    const trimmed = text.trim();
-    if (!trimmed || pending) return;
+  const admin = useMemo(
+    () => family?.profiles.find((p) => p.familyRole === FamilyRole.ADMIN),
+    [family?.profiles],
+  );
 
-    const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: trimmed, time: nowTime() };
-    setMessages((m) => [...m, userMsg]);
-    setInput("");
+  const headerSwitcher =
+    authReady && isAuthenticated && family?.profiles?.length ? (
+      <FamilySwitcher
+        variant="header"
+        profiles={family.profiles}
+        canAddMember={!!admin}
+        onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+      />
+    ) : null;
 
-    startTransition(async () => {
-      const res = await askLabAssistantFromBook(trimmed, activeProfileId);
-      const reply = res.ok ? res.answer : res.error;
-      setMessages((m) => [
-        ...m,
-        { id: crypto.randomUUID(), role: "assistant", text: reply, time: nowTime() },
-      ]);
-    });
-  }, [pending, activeProfileId]);
+  const send = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || pending) return;
+
+      const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: trimmed, time: nowTime() };
+      setMessages((m) => [...m, userMsg]);
+      setInput("");
+
+      startTransition(async () => {
+        const res = await askLabAssistantFromBook(trimmed, activeProfileId);
+        const reply = res.ok ? res.answer : res.error;
+        setMessages((m) => [
+          ...m,
+          { id: crypto.randomUUID(), role: "assistant", text: reply, time: nowTime() },
+        ]);
+      });
+    },
+    [pending, activeProfileId],
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <SakbolTopBar
         title="ИИ"
+        centerSlot={headerSwitcher}
         rightSlot={
           <span className="flex items-center gap-1.5 rounded-full border border-[#d4e6e9] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#004253]">
             <span className="relative flex h-2 w-2">
@@ -73,15 +107,10 @@ export function AiTab() {
               <MaterialIcon name="smart_toy" filled className="text-[24px]" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-manrope font-bold text-[#191c1d]">Sakbol ИИ</p>
-                <span className="flex items-center gap-0.5 rounded-full bg-[#d4e6e9]/60 px-2 py-0.5 text-[9px] font-semibold text-[#004253]">
-                  <MaterialIcon name="biotech" className="text-[14px]" filled />
-                  Gemini · ваши данные
-                </span>
-              </div>
-              <p className="text-xs text-[#70787d]">
-                Контекст последнего анализа активного профиля передаётся в запрос к модели
+              <p className="font-manrope font-bold text-[#191c1d]">Sakbol — помощник</p>
+              <p className="mt-1 text-xs leading-relaxed text-[#70787d]">
+                Отвечаю простым языком, с учётом ваших последних результатов в приложении. Если чего-то нет в
+                базе — скажу честно.
               </p>
             </div>
           </div>
@@ -170,6 +199,15 @@ export function AiTab() {
           </div>
         </div>
       </div>
+
+      <AddMemberModal
+        open={addMemberOpen}
+        onClose={() => setAddMemberOpen(false)}
+        onCreated={() => {
+          reloadFamily();
+          setAddMemberOpen(false);
+        }}
+      />
     </div>
   );
 }
