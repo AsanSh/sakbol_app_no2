@@ -6,10 +6,10 @@ import {
   TrendingUp,
   Users,
   BotMessageSquare,
-  Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SakbolMark } from "@/components/sakbol/sakbol-mark";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import type { MainTab } from "@/context/tab-app-context";
 import { useTabApp } from "@/context/tab-app-context";
@@ -36,9 +36,7 @@ export function SakbolDesktopSidebar() {
       aria-label="Основное меню"
     >
       <div className="flex items-center gap-3 px-5 py-6">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-health-primary to-teal-700 text-white shadow-md shadow-teal-900/25">
-          <Activity className="h-5 w-5" strokeWidth={2.2} aria-hidden />
-        </div>
+        <SakbolMark size="md" className="h-11 w-11 shadow-md shadow-teal-900/20 ring-teal-100" />
         <div className="min-w-0">
           <p className="font-manrope text-sm font-bold tracking-tight text-health-text">Sakbol</p>
           <p className="text-caption font-medium text-health-text-secondary">Medical</p>

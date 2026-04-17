@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { APP_NAME } from "@/constants";
+import { SakbolMark } from "@/components/sakbol/sakbol-mark";
 import { useTelegramSession } from "@/context/telegram-session-context";
 
 function telegramAuthUrl(): string | null {
@@ -80,9 +81,7 @@ function LoginPageContent() {
         className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white p-8 shadow-2xl shadow-slate-900/10"
       >
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#004253] to-[#005b71] text-xl font-extrabold text-white font-manrope">
-            S
-          </div>
+          <SakbolMark size="lg" className="ring-[#004253]/20 shadow-md" />
           <h1 className="mt-4 font-manrope text-2xl font-extrabold text-[#004253]">{APP_NAME}</h1>
           <p className="mt-2 text-sm text-slate-600">
             Кирүү үчүн Telegram аркылуу атыңызды ырастаңыз. Браузерде демо-профиль автоматтык түрдө
@@ -99,13 +98,17 @@ function LoginPageContent() {
           </p>
         ) : null}
 
-        <div className="mt-8 space-y-3 sakbol-web-cta-wrap">
+        <div className="mt-8 space-y-4 sakbol-web-cta-wrap">
           {botUser && widgetAuthUrl ? (
-            <div className="flex flex-col items-center gap-2">
-              <p className="text-center text-[11px] font-medium text-slate-600">
-                Браузерден кирүү (тот эле профиль, мини-апптагыдай)
+            <div className="flex flex-col gap-3 rounded-2xl border border-[#229ED9]/35 bg-gradient-to-b from-[#229ED9]/[0.07] to-white p-4 shadow-sm">
+              <p className="text-center text-sm font-semibold text-[#004253]">
+                Вход в браузере
               </p>
-              <div className="flex min-h-[42px] w-full items-center justify-center [&_iframe]:rounded-xl">
+              <p className="text-center text-[11px] leading-relaxed text-slate-600">
+                Кирүү үчүн төмөнкү баскычты басыңыз — сиз ушул бетте калып, Telegram каттоосу аркылуу
+                киресиз (келечекте колдонмо ачылбайт). / Нажмите кнопку ниже — вы останетесь на сайте.
+              </p>
+              <div className="flex min-h-[44px] w-full items-center justify-center [&_iframe]:rounded-xl">
                 <Script
                   src="https://telegram.org/js/telegram-widget.js?22"
                   strategy="afterInteractive"
@@ -119,27 +122,43 @@ function LoginPageContent() {
             </div>
           ) : null}
 
-          {tgUrl ? (
-            <motion.a
-              href={tgUrl}
-              target="_blank"
-              rel="noreferrer"
-              whileTap={{ scale: 0.98 }}
-              className="flex w-full max-w-xs mx-auto items-center justify-center gap-2 rounded-2xl bg-[#229ED9] px-4 py-3.5 text-sm font-semibold text-white shadow-md transition-[filter] hover:brightness-105"
-            >
-              <Send className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
-              Telegram аркылуу кирүү
-            </motion.a>
-          ) : (
+          {tgUrl && botUser ? (
+            <div className="space-y-2 border-t border-slate-100 pt-4">
+              <p className="text-center text-[11px] font-medium text-slate-500">
+                Другие варианты / Башка жолдор
+              </p>
+              <a
+                href={`https://web.telegram.org/k/#@${botUser}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex w-full max-w-xs mx-auto items-center justify-center rounded-2xl border-2 border-[#229ED9] bg-white px-4 py-3 text-sm font-semibold text-[#229ED9] shadow-sm transition-colors hover:bg-[#229ED9]/5"
+              >
+                Telegram Web (браузер)
+              </a>
+              <motion.a
+                href={tgUrl}
+                target="_blank"
+                rel="noreferrer"
+                whileTap={{ scale: 0.98 }}
+                className="flex w-full max-w-xs mx-auto items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
+              >
+                <Send className="h-5 w-5 shrink-0 text-[#229ED9]" strokeWidth={2} aria-hidden />
+                Приложение Telegram / t.me
+              </motion.a>
+              <p className="text-center text-[10px] text-slate-400">
+                Ссылка t.me часто открывает установленный Telegram, а не вкладку браузера.
+              </p>
+            </div>
+          ) : !tgUrl ? (
             <p className="rounded-xl bg-amber-50 px-3 py-2 text-center text-xs text-amber-900">
               Коюм: <code className="font-mono">NEXT_PUBLIC_TELEGRAM_BOT_USERNAME</code> (боттун
               аталышы, @сыз) — Vercel же .env.
             </p>
-          )}
+          ) : null}
 
           <p className="text-center text-[11px] text-slate-500">
-            Мини-апп: ботто ачылгандан кийин сессия ушул браузерге жайгашат. Башка компьютерде — жогорудагы
-            «Login with Telegram» баскычы.
+            Мини-апп: ботто ачылгандан кийин сессия ушул браузерге жайгашат. Кирүү үчүн алгач жогорудагы
+            виджетти колдонуңуз.
           </p>
 
           {showDevLogin ? (

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
+import { SakbolMark } from "@/components/sakbol/sakbol-mark";
 
 type Props = {
   variant?: "logo" | "back";
@@ -51,14 +52,7 @@ export function SakbolTopBar({
             <MaterialIcon name="arrow_back" className={dense ? "text-[18px]" : "text-[22px]"} />
           </button>
         ) : (
-          <div
-            className={cn(
-              "flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-health-primary to-teal-700 font-manrope font-extrabold text-white shadow-sm",
-              dense ? "h-8 w-8 text-xs" : "h-10 w-10 text-sm",
-            )}
-          >
-            S
-          </div>
+          <SakbolMark size={dense ? "sm" : "md"} />
         )}
         <span
           className={cn(

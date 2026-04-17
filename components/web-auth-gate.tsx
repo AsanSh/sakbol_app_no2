@@ -24,7 +24,8 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { authReady, isAuthenticated, state } = useTelegramSession();
 
-  const isPublic = pathname === "/login" || pathname.startsWith("/share/");
+  const isPublic =
+    pathname === "/login" || pathname === "/" || pathname.startsWith("/share/");
 
   useEffect(() => {
     if (!authReady || !isAuthenticated) return;
