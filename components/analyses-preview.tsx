@@ -19,10 +19,8 @@ import {
   analysisWorstStatus,
   buildBiomarkerSeries,
   getNormForBiomarker,
-  getSmartTip,
   getStatusColorHex,
   ageInMonthsFromDob,
-  isProfileChild,
   listBiomarkersWithDynamics,
   normalizeBiomarkerKey,
   statusForBiomarker,
@@ -33,11 +31,27 @@ import type { ParsedBiomarker } from "@/types/biomarker";
 import { categoryForBiomarkerKey } from "@/constants/biomarker-categories";
 import { downloadLabPdfClient } from "@/lib/download-lab-pdf";
 import { AnalysisComparePanel } from "@/components/analysis-compare-panel";
+import { effectiveAnalysisTimeMs } from "@/lib/lab-analysis-dates";
 
 function biomarkerCount(data: unknown): number | null {
   if (!data || typeof data !== "object") return null;
   const d = data as HealthRecordAnalysisPayload;
   return Array.isArray(d.biomarkers) ? d.biomarkers.length : null;
+}
+
+function fileTypeLabel(mime: string | undefined): string {
+  if (!mime) return "—";
+  if (mime.includes("pdf")) return "PDF";
+  if (mime.includes("image")) return "IMG";
+  const p = mime.split("/").pop();
+  return p ? p.toUpperCase() : "—";
+}
+
+function labNameFromRow(data: unknown): string | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+  const n = d.labName;
+  return typeof n === "string" && n.trim() ? n.trim() : null;
 }
 
 function cardTone(worst: MedicalStatus): string {
@@ -69,6 +83,8 @@ type Props = {
   mode?: "default" | "trends";
   /** Скрыть H2 и подпись (родитель уже дал контекст, напр. блок «Обследования»). */
   hideHeader?: boolean;
+  /** Архив: без фильтров по «норма/критично» и без цветовых статусов в списке. */
+  archiveNeutral?: boolean;
 };
 
 export function AnalysesPreview({
@@ -79,6 +95,7 @@ export function AnalysesPreview({
   onOpenAnalyses,
   mode = "default",
   hideHeader = false,
+  archiveNeutral = false,
 }: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
@@ -92,6 +109,8 @@ export function AnalysesPreview({
   const [pdfError, setPdfError] = useState<{ id: string; msg: string } | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | MedicalStatus>("all");
+  const [trendsRangeDays, setTrendsRangeDays] = useState<number | null>(null);
+  const [trendsFocusKey, setTrendsFocusKey] = useState<string | null>(null);
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -99,7 +118,6 @@ export function AnalysesPreview({
   }, [profiles, activeProfileId]);
 
   const ageMonths = useMemo(() => ageInMonthsFromDob(activeDob), [activeDob]);
-  const childProfile = useMemo(() => isProfileChild(activeDob), [activeDob]);
 
   useEffect(() => {
     if (!activeProfileId) {
@@ -135,16 +153,37 @@ export function AnalysesPreview({
     setStatusFilter("all");
   }, [activeProfileId, refreshKey]);
 
+  const listSourceRows = useMemo(() => {
+    if (!rows?.length) return rows;
+    if (!isTrends) return rows;
+    if (trendsRangeDays == null) return rows;
+    const cutoff = Date.now() - trendsRangeDays * 86400000;
+    return rows.filter((r) => effectiveAnalysisTimeMs(r) >= cutoff);
+  }, [rows, isTrends, trendsRangeDays]);
+
   const dynamicsKeys = useMemo(
-    () => (rows?.length ? listBiomarkersWithDynamics(rows, 2) : []),
-    [rows],
+    () => (listSourceRows?.length ? listBiomarkersWithDynamics(listSourceRows, 2) : []),
+    [listSourceRows],
   );
 
+  useEffect(() => {
+    if (trendsFocusKey && !dynamicsKeys.includes(trendsFocusKey)) {
+      setTrendsFocusKey(null);
+    }
+  }, [dynamicsKeys, trendsFocusKey]);
+
+  const dynamicsKeysFiltered = useMemo(() => {
+    if (!trendsFocusKey || !dynamicsKeys.includes(trendsFocusKey)) return dynamicsKeys;
+    return [trendsFocusKey];
+  }, [dynamicsKeys, trendsFocusKey]);
+
   const filteredRows = useMemo(() => {
-    if (!rows?.length) return rows;
-    if (!activeProfileId || compact || statusFilter === "all" || isTrends) return rows;
-    return rows.filter((a) => analysisWorstStatus(a.data, activeDob) === statusFilter);
-  }, [rows, activeProfileId, compact, statusFilter, activeDob, isTrends]);
+    if (!listSourceRows?.length) return listSourceRows;
+    if (!activeProfileId || compact || statusFilter === "all" || isTrends || archiveNeutral) {
+      return listSourceRows;
+    }
+    return listSourceRows.filter((a) => analysisWorstStatus(a.data, activeDob) === statusFilter);
+  }, [listSourceRows, activeProfileId, compact, statusFilter, activeDob, isTrends, archiveNeutral]);
 
   if (!activeProfileId) return null;
 
@@ -156,6 +195,18 @@ export function AnalysesPreview({
     { id: "warning" as const, label: t(lang, "analyses.filterWarning") },
     { id: "normal" as const, label: t(lang, "analyses.filterNormal") },
   ];
+
+  const trendDeltaInsight = (series: { value: number }[]) => {
+    if (series.length < 2) return t(lang, "dynamics.insightStable");
+    const a = series[series.length - 2]?.value;
+    const b = series[series.length - 1]?.value;
+    if (typeof a !== "number" || typeof b !== "number") return t(lang, "dynamics.insightStable");
+    if (a === 0) return t(lang, "dynamics.insightStable");
+    const pct = ((b - a) / Math.abs(a)) * 100;
+    if (Math.abs(pct) < 2) return t(lang, "dynamics.insightStable");
+    if (b > a) return t(lang, "dynamics.insightRising");
+    return t(lang, "dynamics.insightFalling");
+  };
 
   return (
     <section
@@ -180,6 +231,8 @@ export function AnalysesPreview({
           {!compact ? (
             isTrends ? (
               <p className="mt-1 text-body text-health-text-secondary">{t(lang, "trends.pageSubtitle")}</p>
+            ) : archiveNeutral ? (
+              <p className="mt-1 text-body text-health-text-secondary">{t(lang, "analyses.archiveSubtitle")}</p>
             ) : (
               <>
                 <p className="mt-1 text-body text-health-text-secondary">{t(lang, "analyses.subtitle")}</p>
@@ -189,12 +242,73 @@ export function AnalysesPreview({
               </>
             )
           ) : (
-            <p className="mt-0.5 truncate text-[10px] text-health-text-secondary">{t(lang, "analyses.subtitle")}</p>
+            <p className="mt-0.5 truncate text-[10px] text-health-text-secondary">
+              {archiveNeutral && !isTrends ? t(lang, "analyses.archiveSubtitle") : t(lang, "analyses.subtitle")}
+            </p>
           )}
         </>
       ) : null}
 
-      {!isTrends && !compact && rows && rows.length > 0 ? (
+      {isTrends && !compact ? (
+        <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-md shadow-slate-900/[0.04] ring-1 ring-health-border/80">
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { days: null as number | null, key: "all" },
+                { days: 90, key: "3m" },
+                { days: 180, key: "6m" },
+                { days: 365, key: "1y" },
+              ] as const
+            ).map(({ days, key }) => {
+              const active =
+                (days === null && trendsRangeDays === null) ||
+                (days !== null && trendsRangeDays === days);
+              const label =
+                key === "all"
+                  ? t(lang, "dynamics.rangeAll")
+                  : key === "3m"
+                    ? t(lang, "dynamics.range3m")
+                    : key === "6m"
+                      ? t(lang, "dynamics.range6m")
+                      : t(lang, "dynamics.range1y");
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setTrendsRangeDays(days)}
+                  className={cn(
+                    "min-h-[44px] rounded-xl px-4 text-caption font-semibold transition-colors",
+                    active
+                      ? "bg-teal-50 text-health-primary shadow-sm ring-1 ring-teal-200"
+                      : "bg-slate-50 text-health-text-secondary hover:bg-slate-100",
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {dynamicsKeys.length > 0 ? (
+            <label className="flex flex-col gap-1 text-caption font-medium text-health-text-secondary">
+              <span>{t(lang, "dynamics.selectMetric")}</span>
+              <select
+                value={trendsFocusKey ?? ""}
+                onChange={(e) => setTrendsFocusKey(e.target.value === "" ? null : e.target.value)}
+                className="min-h-[44px] rounded-xl border-0 bg-slate-50 px-3 text-body text-health-text shadow-sm ring-1 ring-health-border/80"
+              >
+                <option value="">{t(lang, "dynamics.metricAll")}</option>
+                {dynamicsKeys.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+      ) : null}
+
+      {!archiveNeutral && !isTrends && !compact && rows && rows.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">
           {filterKeys.map(({ id, label }) => (
             <button
@@ -270,9 +384,13 @@ export function AnalysesPreview({
         </div>
       ) : (
         <>
-          {!compact && isTrends && rows && rows.length > 0 ? (
+          {!compact && isTrends && listSourceRows && listSourceRows.length > 0 ? (
             <div className="mt-4">
-              <AnalysisComparePanel analyses={rows} activeDob={activeDob} refreshKey={refreshKey} />
+              <AnalysisComparePanel
+                analyses={listSourceRows}
+                activeDob={activeDob}
+                refreshKey={refreshKey}
+              />
             </div>
           ) : null}
           {!isTrends && !rowsForUi?.length ? (
@@ -312,7 +430,9 @@ export function AnalysesPreview({
                 className={cn(
                   "rounded-2xl text-health-text transition-all duration-300 hover:shadow-lg",
                   compact ? "px-2.5 py-2 text-xs" : "px-4 py-3 text-sm",
-                  cardTone(worst),
+                  archiveNeutral && !isTrends
+                    ? "bg-white shadow-sm ring-1 ring-slate-200/90"
+                    : cardTone(worst),
                 )}
               >
                 <div className="flex items-stretch gap-2">
@@ -331,7 +451,11 @@ export function AnalysesPreview({
                     <span>
                       <span
                         className="font-semibold text-health-text"
-                        style={{ borderBottom: `2px solid ${getStatusColorHex(worst)}` }}
+                        style={
+                          archiveNeutral && !isTrends
+                            ? undefined
+                            : { borderBottom: `2px solid ${getStatusColorHex(worst)}` }
+                        }
                       >
                         {a.title ?? t(lang, "analyses.analysis")}
                       </span>
@@ -346,7 +470,14 @@ export function AnalysesPreview({
                         </span>
                       ) : null}
                       <span className="mt-1 block text-xs text-health-text-secondary">
-                        {new Date(a.createdAt).toLocaleDateString(lang === "ru" ? "ru-RU" : "ky-KG")}
+                        {new Date(effectiveAnalysisTimeMs(a)).toLocaleDateString(
+                          lang === "ru" ? "ru-RU" : "ky-KG",
+                        )}
+                        {archiveNeutral && !isTrends && payload ? (
+                          <span className="mt-0.5 block text-[11px] text-health-text-secondary/90">
+                            {(labNameFromRow(a.data) ?? "—") + " · " + fileTypeLabel(payload.mimeType)}
+                          </span>
+                        ) : null}
                       </span>
                     </span>
                     {!compact ? (
@@ -403,105 +534,150 @@ export function AnalysesPreview({
                 {open ? (
                   <div className="mt-2 border-t border-health-border/60 pt-3">
                     {payload?.biomarkers && payload.biomarkers.length > 0 ? (
-                      <>
-                        {(() => {
-                          const ranked = [...payload.biomarkers].sort((x, y) => {
-                            const rank: Record<MedicalStatus, number> = {
-                              critical: 0,
-                              warning: 1,
-                              normal: 2,
-                            };
-                            return rank[statusForBiomarker(x, activeDob)] - rank[statusForBiomarker(y, activeDob)];
-                          });
-                          const critical = ranked.filter((b) => statusForBiomarker(b, activeDob) === "critical");
-                          const warning = ranked.filter((b) => statusForBiomarker(b, activeDob) === "warning");
-                          const normal = ranked.filter((b) => statusForBiomarker(b, activeDob) === "normal");
-
-                          return (
-                            <>
-                              <p className="mb-2 text-[11px] font-semibold text-slate-800">
-                                Все показатели · {ranked.length}{" "}
-                                <span className="font-normal text-slate-500">
-                                  (сначала отклонения от нормы)
-                                </span>
-                              </p>
-                              <ul className="max-h-[min(60vh,28rem)] space-y-1 overflow-y-auto pr-0.5">
-                                {ranked.map((b: ParsedBiomarker, idx: number) => {
-                                  const st = statusForBiomarker(b, activeDob);
-                                  const nk = normalizeBiomarkerKey(b.biomarker);
-                                  const catId = nk ? categoryForBiomarkerKey(nk) : "other";
-                                  return (
-                                    <li
-                                      key={`${a.id}-${idx}-${b.biomarker}`}
-                                      className={cn(
-                                        "flex items-center justify-between gap-2 rounded-lg border-l-4 px-2 py-1.5 text-xs",
-                                        st === "critical" && "border-l-red-500 bg-[#fff4f4]",
-                                        st === "warning" && "border-l-amber-500 bg-amber-50/80",
-                                        st === "normal" && "border-l-emerald-200 bg-white/60",
-                                      )}
-                                    >
-                                      <span className="min-w-0 text-slate-700">
-                                        <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
-                                          {t(lang, `category.${catId}`)}
-                                        </span>
-                                        <span className="font-medium text-slate-900">
-                                          {b.biomarker}:{" "}
-                                          <strong
-                                            className={cn(
-                                              st === "critical" && "text-red-800",
-                                              st === "warning" && "text-amber-900",
-                                              st === "normal" && "text-slate-900",
-                                            )}
-                                          >
-                                            {b.value} {b.unit}
-                                          </strong>
-                                        </span>
+                      archiveNeutral || isTrends ? (
+                        <>
+                          <p className="mb-2 text-[11px] font-semibold text-slate-800">
+                            {lang === "ru" ? "Показатели" : "Көрсөткүчтөр"} · {payload.biomarkers.length}
+                          </p>
+                          <ul className="max-h-[min(60vh,28rem)] space-y-1 overflow-y-auto pr-0.5">
+                            {[...payload.biomarkers]
+                              .sort((x, y) =>
+                                x.biomarker.localeCompare(y.biomarker, lang === "ru" ? "ru" : "ky"),
+                              )
+                              .map((b: ParsedBiomarker, idx: number) => {
+                                const nk = normalizeBiomarkerKey(b.biomarker);
+                                const catId = nk ? categoryForBiomarkerKey(nk) : "other";
+                                return (
+                                  <li
+                                    key={`${a.id}-${idx}-${b.biomarker}`}
+                                    className="flex items-center justify-between gap-2 rounded-lg bg-slate-50/90 px-2 py-1.5 text-xs ring-1 ring-slate-200/80"
+                                  >
+                                    <span className="min-w-0 text-slate-700">
+                                      <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                        {t(lang, `category.${catId}`)}
                                       </span>
-                                      <span
+                                      <span className="font-medium text-slate-900">
+                                        {b.biomarker}:{" "}
+                                        <strong className="text-slate-900">
+                                          {b.value} {b.unit}
+                                        </strong>
+                                      </span>
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                          </ul>
+                        </>
+                      ) : (
+                        <>
+                          {(() => {
+                            const ranked = [...payload.biomarkers].sort((x, y) => {
+                              const rank: Record<MedicalStatus, number> = {
+                                critical: 0,
+                                warning: 1,
+                                normal: 2,
+                              };
+                              return (
+                                rank[statusForBiomarker(x, activeDob)] -
+                                rank[statusForBiomarker(y, activeDob)]
+                              );
+                            });
+                            const critical = ranked.filter(
+                              (b) => statusForBiomarker(b, activeDob) === "critical",
+                            );
+                            const warning = ranked.filter(
+                              (b) => statusForBiomarker(b, activeDob) === "warning",
+                            );
+                            const normal = ranked.filter(
+                              (b) => statusForBiomarker(b, activeDob) === "normal",
+                            );
+
+                            return (
+                              <>
+                                <p className="mb-2 text-[11px] font-semibold text-slate-800">
+                                  Все показатели · {ranked.length}{" "}
+                                  <span className="font-normal text-slate-500">
+                                    (сначала отклонения от нормы)
+                                  </span>
+                                </p>
+                                <ul className="max-h-[min(60vh,28rem)] space-y-1 overflow-y-auto pr-0.5">
+                                  {ranked.map((b: ParsedBiomarker, idx: number) => {
+                                    const st = statusForBiomarker(b, activeDob);
+                                    const nk = normalizeBiomarkerKey(b.biomarker);
+                                    const catId = nk ? categoryForBiomarkerKey(nk) : "other";
+                                    return (
+                                      <li
+                                        key={`${a.id}-${idx}-${b.biomarker}`}
                                         className={cn(
-                                          "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                                          statusIndicatorPillClass(st),
+                                          "flex items-center justify-between gap-2 rounded-lg border-l-4 px-2 py-1.5 text-xs",
+                                          st === "critical" && "border-l-red-500 bg-[#fff4f4]",
+                                          st === "warning" && "border-l-amber-500 bg-amber-50/80",
+                                          st === "normal" && "border-l-emerald-200 bg-white/60",
                                         )}
                                       >
-                                        {t(lang, `status.${st}`)}
-                                      </span>
-                                    </li>
-                                  );
-                                })}
-                              </ul>
+                                        <span className="min-w-0 text-slate-700">
+                                          <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                                            {t(lang, `category.${catId}`)}
+                                          </span>
+                                          <span className="font-medium text-slate-900">
+                                            {b.biomarker}:{" "}
+                                            <strong
+                                              className={cn(
+                                                st === "critical" && "text-red-800",
+                                                st === "warning" && "text-amber-900",
+                                                st === "normal" && "text-slate-900",
+                                              )}
+                                            >
+                                              {b.value} {b.unit}
+                                            </strong>
+                                          </span>
+                                        </span>
+                                        <span
+                                          className={cn(
+                                            "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                            statusIndicatorPillClass(st),
+                                          )}
+                                        >
+                                          {t(lang, `status.${st}`)}
+                                        </span>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
 
-                              <div
-                                className={cn(
-                                  "mt-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed",
-                                  critical.length > 0
-                                    ? "ring-1 ring-red-200/80 bg-red-50/90 text-red-900"
-                                    : warning.length > 0
-                                      ? "ring-1 ring-amber-200/70 bg-amber-50 text-amber-900"
-                                      : "ring-1 ring-emerald-200/60 bg-emerald-50/70 text-emerald-900",
-                                )}
-                              >
-                                <p className="font-semibold">
-                                  {critical.length > 0
-                                    ? "🔴 Критические отклонения"
-                                    : warning.length > 0
-                                      ? "🟡 Незначительные отклонения"
-                                      : "🟢 Все показатели в норме"}
-                                </p>
-                                <p className="mt-1 text-[11px] opacity-85">
-                                  {critical.length > 0
-                                    ? `${critical.map((b) => b.biomarker).join(", ")} — значительно выходит за пределы нормы. Рекомендуем обратиться к врачу.`
-                                    : warning.length > 0
-                                      ? `${warning.map((b) => b.biomarker).join(", ")} — на границе нормы. Рекомендуем повторный анализ через 1–2 месяца.`
-                                      : `${normal.length} показателей в пределах нормы. Продолжайте мониторинг.`}
-                                </p>
-                                <p className="mt-1.5 text-[10px] opacity-60">
-                                  Не является медицинским диагнозом. Консультируйтесь с врачом.
-                                </p>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </>
+                                <div
+                                  className={cn(
+                                    "mt-3 rounded-xl px-3 py-2.5 text-xs leading-relaxed",
+                                    critical.length > 0
+                                      ? "bg-red-50/90 text-red-900 ring-1 ring-red-200/80"
+                                      : warning.length > 0
+                                        ? "bg-amber-50 text-amber-900 ring-1 ring-amber-200/70"
+                                        : "bg-emerald-50/70 text-emerald-900 ring-1 ring-emerald-200/60",
+                                  )}
+                                >
+                                  <p className="font-semibold">
+                                    {critical.length > 0
+                                      ? "🔴 Критические отклонения"
+                                      : warning.length > 0
+                                        ? "🟡 Незначительные отклонения"
+                                        : "🟢 Все показатели в норме"}
+                                  </p>
+                                  <p className="mt-1 text-[11px] opacity-85">
+                                    {critical.length > 0
+                                      ? `${critical.map((b) => b.biomarker).join(", ")} — значительно выходит за пределы нормы. Рекомендуем обратиться к врачу.`
+                                      : warning.length > 0
+                                        ? `${warning.map((b) => b.biomarker).join(", ")} — на границе нормы. Рекомендуем повторный анализ через 1–2 месяца.`
+                                        : `${normal.length} показателей в пределах нормы. Продолжайте мониторинг.`}
+                                  </p>
+                                  <p className="mt-1.5 text-[10px] opacity-60">
+                                    Не является медицинским диагнозом. Консультируйтесь с врачом.
+                                  </p>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </>
+                      )
                     ) : (
                       <p className="py-2 text-xs text-slate-500">
                         Показатели в этой записи не найдены или ещё обрабатываются.
@@ -615,31 +791,25 @@ export function AnalysesPreview({
         </button>
       ) : null}
 
-      {!compact && isTrends && rows && rows.length >= 2 && dynamicsKeys.length > 0 ? (
+      {!compact &&
+      isTrends &&
+      listSourceRows &&
+      listSourceRows.length >= 2 &&
+      dynamicsKeysFiltered.length > 0 ? (
         <div className="mt-6 space-y-4 border-t border-health-border/60 pt-4">
           <h3 className="text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
             {t(lang, "analyses.dynamics")}
           </h3>
           <div className="flex flex-col gap-4">
-            {dynamicsKeys.map((key) => {
-              const series = buildBiomarkerSeries(rows, key, activeDob);
+            {dynamicsKeysFiltered.map((key) => {
+              const series = buildBiomarkerSeries(listSourceRows, key, activeDob);
               if (series.length < 2) return null;
               const norm = getNormForBiomarker(key, ageMonths);
-              const unit = unitForBiomarkerKey(rows, key);
-              const last = series[series.length - 1];
-              const lastRow = rows.find((r) => r.id === last.recordId);
-              let lastBm: ParsedBiomarker | undefined;
-              if (lastRow?.data && typeof lastRow.data === "object") {
-                const d = lastRow.data as HealthRecordAnalysisPayload;
-                lastBm = d.biomarkers?.find(
-                  (b) => normalizeBiomarkerKey(b.biomarker) === key,
-                );
-              }
-              const st = lastBm ? statusForBiomarker(lastBm, activeDob) : "normal";
-              const tip = lastBm ? getSmartTip(lastBm.biomarker, st, childProfile) : null;
+              const unit = unitForBiomarkerKey(listSourceRows, key);
+              const insight = trendDeltaInsight(series);
 
               return (
-                <div key={key} className="space-y-2">
+                <div key={key} className="space-y-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
                   <BiomarkerChart
                     title={key}
                     unit={unit}
@@ -647,12 +817,10 @@ export function AnalysesPreview({
                     normMin={norm?.min ?? null}
                     normMax={norm?.max ?? null}
                   />
-                  {tip ? (
-                    <div className="rounded-xl bg-teal-50/80 px-3 py-2 text-xs leading-snug text-health-text ring-1 ring-teal-100/80">
-                      <span className="font-semibold text-health-primary">{t(lang, "analyses.aiInsight")} </span>
-                      {tip}
-                    </div>
-                  ) : null}
+                  <p className="text-xs font-medium text-slate-600">
+                    <span className="text-health-text-secondary">{t(lang, "dynamics.selectMetric")}: </span>
+                    {insight}
+                  </p>
                 </div>
               );
             })}

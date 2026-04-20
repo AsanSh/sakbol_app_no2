@@ -5,16 +5,17 @@ export default {
   content: [
     "./app/**/*.{js,ts,jsx,tsx}",
     "./components/**/*.{js,ts,jsx,tsx}",
+    "./features/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       fontSize: {
-        /** H1 — 36 bold (классы: text-display + font-bold) */
-        display: ["2.25rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em" }],
-        /** H2 — 28 semibold */
-        h2: ["1.75rem", { lineHeight: "2.25rem", letterSpacing: "-0.02em" }],
-        /** H3 — 22 semibold */
-        h3: ["1.375rem", { lineHeight: "1.75rem", letterSpacing: "-0.01em" }],
+        /** H1 — 32px */
+        display: ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em" }],
+        /** H2 — 24px */
+        h2: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.02em" }],
+        /** H3 — 18px */
+        h3: ["1.125rem", { lineHeight: "1.5rem", letterSpacing: "-0.01em" }],
         /** Body — 15 regular */
         body: ["0.9375rem", { lineHeight: "1.5rem" }],
         /** Caption — 12 medium */

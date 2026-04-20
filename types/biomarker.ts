@@ -14,4 +14,10 @@ export type HealthRecordAnalysisPayload = {
   anonymizedAt: string;
   parsedAt: string;
   parser: "gemini" | "openai" | "mock" | "seed";
+  /** ISO: дата из бланка (после OCR), иначе сортировка по uploadedAt */
+  analysisDate?: string;
+  labDate?: string;
+  documentDate?: string;
+  /** Название лаборатории / клиники, если извлечено */
+  labName?: string;
 };

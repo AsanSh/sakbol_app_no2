@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 import { getSession } from "@/lib/session";
 import type { LabAnalysisRow } from "@/types/family";
+import { sortLabAnalysesNewestFirst } from "@/lib/lab-analysis-dates";
 
 export async function listLabAnalysesForProfile(
   profileId: string,
@@ -42,15 +43,17 @@ export async function listLabAnalysesForProfile(
       },
     });
 
+    const mapped: LabAnalysisRow[] = analyses.map((a) => ({
+      id: a.id,
+      title: a.title,
+      data: resolveLabAnalysisPayload(a.data, a.metrics?.payload ?? null),
+      isPrivate: a.isPrivate,
+      createdAt: a.createdAt.toISOString(),
+    }));
+
     return {
       ok: true,
-      analyses: analyses.map((a) => ({
-        id: a.id,
-        title: a.title,
-        data: resolveLabAnalysisPayload(a.data, a.metrics?.payload ?? null),
-        isPrivate: a.isPrivate,
-        createdAt: a.createdAt.toISOString(),
-      })),
+      analyses: sortLabAnalysesNewestFirst(mapped),
     };
   } catch {
     return { ok: false, error: "Database unavailable" };

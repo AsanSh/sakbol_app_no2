@@ -54,13 +54,13 @@ export function AnalysesTab({ family, onAnalysesChanged }: Props) {
       >
         <header>
           <p className="text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
-            Медицинские данные
+            {t(lang, "nav.analysesTab")}
           </p>
           <h2 className="mt-1 font-manrope text-h2 font-bold tracking-tight text-health-text">
-            Мои анализы
+            {t(lang, "analyses.pageTitle")}
           </h2>
           <p className="mt-2 max-w-2xl text-body leading-relaxed text-health-text-secondary">
-            Загрузка PDF и фото, динамика показателей и подсказки по активному профилю семьи.
+            {t(lang, "analyses.pageLead")}
           </p>
         </header>
 

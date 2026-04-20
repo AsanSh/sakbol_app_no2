@@ -27,6 +27,11 @@ export function resolveLabAnalysisPayload(
       ? parserRaw
       : "mock";
 
+  const fromMetrics =
+    metricsPayload && typeof metricsPayload === "object"
+      ? (metricsPayload as Record<string, unknown>)
+      : null;
+
   return {
     biomarkers: rawBiomarkers,
     sourceFileId: typeof d.sourceFileId === "string" ? d.sourceFileId : "legacy",
@@ -36,5 +41,17 @@ export function resolveLabAnalysisPayload(
     anonymizedAt: typeof d.anonymizedAt === "string" ? d.anonymizedAt : "",
     parsedAt: typeof d.parsedAt === "string" ? d.parsedAt : "",
     parser,
+    analysisDate:
+      typeof d.analysisDate === "string"
+        ? d.analysisDate
+        : typeof fromMetrics?.analysisDate === "string"
+          ? fromMetrics.analysisDate
+          : undefined,
+    labName:
+      typeof d.labName === "string"
+        ? d.labName
+        : typeof fromMetrics?.labName === "string"
+          ? fromMetrics.labName
+          : undefined,
   };
 }

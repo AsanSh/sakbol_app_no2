@@ -12,6 +12,7 @@ import { AddMemberModal } from "@/components/add-member-modal";
 import { PaywallModal } from "@/components/paywall-modal";
 import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
 import { useActiveProfile } from "@/context/active-profile-context";
+import { useDeviceType } from "@/hooks/use-device-type";
 import { t } from "@/lib/i18n";
 import { UploadFab } from "@/components/upload-fab";
 
@@ -63,6 +64,7 @@ export function FamilyAnalysesWorkspace({
   onAddMemberModalOpenChange,
 }: Props) {
   const isTrends = variant === "trends";
+  const device = useDeviceType();
   const { lang } = useLanguage();
   const { authReady, isAuthenticated } = useTelegramSession();
   const { activeProfileId } = useActiveProfile();
@@ -172,7 +174,10 @@ export function FamilyAnalysesWorkspace({
 
       {/* FAB: плавающая кнопка загрузки (мобилка) */}
       {activeProfileId ? (
-        <UploadFab onClick={() => setUploadOpen(true)} mobileOnly={false} />
+        <UploadFab
+          onClick={() => setUploadOpen(true)}
+          mobileOnly={device !== "desktop-web"}
+        />
       ) : null}
 
       <AnalysesPreview
@@ -180,6 +185,7 @@ export function FamilyAnalysesWorkspace({
         refreshKey={analysesRefresh}
         onRequestUpload={() => setUploadOpen(true)}
         mode={isTrends ? "trends" : "default"}
+        archiveNeutral={!isTrends}
       />
 
       <AddMemberModal

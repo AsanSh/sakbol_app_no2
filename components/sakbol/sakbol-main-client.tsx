@@ -21,16 +21,13 @@ function TabPanels({
   loading,
   reload,
   bumpAnalyses,
-  desktopWeb,
 }: {
   family: ReturnType<typeof useFamilyDefault>["family"];
   loading: boolean;
   reload: () => void;
   bumpAnalyses: () => void;
-  desktopWeb: boolean;
 }) {
   const { tab } = useTabApp();
-  const homeOneScreen = desktopWeb && tab === "home";
 
   return (
     <AnimatePresence mode="wait">
@@ -40,10 +37,7 @@ function TabPanels({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
         transition={{ duration: 0.2 }}
-        className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col",
-          homeOneScreen ? "overflow-hidden" : "overflow-y-auto",
-        )}
+        className={cn("flex min-h-0 min-w-0 flex-1 flex-col", "overflow-y-auto")}
       >
         {tab === "home" ? <HomeTab family={family} reloadFamily={reload} /> : null}
         {tab === "analyses" ? (
@@ -79,7 +73,6 @@ function TabPanels({
  */
 export function SakbolMainClient() {
   const device = useDeviceType();
-  const { tab } = useTabApp();
   const { lang } = useLanguage();
   const { family, loading, reload } = useFamilyDefault();
   const { bumpAnalyses } = useAnalysesRefresh();
@@ -87,16 +80,8 @@ export function SakbolMainClient() {
   const isDesktopWeb = device === "desktop-web";
 
   const tabPanels = (
-    <TabPanels
-      family={family}
-      loading={loading}
-      reload={reload}
-      bumpAnalyses={bumpAnalyses}
-      desktopWeb={isDesktopWeb}
-    />
+    <TabPanels family={family} loading={loading} reload={reload} bumpAnalyses={bumpAnalyses} />
   );
-
-  const desktopHomeNoScroll = isDesktopWeb && tab === "home";
 
   if (isDesktopWeb) {
     return (
@@ -108,7 +93,7 @@ export function SakbolMainClient() {
               className={cn(
                 "sakbol-dashboard-main mx-auto flex min-h-0 w-full max-w-[90rem] flex-1 flex-col",
                 "px-4 py-3 md:px-8 md:py-4",
-                desktopHomeNoScroll ? "overflow-hidden" : "overflow-y-auto",
+                "overflow-y-auto",
               )}
             >
               {tabPanels}

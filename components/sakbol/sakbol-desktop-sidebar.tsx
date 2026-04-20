@@ -4,8 +4,8 @@ import {
   LayoutDashboard,
   Stethoscope,
   TrendingUp,
-  Users,
   BotMessageSquare,
+  UserCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,8 +22,8 @@ const ITEMS: NavItem[] = [
   { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
   { id: "analyses", labelKey: "nav.analysesTab", Icon: Stethoscope },
   { id: "trends", labelKey: "nav.trends", Icon: TrendingUp },
-  { id: "profile", labelKey: "nav.familyTab", Icon: Users },
   { id: "ai", labelKey: "nav.aiDoctor", Icon: BotMessageSquare },
+  { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },
 ];
 
 /**
