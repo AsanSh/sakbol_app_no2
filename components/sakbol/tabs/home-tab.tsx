@@ -13,19 +13,13 @@ import { useTelegramSession } from "@/context/telegram-session-context";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useTabApp } from "@/context/tab-app-context";
 import { useLanguage } from "@/context/language-context";
-import { t } from "@/lib/i18n";
+import { dashboardGreetingForHour, t } from "@/lib/i18n";
 import type { FamilyWithProfiles } from "@/types/family";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { AnalysesPreview } from "@/components/analyses-preview";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { useDeviceType } from "@/hooks/use-device-type";
 import { HomeTabDesktop } from "@/components/sakbol/tabs/home-tab-desktop";
-
-function greetingRu(hour: number) {
-  if (hour < 12) return "Доброе утро";
-  if (hour < 18) return "Добрый день";
-  return "Добрый вечер";
-}
 
 type Props = {
   family: FamilyWithProfiles | null;
@@ -61,13 +55,12 @@ export function HomeTab({ family, reloadFamily }: Props) {
   const viewerName =
     state.status === "authenticated" ? state.viewer.displayName.split(/\s+/)[0] ?? "друг" : "друг";
 
-  const [greet, setGreet] = useState(() => greetingRu(new Date().getHours()));
+  const [, setHourTick] = useState(0);
   useEffect(() => {
-    const tick = () => setGreet(greetingRu(new Date().getHours()));
-    tick();
-    const id = window.setInterval(tick, 60_000);
+    const id = window.setInterval(() => setHourTick((n) => n + 1), 60_000);
     return () => window.clearInterval(id);
   }, []);
+  const greetPrefix = dashboardGreetingForHour(lang, new Date().getHours());
 
   const clinicalId =
     state.status === "authenticated" ? formatClinicalAnonymId(state.viewer.id) : "—";
@@ -110,7 +103,6 @@ export function HomeTab({ family, reloadFamily }: Props) {
         setActiveProfileId={setActiveProfileId}
         setTab={setTab}
         viewerName={viewerName}
-        greet={greet}
         clinicalId={clinicalId}
         analysesRefreshKey={analysesRefreshKey}
         onOpenNotifications={() => setNotificationsOpen(true)}
@@ -171,11 +163,9 @@ export function HomeTab({ family, reloadFamily }: Props) {
           Профиль: {clinicalId} · Бишкек
         </p>
         <h1 className="mt-1 font-manrope text-h2 font-bold tracking-tight text-health-text sm:text-display sm:leading-[2.5rem]">
-          {greet}, {viewerName}.
+          {greetPrefix}, {viewerName}
         </h1>
-        <p className="mt-1 text-body text-health-text-secondary">
-          Загружайте анализы и следите за динамикой — так картина здоровья будет точнее.
-        </p>
+        <p className="mt-1 text-body text-health-text-secondary">{t(lang, "dashboard.greetingSubtitle")}</p>
       </motion.section>
 
       {authReady && isAuthenticated && profiles.length > 0 ? (

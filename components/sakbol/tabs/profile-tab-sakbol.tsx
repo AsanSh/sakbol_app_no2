@@ -25,7 +25,7 @@ import {
   updateProfileVitals,
 } from "@/app/actions/profile";
 import { updateManagedProfileKinship } from "@/app/actions/family";
-import { profileKinshipLabelRu } from "@/lib/profile-kinship";
+import { profileKinshipLabel } from "@/lib/profile-kinship";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 import { cn } from "@/lib/utils";
 
@@ -166,7 +166,7 @@ function FamilyMemberEditableCard({
                 : "bg-sky-300 text-sky-950 shadow-inner ring-1 ring-sky-600/40",
             )}
           >
-            {profileKinshipLabelRu(profile)}
+            {profileKinshipLabel(profile, lang)}
           </span>
         </div>
         <ChevronDown

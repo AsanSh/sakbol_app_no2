@@ -67,6 +67,8 @@ type Props = {
   onOpenAnalyses?: () => void;
   /** Вкладка «Динамика»: только сравнение и графики, без списка карточек. */
   mode?: "default" | "trends";
+  /** Скрыть H2 и подпись (родитель уже дал контекст, напр. блок «Обследования»). */
+  hideHeader?: boolean;
 };
 
 export function AnalysesPreview({
@@ -76,6 +78,7 @@ export function AnalysesPreview({
   compact = false,
   onOpenAnalyses,
   mode = "default",
+  hideHeader = false,
 }: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
@@ -164,28 +167,32 @@ export function AnalysesPreview({
         compact ? "flex h-full min-h-0 flex-col overflow-hidden p-2" : !isTrends && "p-4 sm:p-5",
       )}
     >
-      <h2
-        className={cn(
-          "font-manrope font-semibold text-health-text",
-          compact ? "text-xs" : "text-h3",
-        )}
-      >
-        {isTrends ? t(lang, "trends.pageTitle") : t(lang, "analyses.title")}
-      </h2>
-      {!compact ? (
-        isTrends ? (
-          <p className="mt-1 text-body text-health-text-secondary">{t(lang, "trends.pageSubtitle")}</p>
-        ) : (
-          <>
-            <p className="mt-1 text-body text-health-text-secondary">{t(lang, "analyses.subtitle")}</p>
-            <p className="mt-1 text-caption leading-relaxed text-health-text-secondary/90">
-              {t(lang, "analyses.labsBrands")}
-            </p>
-          </>
-        )
-      ) : (
-        <p className="mt-0.5 truncate text-[10px] text-health-text-secondary">{t(lang, "analyses.subtitle")}</p>
-      )}
+      {!hideHeader ? (
+        <>
+          <h2
+            className={cn(
+              "font-manrope font-semibold text-health-text",
+              compact ? "text-xs" : "text-h3",
+            )}
+          >
+            {isTrends ? t(lang, "trends.pageTitle") : t(lang, "analyses.title")}
+          </h2>
+          {!compact ? (
+            isTrends ? (
+              <p className="mt-1 text-body text-health-text-secondary">{t(lang, "trends.pageSubtitle")}</p>
+            ) : (
+              <>
+                <p className="mt-1 text-body text-health-text-secondary">{t(lang, "analyses.subtitle")}</p>
+                <p className="mt-1 text-caption leading-relaxed text-health-text-secondary/90">
+                  {t(lang, "analyses.labsBrands")}
+                </p>
+              </>
+            )
+          ) : (
+            <p className="mt-0.5 truncate text-[10px] text-health-text-secondary">{t(lang, "analyses.subtitle")}</p>
+          )}
+        </>
+      ) : null}
 
       {!isTrends && !compact && rows && rows.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-2">

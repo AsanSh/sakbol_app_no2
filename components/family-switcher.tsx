@@ -12,7 +12,7 @@ import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { ProfileAvatar } from "@/components/ui/avatar";
-import { profileKinshipLabelRu } from "@/lib/profile-kinship";
+import { profileKinshipLabel } from "@/lib/profile-kinship";
 
 type FamilySwitcherProps = {
   profiles: ProfileSummary[];
@@ -183,7 +183,7 @@ export function FamilySwitcher({
                       active ? "text-health-text-secondary" : "text-health-text-secondary/85",
                     )}
                   >
-                    {profileKinshipLabelRu(p)}
+                    {profileKinshipLabel(p, lang)}
                   </span>
                 </span>
               </motion.button>

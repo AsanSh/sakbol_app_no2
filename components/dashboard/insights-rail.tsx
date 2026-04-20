@@ -2,13 +2,17 @@
 
 import { DsCard } from "@/components/ui/ds-card";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/language-context";
+import { t } from "@/lib/i18n";
 
 type Props = {
   className?: string;
 };
 
-/** Боковая колонка дашборда: без демо-оценок и «советов» без источника данных. */
+/** Боковая колонка: тариф (юридический дисклеймер — в `DisclaimerCard` на дашборде). */
 export function InsightsRail({ className }: Props) {
+  const { lang } = useLanguage();
+
   return (
     <aside
       className={cn(
@@ -17,10 +21,8 @@ export function InsightsRail({ className }: Props) {
       )}
     >
       <DsCard variant="muted" className="p-4 sm:p-5">
-        <p className="text-caption font-semibold text-health-text-secondary">Напоминание</p>
-        <p className="mt-2 text-sm font-medium leading-snug text-health-text">
-          Sakbol не заменяет очный приём врача. При ухудшении самочувствия обратитесь в клинику.
-        </p>
+        <p className="text-caption font-semibold text-health-text-secondary">{t(lang, "paywall.title")}</p>
+        <p className="mt-2 text-sm font-medium leading-snug text-health-text">{t(lang, "paywall.body")}</p>
       </DsCard>
     </aside>
   );
