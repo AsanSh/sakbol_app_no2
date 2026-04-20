@@ -1,0 +1,3324 @@
+{
+  "generatedAt": "2026-04-20T18:52:14.923Z",
+  "source": "https://doctors.kg",
+  "doctors": [
+    {
+      "id": 748,
+      "slug": "tebenkov-dmitrij-sergeevich",
+      "name": "Тебеньков Дмитрий Сергеевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/tebenkov-dmitrij-sergeevich/",
+      "categorySlugs": [
+        "rentgenolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-70-79-03"
+      ],
+      "streetAddress": "Московская, 186",
+      "locality": "",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": null,
+      "priceRange": null,
+      "latitude": 42.870276,
+      "longitude": 74.58312
+    },
+    {
+      "id": 743,
+      "slug": "nina-evgenevna-zemlyanaya",
+      "name": "Нина Евгеньевна Земляная",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/nina-evgenevna-zemlyanaya/",
+      "categorySlugs": [
+        "vrach-lfk",
+        "limfolog",
+        "fizioterapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)554-12-39-87"
+      ],
+      "streetAddress": "ул Раззакова 15",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2024/11/3af668ee-2a09-41b5-b1c5-53bbe45b11f3.jpg",
+      "priceRange": " сом 100 -  сом 2&nbsp;000",
+      "latitude": 42.87779,
+      "longitude": 74.606693
+    },
+    {
+      "id": 738,
+      "slug": "halilov-nuradin-mustafaevich",
+      "name": "Халилов Нурадин Мустафаевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/halilov-nuradin-mustafaevich/",
+      "categorySlugs": [
+        "lor"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-57-56-91",
+        "(+996)553-57-56-91",
+        "(+996)704-57-56-91"
+      ],
+      "streetAddress": "Байтик Баатыра 3в",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "http://unimed.kg/",
+      "image": "https://doctors.kg/wp-content/uploads/2024/11/halilov-nuradin-mustafaevich-doctor_lor-kg-•-foto-i-video-v-instagram-11-18-2024_04_30_pm.png",
+      "priceRange": " сом 500 -  сом 1&nbsp;500",
+      "latitude": 42.87779,
+      "longitude": 74.606693
+    },
+    {
+      "id": 733,
+      "slug": "dzhusupbekov-samat-dzhusupbekovich-2",
+      "name": "Джусупбеков Самат Джусупбекович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dzhusupbekov-samat-dzhusupbekovich-2/",
+      "categorySlugs": [
+        "allergolog",
+        "venerolog",
+        "vrach-obshhej-praktiki",
+        "gastroenterolog",
+        "dermatolog",
+        "immunolog",
+        "lazernyj-hirurg",
+        "onkolog-dermatolog",
+        "hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)505-14-03-03"
+      ],
+      "streetAddress": "Дэн Сяопина, 2Б",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2024/09/screenshot_2024-09-13-21-12-41-735-edit_com.miui_.gallery.jpg",
+      "priceRange": " сом 1&nbsp;000 -  сом 1&nbsp;000",
+      "latitude": 42.877278,
+      "longitude": 74.56162
+    },
+    {
+      "id": 710,
+      "slug": "davletova-meerim-2",
+      "name": "Давлетова Мээрим",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/davletova-meerim-2/",
+      "categorySlugs": [
+        "kosmetolog-estetist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)556-87-77-82"
+      ],
+      "streetAddress": "Московская 191",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/07/meerim-dav.webp",
+      "priceRange": " сом 1&nbsp;000 -  сом 10&nbsp;000",
+      "latitude": 42.86667,
+      "longitude": 74.56667
+    },
+    {
+      "id": 721,
+      "slug": "tronina-darya-dmitrievna",
+      "name": "Тронина Дарья Дмитриевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/tronina-darya-dmitrievna/",
+      "categorySlugs": [
+        "vrach-uzi",
+        "kardiolog",
+        "funkczionalnyj-diagnost"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)554-90-34-33"
+      ],
+      "streetAddress": "Медико-диагностический центр \"Sistem\", ул. Юнусалиева д. 57",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://ok.ru/profile/587170103043?utm_campaign=web_share&utm_content=profile",
+      "image": "https://doctors.kg/wp-content/uploads/2022/07/ya.jpg",
+      "priceRange": " сом 600 -  сом 600",
+      "latitude": 42.850377,
+      "longitude": 74.62301
+    },
+    {
+      "id": 717,
+      "slug": "chernovik",
+      "name": "Черновик",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/chernovik/",
+      "categorySlugs": [],
+      "cityFilterSlug": null,
+      "cityCode": null,
+      "telephones": [],
+      "streetAddress": null,
+      "locality": null,
+      "region": null,
+      "country": null,
+      "website": null,
+      "image": null,
+      "priceRange": null,
+      "latitude": null,
+      "longitude": null
+    },
+    {
+      "id": 705,
+      "slug": "dzhusupbekov-samat-dzhusupbekovich",
+      "name": "Джусупбеков Самат Джусупбекович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dzhusupbekov-samat-dzhusupbekovich/",
+      "categorySlugs": [
+        "venerolog",
+        "vrach-obshhej-praktiki",
+        "gastroenterolog",
+        "dermatolog",
+        "terapevt",
+        "hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)505-14-03-03"
+      ],
+      "streetAddress": "Тыныстанова, 1",
+      "locality": "110 квартал ж/м",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": null,
+      "priceRange": null,
+      "latitude": 42.893352,
+      "longitude": 74.52534
+    },
+    {
+      "id": 593,
+      "slug": "umarova-zhamilya-zhalgashevna",
+      "name": "Умарова Жамиля Жалгашевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/umarova-zhamilya-zhalgashevna/",
+      "categorySlugs": [
+        "nevrolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)708-59-65-88"
+      ],
+      "streetAddress": "ул.​Сагынбая манасчы, 77",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/whatsapp_image_2019-05-08_at_14.16.16.jpeg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.870129,
+      "longitude": 74.612857
+    },
+    {
+      "id": 591,
+      "slug": "toktohodzhaeva-gulbara-manapovna",
+      "name": "Токтоходжаева Гульбара Манаповна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/toktohodzhaeva-gulbara-manapovna/",
+      "categorySlugs": [
+        "nevrolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-90-90-01",
+        "(+996)707-90-90-01"
+      ],
+      "streetAddress": "ул.Джунусалиева, 83",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/catalog_213bd195cdf8702053c20b73085fa1d5.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.852486,
+      "longitude": 74.58132
+    },
+    {
+      "id": 589,
+      "slug": "raimkulov-alibek-ermuhambetovich",
+      "name": "Раимкулов Алибек Эрмухамбетович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/raimkulov-alibek-ermuhambetovich/",
+      "categorySlugs": [
+        "flebolog",
+        "hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-30-03-03"
+      ],
+      "streetAddress": "ул.Московская, 186",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/91616974_869525753520829_6689966360990474979_n.jpg",
+      "priceRange": " сом 800 -  сом 10&nbsp;000",
+      "latitude": 42.870282,
+      "longitude": 74.583032
+    },
+    {
+      "id": 587,
+      "slug": "muhamedalieva-nargiza-nasyrhanovna",
+      "name": "Мухамедалиева Наргиза Насырхановна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/muhamedalieva-nargiza-nasyrhanovna/",
+      "categorySlugs": [
+        "ortoped"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-31-25-24"
+      ],
+      "streetAddress": "ул.Насирдина Исанова, 60",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/muhamedalieva.jpg",
+      "priceRange": " сом 550 -  сом 10&nbsp;000",
+      "latitude": 42.873302,
+      "longitude": 74.591075
+    },
+    {
+      "id": 585,
+      "slug": "mambetova-anara-erkinovna",
+      "name": "Мамбетова Анара Эркиновна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/mambetova-anara-erkinovna/",
+      "categorySlugs": [
+        "fizioterapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)553-66-66-66"
+      ],
+      "streetAddress": "проспект Чынгыза Айтматова, 20",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/mambetova.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.857985,
+      "longitude": 74.587221
+    },
+    {
+      "id": 583,
+      "slug": "yuldashev-ravshan-momunovich",
+      "name": "Юлдашев Равшан Момунович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/yuldashev-ravshan-momunovich/",
+      "categorySlugs": [
+        "vertebrolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-92-58-07"
+      ],
+      "streetAddress": "ул.​Суеркулова, 8/3",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/1093ed3e-ae3c-44d1-a9e2-f27b9be46532_-_kopiia.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.837314,
+      "longitude": 74.603733
+    },
+    {
+      "id": 581,
+      "slug": "saparova-nursuluu-mustafaevna",
+      "name": "Сапарова Нурсулуу Мустафаевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/saparova-nursuluu-mustafaevna/",
+      "categorySlugs": [
+        "gastroenterolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)709-68-07-73",
+        "(+996)555-68-07-73"
+      ],
+      "streetAddress": "микрорайон Тунгуч, 64/4",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/saparova_nursuluu_mustafaevna.jpg",
+      "priceRange": " сом 400 -  сом 10&nbsp;000",
+      "latitude": 42.854366,
+      "longitude": 74.687377
+    },
+    {
+      "id": 579,
+      "slug": "petrosyancz-aleksej-vladimirovich",
+      "name": "Петросьянц Алексей Владимирович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/petrosyancz-aleksej-vladimirovich/",
+      "categorySlugs": [
+        "androlog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-45-44-90"
+      ],
+      "streetAddress": "ул.Тимирязева, 67а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/dsc_8145-scaled.jpg",
+      "priceRange": " сом 600 -  сом 10&nbsp;000",
+      "latitude": 42.87421,
+      "longitude": 74.579626
+    },
+    {
+      "id": 577,
+      "slug": "kultaev-uran-tashbolotovich",
+      "name": "Култаев Уран Ташболотович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kultaev-uran-tashbolotovich/",
+      "categorySlugs": [],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)554-95-19-95"
+      ],
+      "streetAddress": "ул.​Бейшеналиевой, 54а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/kultaev_uran_tashbolotovich.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879291,
+      "longitude": 74.572936
+    },
+    {
+      "id": 575,
+      "slug": "amatov-daniyar-apasovich",
+      "name": "Аматов Данияр Апасович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/amatov-daniyar-apasovich/",
+      "categorySlugs": [
+        "aritmolog",
+        "kardiolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-56-50-52"
+      ],
+      "streetAddress": "ул.Касыма Тыныстанова, 1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/amatov.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.838689,
+      "longitude": 74.605663
+    },
+    {
+      "id": 574,
+      "slug": "chodenova-kyyal-kubanychevna",
+      "name": "Чоденова Кыял Кубанычевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/chodenova-kyyal-kubanychevna/",
+      "categorySlugs": [
+        "allergolog",
+        "dermatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)700-50-41-96"
+      ],
+      "streetAddress": "ул.​Якова Логвиненко, 8",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2021/09/cropped-doctor.png",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.86822,
+      "longitude": 74.598231
+    },
+    {
+      "id": 572,
+      "slug": "alybaeva-anara-ablasovna",
+      "name": "Алыбаева Анара Абласовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/alybaeva-anara-ablasovna/",
+      "categorySlugs": [
+        "akusher"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-30-35-53"
+      ],
+      "streetAddress": "ул.Юсупа Абдрахманова, 144а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/alybaeva_new.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.866987,
+      "longitude": 74.610863
+    },
+    {
+      "id": 599,
+      "slug": "rafibekov-eldar-dzhangirovich",
+      "name": "Рафибеков Эльдар Джангирович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/rafibekov-eldar-dzhangirovich/",
+      "categorySlugs": [
+        "proktolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-30-35-53"
+      ],
+      "streetAddress": "ул.Юсупа Абдрахманова, 144а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/catalog_6146531a89a2d2462e0847eb8849d3e6.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.867396,
+      "longitude": 74.6109
+    },
+    {
+      "id": 597,
+      "slug": "dzhoroeva-gulzada-eshalyevna",
+      "name": "Джороева Гулзада Эшалыевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dzhoroeva-gulzada-eshalyevna/",
+      "categorySlugs": [
+        "venerolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)703-15-02-66"
+      ],
+      "streetAddress": "Джеты-Огузский переулок, 8",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/dzhoroea.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.89025,
+      "longitude": 74.595467
+    },
+    {
+      "id": 595,
+      "slug": "magizova-svetlana-nasyrkulovna",
+      "name": "Магизова Светлана Насыркуловна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/magizova-svetlana-nasyrkulovna/",
+      "categorySlugs": [
+        "dermatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-62-40-40"
+      ],
+      "streetAddress": "ул.Киевская улица, 65",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/4n8a7905-scaled.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.876221,
+      "longitude": 74.589443
+    },
+    {
+      "id": 437,
+      "slug": "asanaliev-nurbek-zholchuevich",
+      "name": "Асаналиев Нурбек Жолчуевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/asanaliev-nurbek-zholchuevich/",
+      "categorySlugs": [
+        "endoskopist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-30-35-53"
+      ],
+      "streetAddress": "ул.Абдрахманова, 144а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://medcenter.kg/doctorsmedcenter/asanaliev-nurbek-zholchuevich/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/asanaliev.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.867407,
+      "longitude": 74.610879
+    },
+    {
+      "id": 436,
+      "slug": "esenkulova-nurzhamal-asylbekovna",
+      "name": "Эсенкулова Нуржамал Асылбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/esenkulova-nurzhamal-asylbekovna/",
+      "categorySlugs": [
+        "endokrinolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)707-10-31-03"
+      ],
+      "streetAddress": "ул.Юлиуса Фучика, 34",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2021/09/cropped-doctor.png",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.879434,
+      "longitude": 74.562283
+    },
+    {
+      "id": 434,
+      "slug": "karagulova-gulnura-orozbekovna",
+      "name": "Карагулова Гульнура Орозбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/karagulova-gulnura-orozbekovna/",
+      "categorySlugs": [
+        "embriolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)552-20-62-06"
+      ],
+      "streetAddress": "Джал-29 микрорайон, 18",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/karagulova.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.831691,
+      "longitude": 74.567255
+    },
+    {
+      "id": 432,
+      "slug": "toktombaev-meder-amanturovich",
+      "name": "Токтомбаев Медер Амантурович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/toktombaev-meder-amanturovich/",
+      "categorySlugs": [
+        "chelyustno-liczevoj-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-62-27-64"
+      ],
+      "streetAddress": "ул.​Тоголок Молдо, 3",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/a61f5517-41c8-455c-b110-136f303b730c.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.8715,
+      "longitude": 74.596693
+    },
+    {
+      "id": 430,
+      "slug": "imanalieva-gulzada-alhanbekovna",
+      "name": "Иманалиева Гульзада Алханбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/imanalieva-gulzada-alhanbekovna/",
+      "categorySlugs": [
+        "funkczionalnyj-diagnost"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)501-22-40-22"
+      ],
+      "streetAddress": "​Манаса, 41а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/imanalieva_g.a..jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.872392,
+      "longitude": 74.58835
+    },
+    {
+      "id": 428,
+      "slug": "asambaev-abdykadyr-asambaevich",
+      "name": "Асамбаев Абдыкадыр Асамбаевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/asambaev-abdykadyr-asambaevich/",
+      "categorySlugs": [
+        "ftiziatr"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-56-50-52"
+      ],
+      "streetAddress": "ул.Касыма Тыныстанова, 1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/asambaev1.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.838677,
+      "longitude": 74.605658
+    },
+    {
+      "id": 426,
+      "slug": "alekseev-dmitrij-nikolaevich",
+      "name": "Алексеев Дмитрий Николаевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/alekseev-dmitrij-nikolaevich/",
+      "categorySlugs": [
+        "flebolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-30-03-03"
+      ],
+      "streetAddress": "ул.Московская, 186",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/alekseev-scaled.jpg",
+      "priceRange": " сом 800 -  сом 10&nbsp;000",
+      "latitude": 42.870286,
+      "longitude": 74.582979
+    },
+    {
+      "id": 424,
+      "slug": "klipacheva-oksana-yurevna",
+      "name": "Клипачева Оксана Юрьевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/klipacheva-oksana-yurevna/",
+      "categorySlugs": [
+        "fizioterapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-56-50-52"
+      ],
+      "streetAddress": "ул.Касыма Тыныстанова, 1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/klipacheva.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.839037,
+      "longitude": 74.605585
+    },
+    {
+      "id": 422,
+      "slug": "baltabaev-alidzhon-mir-alievich",
+      "name": "Балтабаев Алиджон Мир-Алиевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/baltabaev-alidzhon-mir-alievich/",
+      "categorySlugs": [
+        "triholog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-31-09-29"
+      ],
+      "streetAddress": "ул.Юнусалиева, 173/7",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/baltabaev_alidzhon_mir-alievich.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.829712,
+      "longitude": 74.621893
+    },
+    {
+      "id": 420,
+      "slug": "astapova-svetlana-grigorevna",
+      "name": "Астапова Светлана Григорьевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/astapova-svetlana-grigorevna/",
+      "categorySlugs": [
+        "transfuziolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-57-56-91"
+      ],
+      "streetAddress": "ул.Байтик Баатыра, 3в",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/astapova.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.836613,
+      "longitude": 74.608572
+    },
+    {
+      "id": 418,
+      "slug": "mamyrov-maksat-kemelbekovich",
+      "name": "Мамыров Максат Кемелбекович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/mamyrov-maksat-kemelbekovich/",
+      "categorySlugs": [
+        "ortoped",
+        "travmatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-91-19-99"
+      ],
+      "streetAddress": "ул.Ибраимова, 103",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://cortex.kg/staff/mamyrov-m-k/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/mamirov.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879151,
+      "longitude": 74.618018
+    },
+    {
+      "id": 416,
+      "slug": "nazarov-ulan-sadyrbekovich",
+      "name": "Назаров Улан Садырбекович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/nazarov-ulan-sadyrbekovich/",
+      "categorySlugs": [
+        "torakalnyj-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-43-93-13"
+      ],
+      "streetAddress": "ул.Гоголя, 133",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://zdorovie-lab.kg/%D1%81%D0%BF%D0%B5%D1%86%D0%B8%D0%B0%D0%BB%D0%B8%D1%81%D1%82%D1%8B/%D0%BD%D0%B0%D0%B7%D0%B0%D1%80%D0%BE%D0%B2-%D1%83%D0%BB%D0%B0%D0%BD-%D1%81%D0%B0%D0%B4%D1%8B%D1%80%D0%B1%D0%B5%D0%BA%D0%BE%D0%B2%D0%B8%D1%87/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/nazarov.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.880025,
+      "longitude": 74.619973
+    },
+    {
+      "id": 414,
+      "slug": "kozlovskij-aleksandr-igorevich",
+      "name": "Козловский Александр Игоревич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kozlovskij-aleksandr-igorevich/",
+      "categorySlugs": [
+        "toksikolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)500-21-50-51"
+      ],
+      "streetAddress": "ул.Ростовская,6",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://idalgo.kg/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/bezymyannyj-4.png",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.883858,
+      "longitude": 74.564253
+    },
+    {
+      "id": 412,
+      "slug": "isakanova-anara-zhakshylykovna",
+      "name": "Исаканова Анара Жакшылыковна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/isakanova-anara-zhakshylykovna/",
+      "categorySlugs": [
+        "terapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-44-71-17"
+      ],
+      "streetAddress": "микрорайон Тунгуч,64/4",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/isakanova_anara_zhakshylykovna.jpg",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.854412,
+      "longitude": 74.687328
+    },
+    {
+      "id": 410,
+      "slug": "oruzieva-mahira-turusbekovna",
+      "name": "Орузиева Махира Турусбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/oruzieva-mahira-turusbekovna/",
+      "categorySlugs": [
+        "surdolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-88-19-55"
+      ],
+      "streetAddress": "ул.Тыналиева, 2/7 блок С",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/oruzieva_mahira_turusbekovna.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.839987,
+      "longitude": 74.570188
+    },
+    {
+      "id": 408,
+      "slug": "sivara-samakova",
+      "name": "Сивара Самакова",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/sivara-samakova/",
+      "categorySlugs": [
+        "speczialist-po-grudnomu-vskarmlivani"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)551-70-35-55"
+      ],
+      "streetAddress": "Выезд на дом",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/bezymyannyj-3.png",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.881244,
+      "longitude": 74.603691
+    },
+    {
+      "id": 406,
+      "slug": "esekeev-erkinbek-bazarbaevich",
+      "name": "Эсекеев Эркинбек Базарбаевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/esekeev-erkinbek-bazarbaevich/",
+      "categorySlugs": [
+        "sosudistyj-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)500-23-24-48"
+      ],
+      "streetAddress": "ул.Сыдыкова, 139",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://ok.ru/group/60527677866033?st._aid=GroupTopicLayer_VisitProfile",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/esekeev_erkinbek_bazarbaevich.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.873958,
+      "longitude": 74.593155
+    },
+    {
+      "id": 403,
+      "slug": "myrzaahmatova-ajzat-kubatbekovna",
+      "name": "Мырзаахматова Айзат Кубатбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/myrzaahmatova-ajzat-kubatbekovna/",
+      "categorySlugs": [
+        "kardiolog",
+        "pulmonolog",
+        "somnolog",
+        "terapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-38-94-36",
+        "(+996)555-81-29-10"
+      ],
+      "streetAddress": "ул.Ибраимова, 42",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/myrzaahmatova.jpeg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.868025,
+      "longitude": 74.615994
+    },
+    {
+      "id": 401,
+      "slug": "ivahnik-natalya-vladimirovna",
+      "name": "Ивахник Наталья Владимировна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/ivahnik-natalya-vladimirovna/",
+      "categorySlugs": [
+        "psihoterapevt",
+        "seksolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)772-50-34-91"
+      ],
+      "streetAddress": "ул.Суеркулова, 1а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/ivahnik.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.838003,
+      "longitude": 74.613092
+    },
+    {
+      "id": 399,
+      "slug": "gribinyukova-tatyana-nikolaevna",
+      "name": "Грибинюкова Татьяна Николаевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/gribinyukova-tatyana-nikolaevna/",
+      "categorySlugs": [
+        "massazhist",
+        "refleksoterapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-88-16-25"
+      ],
+      "streetAddress": "Загорская улица, 4",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/gribinyukova-tatyana-nikolaevna-400x400-1.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879602,
+      "longitude": 74.685116
+    },
+    {
+      "id": 397,
+      "slug": "turdieva-aliya-sagynbekovna",
+      "name": "Турдиева Алия Сагынбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/turdieva-aliya-sagynbekovna/",
+      "categorySlugs": [
+        "ginekolog",
+        "reproduktolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-88-45-67"
+      ],
+      "streetAddress": "ул.Байтик Баатыра, 70",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/turdieva_aliya_sagynbekovna.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.854521,
+      "longitude": 74.609543
+    },
+    {
+      "id": 395,
+      "slug": "dzhusupbaeva-gulnara-turarovna",
+      "name": "Джусупбаева Гульнара Тураровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dzhusupbaeva-gulnara-turarovna/",
+      "categorySlugs": [
+        "rentgenolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)707-10-31-03"
+      ],
+      "streetAddress": "ул.Юлиуса Фучика, 34",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/dzhusupbaeva_gulnara.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879418,
+      "longitude": 74.562466
+    },
+    {
+      "id": 393,
+      "slug": "lobanchenko-olga-valerevna",
+      "name": "Лобанченко Ольга Валерьевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/lobanchenko-olga-valerevna/",
+      "categorySlugs": [
+        "revmatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-31-73-10"
+      ],
+      "streetAddress": "ул.Табышалиева, 34",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/lobanchenko.jpg",
+      "priceRange": " сом 1&nbsp;500 -  сом 10&nbsp;000",
+      "latitude": 42.871041,
+      "longitude": 74.585765
+    },
+    {
+      "id": 391,
+      "slug": "balbachan-boris-ivanovich-2",
+      "name": "Балбачан Борис Иванович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/balbachan-boris-ivanovich-2/",
+      "categorySlugs": [
+        "reabilitolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-98-89-78"
+      ],
+      "streetAddress": "ул.Жоомарта Боконбаева, 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/rehabilitation/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/balbachan.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.867646,
+      "longitude": 74.580305
+    },
+    {
+      "id": 389,
+      "slug": "baudinov-ilyar-akbarovich",
+      "name": "Баудинов Ильяр Акбарович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/baudinov-ilyar-akbarovich/",
+      "categorySlugs": [
+        "radiolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-90-34-33",
+        "(+996)702-90-34-33",
+        "(+996)778-90-34-33",
+        "(+996)554-90-34-33"
+      ],
+      "streetAddress": "ул.Юнусалиева, 57",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/1296828.63814b4a122a8c36336073b37de1c4b8.500.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.850342,
+      "longitude": 74.622965
+    },
+    {
+      "id": 387,
+      "slug": "osmonov-batyr-rashidovich",
+      "name": "Осмонов Батыр Рашидович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/osmonov-batyr-rashidovich/",
+      "categorySlugs": [
+        "pulmonolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-56-50-52"
+      ],
+      "streetAddress": "ул.Касыма Тыныстанова, 1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "http://medcenter-kgma.kg/doctors/osmonov-batir-rashidovich.html",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/osmonov-1.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.83875,
+      "longitude": 74.605626
+    },
+    {
+      "id": 385,
+      "slug": "toksonbaeva-tynara-nurmanbetovna",
+      "name": "Токсонбаева Тынара Нурманбетовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/toksonbaeva-tynara-nurmanbetovna/",
+      "categorySlugs": [
+        "psihoterapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-54-94-41"
+      ],
+      "streetAddress": "ул.Исы Ахунбаева, 98",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/whatsapp_image_2019-08-09_at_11.53.36.jpeg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.842518,
+      "longitude": 74.601952
+    },
+    {
+      "id": 383,
+      "slug": "kotuleva-polina-igorevna",
+      "name": "Котулева Полина Игоревна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kotuleva-polina-igorevna/",
+      "categorySlugs": [
+        "psiholog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)700-13-43-08"
+      ],
+      "streetAddress": "ул.Насирдина Исанова, 105/1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/img_8383.jpg",
+      "priceRange": " сом 1&nbsp;200 -  сом 10&nbsp;000",
+      "latitude": 42.877562,
+      "longitude": 74.593119
+    },
+    {
+      "id": 381,
+      "slug": "komarover-ilya-nuhimovich",
+      "name": "Комаровер Илья Нухимович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/komarover-ilya-nuhimovich/",
+      "categorySlugs": [
+        "psihiatr",
+        "psihoterapevt",
+        "seksolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-56-50-52",
+        "(+996)773-22-90-62",
+        "(+996)312-56-50-08"
+      ],
+      "streetAddress": "ул.Касыма Тыныстанова, 1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "http://www.medcenter-kgma.kg/diagnosts/komarover-ilia-nuchimovich.html",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/komarover_ilya_nuhimovich_m8qirwq.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.838947,
+      "longitude": 74.605598
+    },
+    {
+      "id": 378,
+      "slug": "sydykov-urmatbek-omarovich",
+      "name": "Сыдыков Урматбек Омарович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/sydykov-urmatbek-omarovich/",
+      "categorySlugs": [
+        "proktolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)552-62-10-22"
+      ],
+      "streetAddress": "ул.Ажыбек баатыра, 10",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "http://proctolog.kg/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/sydykov_fkja6wh.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.840761,
+      "longitude": 74.582261
+    },
+    {
+      "id": 375,
+      "slug": "buranchieva-asel-dzhenishbekovna",
+      "name": "Буранчиева Асель Дженишбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/buranchieva-asel-dzhenishbekovna/",
+      "categorySlugs": [
+        "podolog-podiatr"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-91-25-25"
+      ],
+      "streetAddress": "ул.Московская, 248",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/buranchieva.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.870754,
+      "longitude": 74.572609
+    },
+    {
+      "id": 308,
+      "slug": "mambetalieva-zhyldyz-munurovna",
+      "name": "Мамбеталиева Жылдыз Мунуровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/mambetalieva-zhyldyz-munurovna/",
+      "categorySlugs": [
+        "massazhist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-44-71-17"
+      ],
+      "streetAddress": "Тунгуч микрорайон, 64/4",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/mambetalieva_zhyldyz_8ly8qsc.jpg",
+      "priceRange": " сом 350 -  сом 10&nbsp;000",
+      "latitude": 42.854341,
+      "longitude": 74.687358
+    },
+    {
+      "id": 306,
+      "slug": "eginbaev-daniyar-yusupovich",
+      "name": "Эгинбаев Данияр Юсупович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/eginbaev-daniyar-yusupovich/",
+      "categorySlugs": [
+        "manualnyj-terapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)554-14-29-42"
+      ],
+      "streetAddress": "ул.Тыныстанова 1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/44190246_10215310515909236_1874629250473000960_n.jpg",
+      "priceRange": " сом 700 -  сом 10&nbsp;000",
+      "latitude": 42.838565,
+      "longitude": 74.605567
+    },
+    {
+      "id": 304,
+      "slug": "makieva-kyyal-bolobekovna",
+      "name": "Макиева Кыял Болобековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/makieva-kyyal-bolobekovna/",
+      "categorySlugs": [
+        "mammolog",
+        "onkolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-58-94-96"
+      ],
+      "streetAddress": "Токомбаева, 45/1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/makieva_kyyal.jpg",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.828163,
+      "longitude": 74.61045
+    },
+    {
+      "id": 302,
+      "slug": "kadyrov-ruslan-mannafovich",
+      "name": "Кадыров Руслан Маннафович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kadyrov-ruslan-mannafovich/",
+      "categorySlugs": [
+        "maloinvazivnyj-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)705-87-13-33"
+      ],
+      "streetAddress": "проспект Жибек-Жолу, 224",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://surgery.cortex.kg/doctorscortex/kadyrov-ruslan-mannafovich/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/img_doctor_1.png",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.885558,
+      "longitude": 74.624991
+    },
+    {
+      "id": 299,
+      "slug": "satybaldieva-ajnagul-zhaparovna",
+      "name": "Сатыбалдиева Айнагул Жапаровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/satybaldieva-ajnagul-zhaparovna/",
+      "categorySlugs": [
+        "lor"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-43-54-23"
+      ],
+      "streetAddress": "Киевская, 27/1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/satybaldieva_ajnagul_zhaparovna.jpg",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.874468,
+      "longitude": 74.615975
+    },
+    {
+      "id": 297,
+      "slug": "shaltakova-gulbu-chalovna",
+      "name": "Шалтакова Гулбу Чаловна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/shaltakova-gulbu-chalovna/",
+      "categorySlugs": [
+        "lazernyj-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)705-88-13-46"
+      ],
+      "streetAddress": "ул.7 апреля 3/1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/49348582_385757835304439_2951934647493197824_n.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.851242,
+      "longitude": 74.634793
+    },
+    {
+      "id": 295,
+      "slug": "abdyrahmanova-toktokan-raimkulovna",
+      "name": "Абдырахманова Токтокан Раимкуловна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/abdyrahmanova-toktokan-raimkulovna/",
+      "categorySlugs": [
+        "kosmetolog-estetist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-31-28-65"
+      ],
+      "streetAddress": "пр.Чуй 261 (между ул.Турусбекова и ул. Уметалиева)",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/942759.8d4d96fc546789370758b2997c6847da.500.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.877031,
+      "longitude": 74.583325
+    },
+    {
+      "id": 293,
+      "slug": "tokobaev-timur",
+      "name": "Токобаев Тимур",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/tokobaev-timur/",
+      "categorySlugs": [
+        "kineziolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)755-14-09-10"
+      ],
+      "streetAddress": "ул. Б. Батыра, 37 /Дружба 17 каб",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/20191211_134710.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.854306,
+      "longitude": 74.612593
+    },
+    {
+      "id": 291,
+      "slug": "tashmamatov-abdiashim-zhanybaevich",
+      "name": "Ташмаматов Абдиашим Жаныбаевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/tashmamatov-abdiashim-zhanybaevich/",
+      "categorySlugs": [
+        "kardiohirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-88-06-88"
+      ],
+      "streetAddress": "Касыма Тыныстанова, 2/1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/whatsapp_image_2020-11-01_at_23.39.01.jpeg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.83859,
+      "longitude": 74.604138
+    },
+    {
+      "id": 289,
+      "slug": "mamankulova-irina-rustambekovna",
+      "name": "Маманкулова Ирина Рустамбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/mamankulova-irina-rustambekovna/",
+      "categorySlugs": [
+        "kardiolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-91-01-50"
+      ],
+      "streetAddress": "ул.Суеркулова, 8/3",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/mamankulova.png",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.837207,
+      "longitude": 74.603711
+    },
+    {
+      "id": 288,
+      "slug": "abdykerimov-mamaziya-mansurovich",
+      "name": "Абдыкеримов Мамазия Мансурович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/abdykerimov-mamaziya-mansurovich/",
+      "categorySlugs": [
+        "infekczionist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-62-01-02"
+      ],
+      "streetAddress": "ул. Логвиненко 21/2",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2021/09/doctor.png",
+      "priceRange": " сом 800 -  сом 10&nbsp;000",
+      "latitude": 42.867894,
+      "longitude": 74.599013
+    },
+    {
+      "id": 284,
+      "slug": "arykpaeva-cholpon-syrtbaevna",
+      "name": "Арыкпаева Чолпон Сыртбаевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/arykpaeva-cholpon-syrtbaevna/",
+      "categorySlugs": [
+        "immunolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-91-13-03"
+      ],
+      "streetAddress": "Асанбай микрорайон, 40/1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/arykpaeva.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.817642,
+      "longitude": 74.625323
+    },
+    {
+      "id": 282,
+      "slug": "salomahina-natalya-sergeevna",
+      "name": "Саломахина Наталья Сергеевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/salomahina-natalya-sergeevna/",
+      "categorySlugs": [
+        "ginekolog-endokrinolog",
+        "dietolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-67-01-47"
+      ],
+      "streetAddress": "Касыма Тыныстанова, 160а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/dsc_8235-scaled.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.885336,
+      "longitude": 74.609473
+    },
+    {
+      "id": 280,
+      "slug": "choyubekov-nurbolot-toktoralievich",
+      "name": "Чоюбеков Нурболот Токторалиевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/choyubekov-nurbolot-toktoralievich/",
+      "categorySlugs": [
+        "venerolog",
+        "dermatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)550-42-30-09"
+      ],
+      "streetAddress": "36/1-дом, 5-микрорайон",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://kojvenerolog.simplesite.com",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/f5bf15a4-b0c3-49d0-a12f-069dc3104dc1-230x230-1.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.874612,
+      "longitude": 74.63002
+    },
+    {
+      "id": 278,
+      "slug": "eraliev-bejshen-ashimovich",
+      "name": "Эралиев Бейшен Ашимович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/eraliev-bejshen-ashimovich/",
+      "categorySlugs": [
+        "gnojnyj-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-90-90-01"
+      ],
+      "streetAddress": "ул.Джунусалиева, 83",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/eraliev.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.852474,
+      "longitude": 74.581308
+    },
+    {
+      "id": 276,
+      "slug": "doktor-zina",
+      "name": "Доктор Зина",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/doktor-zina/",
+      "categorySlugs": [
+        "girudoterapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)703-34-44-84"
+      ],
+      "streetAddress": "ул.Матыева, 7а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/bezymyannpyj-3.png",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.852845,
+      "longitude": 74.564182
+    },
+    {
+      "id": 274,
+      "slug": "abdysatarova-cholpon-kachkynbekovna",
+      "name": "Абдысатарова Чолпон Качкынбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/abdysatarova-cholpon-kachkynbekovna/",
+      "categorySlugs": [
+        "ginekolog-endokrinolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-59-13-96"
+      ],
+      "streetAddress": "ул.Байтик Баатыра, 122",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/abdysatarova_cholpon_kachkynbekovna.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.859374,
+      "longitude": 74.610222
+    },
+    {
+      "id": 272,
+      "slug": "akmatova-asel-iskenderovna",
+      "name": "Акматова Асель Искендеровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/akmatova-asel-iskenderovna/",
+      "categorySlugs": [
+        "ginekolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-43-02-33"
+      ],
+      "streetAddress": "ул.Ибраимова 181",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/d6809c4a-7685-4ac6-8ab2-5c3c36e28f85.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.883387,
+      "longitude": 74.617911
+    },
+    {
+      "id": 270,
+      "slug": "karabaeva-omurnisa-nazarovna",
+      "name": "Карабаева Омурниса Назаровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/karabaeva-omurnisa-nazarovna/",
+      "categorySlugs": [
+        "gepatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-41-52-09"
+      ],
+      "streetAddress": "ул.К.Акиева 111",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/20190822_115436.jpg",
+      "priceRange": " сом 400 -  сом 600",
+      "latitude": 42.879361,
+      "longitude": 74.578309
+    },
+    {
+      "id": 268,
+      "slug": "cherikova-majramkul-omorovna",
+      "name": "Черикова Майрамкул Оморовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/cherikova-majramkul-omorovna/",
+      "categorySlugs": [
+        "genetik"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-42-80-08"
+      ],
+      "streetAddress": "6 мкр, ул. Юнусалиева, 300",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://clinica.kg/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/cherikova-mairamkyl-omorovna.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.82492,
+      "longitude": 74.624487
+    },
+    {
+      "id": 266,
+      "slug": "murzamatova-shahnoza-abdukadyrovna",
+      "name": "Мурзаматова Шахноза Абдукадыровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/murzamatova-shahnoza-abdukadyrovna/",
+      "categorySlugs": [
+        "gematolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)553-57-56-91"
+      ],
+      "streetAddress": "ул. Байтик Баатыра 3в",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "http://unimed.kg/consulting/gematologija/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/ee2ba3cc-cafd-4ad2-bc30-6bcc3d26151e.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.836574,
+      "longitude": 74.608572
+    },
+    {
+      "id": 264,
+      "slug": "klevczova-tatyana-anatolevna",
+      "name": "Клевцова Татьяна Анатольевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/klevczova-tatyana-anatolevna/",
+      "categorySlugs": [
+        "gastroenterolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)553-57-56-91"
+      ],
+      "streetAddress": "ул. Байтик Баатыра 3в",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "http://unimed.kg/consulting/gastroenterologiya/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/klevczova.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.836628,
+      "longitude": 74.608555
+    },
+    {
+      "id": 260,
+      "slug": "davletova-meerim",
+      "name": "Давлетова Мээрим",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/davletova-meerim/",
+      "categorySlugs": [
+        "vrach-kosmetolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)556-87-77-82"
+      ],
+      "streetAddress": "ул.Московская 191/Уметалиева",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/kosmetolog.jpeg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.871241,
+      "longitude": 74.582073
+    },
+    {
+      "id": 258,
+      "slug": "ishakova-nafisa-raisovna",
+      "name": "Исхакова Нафиса Раисовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/ishakova-nafisa-raisovna/",
+      "categorySlugs": [
+        "vrach-uzi"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)557-79-30-49"
+      ],
+      "streetAddress": "ул. Московская 225 (ост. Роддом №2)",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/raisa.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.871275,
+      "longitude": 74.572642
+    },
+    {
+      "id": 257,
+      "slug": "kuczova-ekaterina-ilinechna",
+      "name": "Куцова Екатерина Ильинечна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kuczova-ekaterina-ilinechna/",
+      "categorySlugs": [
+        "vrach-skoroj-pomoshhi"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-59-56-27"
+      ],
+      "streetAddress": "ул. Суеркулова 5/3",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": null,
+      "priceRange": null,
+      "latitude": 42.838058,
+      "longitude": 74.602889
+    },
+    {
+      "id": 255,
+      "slug": "stamkulova-bermet-stamkulovna",
+      "name": "Стамкулова Бермет Стамкуловна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/stamkulova-bermet-stamkulovna/",
+      "categorySlugs": [
+        "vrach-obshhej-praktiki",
+        "terapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-54-21-44"
+      ],
+      "streetAddress": "Проспект Ч.Айтматова 80б",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/stamkulova.jpeg",
+      "priceRange": " сом 650 -  сом 10&nbsp;000",
+      "latitude": 42.841691,
+      "longitude": 74.586286
+    },
+    {
+      "id": 253,
+      "slug": "ismailova-dzhanyl-sarmatovna",
+      "name": "Исмаилова Джаныл Сарматовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/ismailova-dzhanyl-sarmatovna/",
+      "categorySlugs": [
+        "vrach-lfk"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)550-01-83-73"
+      ],
+      "streetAddress": "мкрн Джал-15. д32",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://bubnovsky.kg/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/htmlimage-4-230x230-1.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.844902,
+      "longitude": 74.554194
+    },
+    {
+      "id": 251,
+      "slug": "savenkov-aleksandr-petrovich",
+      "name": "Савенков Александр Петрович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/savenkov-aleksandr-petrovich/",
+      "categorySlugs": [
+        "vertebrolog",
+        "manualnyj-terapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-91-19-99"
+      ],
+      "streetAddress": "ул. Ибраимова 103",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://cortex.kg/staff/aleksandr-petrovich/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/savenkov.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879171,
+      "longitude": 74.618131
+    },
+    {
+      "id": 248,
+      "slug": "kichina-tatyana-vasilevna",
+      "name": "Кичина Татьяна Васильевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kichina-tatyana-vasilevna/",
+      "categorySlugs": [
+        "venerolog",
+        "vrach-kosmetolog",
+        "dermatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-97-55-77"
+      ],
+      "streetAddress": "ул.Гоголя, 77/1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/bezymyannpyj-2.png",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.871843,
+      "longitude": 74.620783
+    },
+    {
+      "id": 245,
+      "slug": "osmonov-damirbek-asylbekovich",
+      "name": "Осмонов Дамирбек Асылбекович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/osmonov-damirbek-asylbekovich/",
+      "categorySlugs": [
+        "aritmolog",
+        "kardiolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-88-06-88"
+      ],
+      "streetAddress": "ул.Касыма Тыныстанова, 2/1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/osmonov.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.83858,
+      "longitude": 74.6056
+    },
+    {
+      "id": 243,
+      "slug": "iskakov-muktarbek-bakburovich",
+      "name": "Искаков Муктарбек Бакбурович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/iskakov-muktarbek-bakburovich/",
+      "categorySlugs": [
+        "akusher",
+        "anesteziolog-reanimatolog",
+        "ginekolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-56-50-52"
+      ],
+      "streetAddress": "Касыма Тыныстанова, 1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/iskakov4.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.838378,
+      "longitude": 74.605531
+    },
+    {
+      "id": 240,
+      "slug": "ajbashov-mirlan-nurmatovich",
+      "name": "Айбашов Мирлан Нурматович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/ajbashov-mirlan-nurmatovich/",
+      "categorySlugs": [
+        "androlog",
+        "seksolog",
+        "urolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-96-57-14"
+      ],
+      "streetAddress": "Медцентр \"МРЦ\" ул Киевская.161",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/image-11.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.875846,
+      "longitude": 74.583291
+    },
+    {
+      "id": 237,
+      "slug": "muhitdinova-rozaliya-renatovna",
+      "name": "Мухитдинова Розалия Ренатовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/muhitdinova-rozaliya-renatovna/",
+      "categorySlugs": [
+        "allergolog",
+        "immunolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)031-23-12-52"
+      ],
+      "streetAddress": "ул.Насирдина Исанова, 60",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/muhitdinova_rozaliya_rinatovna.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.873444,
+      "longitude": 74.591059
+    },
+    {
+      "id": 315,
+      "slug": "rekaeva-mariya-ivanovna",
+      "name": "Рекаева Мария Ивановна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/rekaeva-mariya-ivanovna/",
+      "categorySlugs": [
+        "nevrolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-57-56-91"
+      ],
+      "streetAddress": "Байтик Баатыра, 3в",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/rekaeva-mariya-ivanovna.jpg",
+      "priceRange": " сом 600 -  сом 10&nbsp;000",
+      "latitude": 42.836617,
+      "longitude": 74.60855
+    },
+    {
+      "id": 313,
+      "slug": "kalilov-ariet-kalilovich",
+      "name": "Калилов Ариет Калилович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kalilov-ariet-kalilovich/",
+      "categorySlugs": [
+        "narkolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)700-07-17-37"
+      ],
+      "streetAddress": "Выезд на дом",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2021/09/cropped-doctor.png",
+      "priceRange": " сом 2&nbsp;000 -  сом 10&nbsp;000",
+      "latitude": 42.881244,
+      "longitude": 74.603691
+    },
+    {
+      "id": 348,
+      "slug": "kachkinbaev-iskender-karimovich",
+      "name": "Качкинбаев Искендер Каримович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kachkinbaev-iskender-karimovich/",
+      "categorySlugs": [
+        "plasticheskij-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-30-35-53"
+      ],
+      "streetAddress": "ул.Юсупа Абдрахманова, 144а",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/kachkinbaev2.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.86722,
+      "longitude": 74.61095
+    },
+    {
+      "id": 344,
+      "slug": "abdyrakmanova-gulmira-asanovna",
+      "name": "Абдыракманова Гулмира Асановна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/abdyrakmanova-gulmira-asanovna/",
+      "categorySlugs": [
+        "oftalmolog-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-51-07-81"
+      ],
+      "streetAddress": "ул.​Байтик Баатыра, 5",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "http://ismankulov.kg/personal/abdyrakhmanova-gulmira-asanovna",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/abdyrakmanova-scaled.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.845812,
+      "longitude": 74.612
+    },
+    {
+      "id": 342,
+      "slug": "ibraimova-ajgul-asanovna",
+      "name": "Ибраимова Айгуль Асановна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/ibraimova-ajgul-asanovna/",
+      "categorySlugs": [
+        "oftalmolog-okulist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)709-91-93-08"
+      ],
+      "streetAddress": "7 апреля, 3",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/ibraimova_ajgul.jpg",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.851236,
+      "longitude": 74.635044
+    },
+    {
+      "id": 340,
+      "slug": "sarbanova-ajzhan-sabyrbekovna",
+      "name": "Сарбанова Айжан Сабырбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/sarbanova-ajzhan-sabyrbekovna/",
+      "categorySlugs": [
+        "osteopat"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-88-16-25"
+      ],
+      "streetAddress": "Загорская улица, 4",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://czar.kg/services/osteopathy/",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/sarbanova-ajzhan-sabyrbekovna-400x400-1.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879622,
+      "longitude": 74.685082
+    },
+    {
+      "id": 338,
+      "slug": "konovchenko-roman-alekseevich",
+      "name": "Коновченко Роман Алексеевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/konovchenko-roman-alekseevich/",
+      "categorySlugs": [
+        "ortoped"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-46-13-63"
+      ],
+      "streetAddress": "ул.Айни, 20",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/konovchenko_roman_alekseevich.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.848154,
+      "longitude": 74.588109
+    },
+    {
+      "id": 336,
+      "slug": "dirov-shakir-harkievich",
+      "name": "Диров Шакир Харкиевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dirov-shakir-harkievich/",
+      "categorySlugs": [
+        "onkolog-urolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)551-75-77-88"
+      ],
+      "streetAddress": "ул.Исы Ахунбаева, 92",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/dirov_shakir.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.842326,
+      "longitude": 74.607327
+    },
+    {
+      "id": 334,
+      "slug": "abdyshev-askarbek-sharshenbekovich",
+      "name": "Абдышев Аскарбек Шаршенбекович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/abdyshev-askarbek-sharshenbekovich/",
+      "categorySlugs": [
+        "mammolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-90-90-01"
+      ],
+      "streetAddress": "ул. Джунусалиева, 83",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://www.avicenna.kg/doctors/28-abdyshev-askarbek-sharshenbekovich.html#",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/1615975512_38.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.852473,
+      "longitude": 74.581315
+    },
+    {
+      "id": 332,
+      "slug": "sidikova-margarita-rasulovna",
+      "name": "Сидикова Маргарита Расуловна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/sidikova-margarita-rasulovna/",
+      "categorySlugs": [
+        "onkolog-ginekolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)707-10-31-03"
+      ],
+      "streetAddress": "ул.Юлиуса Фучика, 34",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/sidikova_margarita_rasulovna0a0a.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879397,
+      "longitude": 74.562363
+    },
+    {
+      "id": 329,
+      "slug": "makimbetov-emil-kozhoshevich",
+      "name": "Макимбетов Эмиль Кожошевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/makimbetov-emil-kozhoshevich/",
+      "categorySlugs": [
+        "gematolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-51-18-30"
+      ],
+      "streetAddress": "ул.Суеркулова, 1/4",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/02/makimbetov-emil-gematolog.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.837192,
+      "longitude": 74.617531
+    },
+    {
+      "id": 328,
+      "slug": "zelenenko-natalya-vyacheslavovna",
+      "name": "Зелененко Наталья Вячеславовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/zelenenko-natalya-vyacheslavovna/",
+      "categorySlugs": [
+        "onkolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-88-15-01"
+      ],
+      "streetAddress": "ул.Киевская улица, 39",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2021/09/cropped-doctor.png",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.874537,
+      "longitude": 74.612816
+    },
+    {
+      "id": 325,
+      "slug": "abazbekova-saltanat-sagynbekovna",
+      "name": "Абазбекова Салтанат Сагынбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/abazbekova-saltanat-sagynbekovna/",
+      "categorySlugs": [
+        "nutricziolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)707-10-31-03"
+      ],
+      "streetAddress": "ул.Юлиуса Фучика, 34",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/abazbekova_saltanat_sagynbekovna.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879442,
+      "longitude": 74.562433
+    },
+    {
+      "id": 323,
+      "slug": "isaeva-mira-isaevna",
+      "name": "Исаева Мира Исаевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/isaeva-mira-isaevna/",
+      "categorySlugs": [],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-76-65-55"
+      ],
+      "streetAddress": "ул.Исы Ахунбаева, 27",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/1528363820_0.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.842365,
+      "longitude": 74.624736
+    },
+    {
+      "id": 321,
+      "slug": "zhaparov-talant-sagyndykovich",
+      "name": "Жапаров Талант Сагындыкович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/zhaparov-talant-sagyndykovich/",
+      "categorySlugs": [
+        "nejrohirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)709-91-93-08"
+      ],
+      "streetAddress": "7 апреля, 3",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/zhaparov_talant_sagyndykovich.jpg",
+      "priceRange": " сом 500 -  сом 10&nbsp;000",
+      "latitude": 42.851193,
+      "longitude": 74.635121
+    },
+    {
+      "id": 319,
+      "slug": "mamysheva-ajnura-sharshembekovna",
+      "name": "Мамышева Айнура Шаршембековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/mamysheva-ajnura-sharshembekovna/",
+      "categorySlugs": [
+        "nejrofiziolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-91-19-99"
+      ],
+      "streetAddress": "ул.Ибраимова, 103",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/mamysheva.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.879191,
+      "longitude": 74.618031
+    },
+    {
+      "id": 317,
+      "slug": "manakovskij-vladimir-nikolaevich",
+      "name": "Манаковский Владимир Николаевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/manakovskij-vladimir-nikolaevich/",
+      "categorySlugs": [
+        "nejropsiholog",
+        "psiholog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-93-93-77"
+      ],
+      "streetAddress": "Центр детского развития и творчества \"Детвора\" 3 мкр дом 3/2",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/img-20190426-wa0000-230x230-1.jpg",
+      "priceRange": " сом 1&nbsp;200 -  сом 10&nbsp;000",
+      "latitude": 42.839618,
+      "longitude": 74.620313
+    },
+    {
+      "id": 311,
+      "slug": "hodzhahunov-bahtier-raimzhanovich",
+      "name": "Ходжахунов Бахтиер Раимжанович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/hodzhahunov-bahtier-raimzhanovich/",
+      "categorySlugs": [
+        "anesteziolog-reanimatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-56-50-52"
+      ],
+      "streetAddress": "Касыма Тыныстанова, 1",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "http://medcenter-kgma.kg/doctors/hodjachunov-bachtier-raimjanovich.html",
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/hodjahunov.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.838605,
+      "longitude": 74.605611
+    },
+    {
+      "id": 346,
+      "slug": "ustimenko-elena-viktorovna",
+      "name": "Устименко Елена Викторовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/ustimenko-elena-viktorovna/",
+      "categorySlugs": [
+        "pediatr"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)312-31-25-24"
+      ],
+      "streetAddress": "ул.Насирдина Исанова, 60",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/ustimenko_elena_viktorovna.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.873255,
+      "longitude": 74.591103
+    },
+    {
+      "id": 221,
+      "slug": "sajyrova-ajnura-mukanbetovna",
+      "name": "Сайырова Айнура Муканбетовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/sajyrova-ajnura-mukanbetovna/",
+      "categorySlugs": [
+        "akusher",
+        "ginekolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)077-22-86-17"
+      ],
+      "streetAddress": "ул.Шопокова 34",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/whatsapp_image_2019-06-28_at_15.06.38.jpeg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.8672,
+      "longitude": 74.614473
+    },
+    {
+      "id": 218,
+      "slug": "doktor-sultakeev",
+      "name": "Султакеев Мирлан Зарылбекович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/doktor-sultakeev/",
+      "categorySlugs": [
+        "abdominalnyj-hirurg",
+        "torakalnyj-hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)707-98-17-58"
+      ],
+      "streetAddress": "​3-я линия 25",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2022/01/miran-sultakeev.jpg",
+      "priceRange": " сом 100 -  сом 10&nbsp;000",
+      "latitude": 42.852834,
+      "longitude": 74.582405
+    },
+    {
+      "id": 187,
+      "slug": "mamakeev-mambet-mamakeevich",
+      "name": "Мамакеев Мамбет Мамакеевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/mamakeev-mambet-mamakeevich/",
+      "categorySlugs": [
+        "hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [],
+      "streetAddress": "Национальный хирургический центр",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/mamakeev-mambet-hirurg.jpg",
+      "priceRange": " сом 800 -  сом 1&nbsp;000",
+      "latitude": 42.85194,
+      "longitude": 74.581981
+    },
+    {
+      "id": 183,
+      "slug": "rasulov-babur-adylovich",
+      "name": "Расулов Бабур Адылович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/rasulov-babur-adylovich/",
+      "categorySlugs": [
+        "androlog",
+        "urolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)556-83-73-19"
+      ],
+      "streetAddress": "Мира 80 Б",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/urlog-rasulov-babur-1.jpg",
+      "priceRange": " сом 500 -  сом 700",
+      "latitude": 42.884268,
+      "longitude": 74.589277
+    },
+    {
+      "id": 181,
+      "slug": "lim-evgenij-yurevich",
+      "name": "Лим Евгений Юрьевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/lim-evgenij-yurevich/",
+      "categorySlugs": [
+        "androlog",
+        "urolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)706-43-93-13",
+        "(+996)555-99-63-62"
+      ],
+      "streetAddress": "Гоголя 133",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://zdorovie-lab.kg/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/lim-evgeniy.jpg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.879682,
+      "longitude": 74.619971
+    },
+    {
+      "id": 176,
+      "slug": "salimov-bahtiyar-gapparovich",
+      "name": "Салимов Бахтияр Гаппарович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/salimov-bahtiyar-gapparovich/",
+      "categorySlugs": [
+        "urolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)552-56-32-95"
+      ],
+      "streetAddress": "ул. Веселая 3",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://urolog.kg",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/salimov-bahtiyar.jpg",
+      "priceRange": " сом 500 -  сом 700",
+      "latitude": 42.885326,
+      "longitude": 74.649516
+    },
+    {
+      "id": 168,
+      "slug": "dadazhanov-roman-ibragimovich",
+      "name": "Дадажанов Роман Ибрагимович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dadazhanov-roman-ibragimovich/",
+      "categorySlugs": [
+        "androlog",
+        "urolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-97-34-35"
+      ],
+      "streetAddress": "Жаш гвардия 21",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://androlog.kg/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/dadashanov-roman-ibragimovich.jpg",
+      "priceRange": " сом 400 -  сом 1&nbsp;000",
+      "latitude": 42.871277,
+      "longitude": 74.575799
+    },
+    {
+      "id": 158,
+      "slug": "zhakshybayeva",
+      "name": "Жакшыбаева",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/zhakshybayeva/",
+      "categorySlugs": [
+        "pediatr"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/pediatrics",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/zhakshybayeva.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 156,
+      "slug": "atakhodzhayev-farkhad-akmalkhodzhayevich",
+      "name": "Атаходжаев Фархад Акмалходжаевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/atakhodzhayev-farkhad-akmalkhodzhayevich/",
+      "categorySlugs": [
+        "travmatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/neurologist/",
+      "image": null,
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 155,
+      "slug": "tagiyev-mansur-maumbatovich",
+      "name": "Тагиев Мансур Маумбатович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/tagiyev-mansur-maumbatovich/",
+      "categorySlugs": [
+        "dermatolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/neurologist/",
+      "image": null,
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 154,
+      "slug": "maniyeva-batma-nurakhmedovna",
+      "name": "Маниева Батма Нурахмедовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/maniyeva-batma-nurakhmedovna/",
+      "categorySlugs": [
+        "gastroenterolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/neurologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/maniyeva-batma-nurakhmedovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 152,
+      "slug": "zhakishova-elvira-amanovna",
+      "name": "Жакишова Эльвира Амановна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/zhakishova-elvira-amanovna/",
+      "categorySlugs": [
+        "gastroenterolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/neurologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/zhakishova-elvira-amanovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 150,
+      "slug": "babadzhanova-zarina-dzhamalovna",
+      "name": "Кадыралиева Айгуль Аскеровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/babadzhanova-zarina-dzhamalovna/",
+      "categorySlugs": [
+        "oftalmolog-okulist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/neurologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/babadzhanova-zarina-dzhamalovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 148,
+      "slug": "kadyraliyeva-aygul-askerovna",
+      "name": "Кадыралиева Айгуль Аскеровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kadyraliyeva-aygul-askerovna/",
+      "categorySlugs": [
+        "oftalmolog-okulist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/neurologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/kadyraliyeva-aygul-askerovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 146,
+      "slug": "eratov-iliyas-tazhibayevich",
+      "name": "Эратов Илияс Тажибаевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/eratov-iliyas-tazhibayevich/",
+      "categorySlugs": [
+        "urolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/urologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/eratov-iliyas-tazhibayevich.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 144,
+      "slug": "talyshkhanov-nagi-aleksandrovich",
+      "name": "Талышханов Наги Александрович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/talyshkhanov-nagi-aleksandrovich/",
+      "categorySlugs": [
+        "hirurg"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/doctors/talyshhanov/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/talyshkhanov-nagi-aleksandrovich.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 142,
+      "slug": "emilov-berik-emilovich",
+      "name": "Эмилов Берик Эмилович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/emilov-berik-emilovich/",
+      "categorySlugs": [
+        "pulmonolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/pulmonologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/emilov-berik-emilovich.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 140,
+      "slug": "kemelova-zhypara-kemelovna",
+      "name": "Кемелова Жыпара Кемеловна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kemelova-zhypara-kemelovna/",
+      "categorySlugs": [
+        "pulmonolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/pulmonologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/kemelova-zhypara-kemelovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 138,
+      "slug": "balbachan-boris-ivanovich",
+      "name": "Балбачан Борис Иванович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/balbachan-boris-ivanovich/",
+      "categorySlugs": [
+        "massazhist"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/masseuse/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/balbachan-boris-ivanovich.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 136,
+      "slug": "albakova-aysuluu-obolbekovna",
+      "name": "Албакова Айсулуу Оболбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/albakova-aysuluu-obolbekovna/",
+      "categorySlugs": [
+        "endokrinolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/endocrinologist",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/albakova-aysuluu-obolbekovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 132,
+      "slug": "ozubekova-cholponay-asanbekovna",
+      "name": "Озубекова Чолпонай Асанбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/ozubekova-cholponay-asanbekovna/",
+      "categorySlugs": [
+        "kardiolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/primary_care_physician/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/ozubekova-cholponay-asanbekovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 130,
+      "slug": "mambetkaliyeva-zarina-sulpukorovna",
+      "name": "Мамбеткалиева Зарина Сулпукоровна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/mambetkaliyeva-zarina-sulpukorovna/",
+      "categorySlugs": [
+        "proktolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/proctologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/mambetkaliyeva-zarina-sulpukorovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 128,
+      "slug": "avazkanova-shakhira-doolotbayevna",
+      "name": "Авазканова Шахира Доолотбаевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/avazkanova-shakhira-doolotbayevna/",
+      "categorySlugs": [
+        "proktolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/proctologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/avazkanova-shakhira-doolotbayevna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 126,
+      "slug": "kukharkina-yuliya-vladimirovna",
+      "name": "Кухаркина Юлия Владимировна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kukharkina-yuliya-vladimirovna/",
+      "categorySlugs": [
+        "lor"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/ent",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/kukharkina-yuliya-vladimirovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 124,
+      "slug": "narmatova-kaniza-kanybekovna",
+      "name": "Нарматова Каниза Каныбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/narmatova-kaniza-kanybekovna/",
+      "categorySlugs": [
+        "lor"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/ent",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/narmatova-kaniza-kanybekovna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 122,
+      "slug": "yerubayev-nurzhan-daurenovich",
+      "name": "Ерубаев Нуржан Дауренович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/yerubayev-nurzhan-daurenovich/",
+      "categorySlugs": [
+        "vrach-uzi"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/diagnostic/ultrasound/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/yerubayev-nurzhan-daurenovich-uzi.jpg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 120,
+      "slug": "kozhomkulova-aygul-temirbekovna",
+      "name": "Кожомкулова Айгуль Темирбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/kozhomkulova-aygul-temirbekovna/",
+      "categorySlugs": [
+        "vrach-uzi"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/diagnostic/ultrasound/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/kozhomkulova-aygul-temirbekovna.jpg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 118,
+      "slug": "aibolotova-cardiolog",
+      "name": "ДОКТОР АЙБОЛОТОВА",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/aibolotova-cardiolog/",
+      "categorySlugs": [
+        "kardiolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/diagnostic/electrocardiography/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/aibolotova-cardiolog.jpg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 116,
+      "slug": "dalbayeva-batma-zhumabayevna",
+      "name": "Далбаева Батма Жумабаевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dalbayeva-batma-zhumabayevna/",
+      "categorySlugs": [
+        "akusher",
+        "ginekolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/gynecologist",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/dalbayeva-batma-zhumabayevna.jpg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 114,
+      "slug": "brayeva-bella-kenzhegulovna",
+      "name": "Ибраева Белла Кенжегуловна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/brayeva-bella-kenzhegulovna/",
+      "categorySlugs": [
+        "ginekolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/gynecologist",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/brayeva-bella-kenzhegulovna-ginecolog.jpg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 111,
+      "slug": "barktabasova-anara-sagynovna",
+      "name": "Барктабасова Анара Сагыновна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/barktabasova-anara-sagynovna/",
+      "categorySlugs": [
+        "akusher",
+        "ginekolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/gynecologist",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/barktabasova-anara-sagynovna.jpg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 107,
+      "slug": "dzhamangulov-erns-zhumakanovich",
+      "name": "Джамангулов Эрнс Жумаканович",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dzhamangulov-erns-zhumakanovich/",
+      "categorySlugs": [
+        "nevrolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/neurologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/jamangulov_nevrolog.jpeg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 134,
+      "slug": "antropkina-yuliya-alekseyevna",
+      "name": "Антропкина Юлия Алексеевна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/antropkina-yuliya-alekseyevna/",
+      "categorySlugs": [
+        "endokrinolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/endocrinologist",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/antropkina-yuliya-alekseyevna.jpg",
+      "priceRange": " сом 400 -  сом 800",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 105,
+      "slug": "dzhaparaliyeva-nurzhan-tynchtykbekovna",
+      "name": "Джапаралиева Нуржан Тынчтыкбековна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/dzhaparaliyeva-nurzhan-tynchtykbekovna/",
+      "categorySlugs": [
+        "nevrolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул.Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/service/neurologist/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/05/japaralieva.jpg",
+      "priceRange": " сом 0 -  сом 100",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 103,
+      "slug": "sydykova-mira-syntashovna",
+      "name": "Сыдыкова Мира Сынташовна",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/sydykova-mira-syntashovna/",
+      "categorySlugs": [
+        "terapevt"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)777-98-89-78"
+      ],
+      "streetAddress": "ул. Боконбаева 202",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": "https://prime.kg/doctors/sydykova/",
+      "image": "https://doctors.kg/wp-content/uploads/2021/04/msydykova_prof.jpg",
+      "priceRange": " сом 400 -  сом 700",
+      "latitude": 42.867169,
+      "longitude": 74.611384
+    },
+    {
+      "id": 34,
+      "slug": "bahtahunov-kaldarbek-kozhoevich",
+      "name": "Бахтахунов Калдарбек Кожоевич",
+      "sourceUrl": "https://doctors.kg/directory-doctors/listing/bahtahunov-kaldarbek-kozhoevich/",
+      "categorySlugs": [
+        "vrach-uzi",
+        "urolog"
+      ],
+      "cityFilterSlug": "loc-bishkek",
+      "cityCode": "bishkek",
+      "telephones": [
+        "(+996)555-00-49-52"
+      ],
+      "streetAddress": "Логвиненко 32",
+      "locality": "Бишкек",
+      "region": "Бишкек",
+      "country": "KG",
+      "website": null,
+      "image": "https://doctors.kg/wp-content/uploads/2021/04/img_5953.jpg",
+      "priceRange": " сом 400 -  сом 600",
+      "latitude": 42.88315,
+      "longitude": 74.59868
+    }
+  ]
+}

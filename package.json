@@ -12,7 +12,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:local": "prisma migrate deploy && tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "doctors-kg:sync": "tsx scripts/sync-doctors-kg.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
