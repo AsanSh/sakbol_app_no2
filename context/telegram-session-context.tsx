@@ -39,6 +39,8 @@ type TelegramSessionContextValue = {
   /** Подтянуть displayName/avatar из БД без полного re-login (после сохранения профиля). */
   syncViewerFromServer: () => Promise<void>;
   submitNewUserPin: (pin: string) => Promise<SubmitPinResult>;
+  /** Завершить сессию (удалить cookie) и перенаправить на /login. */
+  signOut: () => Promise<void>;
 };
 
 const TelegramSessionContext = createContext<TelegramSessionContextValue | null>(null);
@@ -76,6 +78,23 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       );
     } catch {
       /* ignore */
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+    } catch {
+      /* even if server-side logout fails, clear client state below */
+    }
+    pendingInitDataRef.current = null;
+    setState({ status: "unauthenticated", reason: "signed_out" });
+    setAuthReady(true);
+    if (typeof window !== "undefined") {
+      window.location.assign("/login");
     }
   }, []);
 
@@ -266,8 +285,9 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       refresh,
       syncViewerFromServer,
       submitNewUserPin,
+      signOut,
     }),
-    [state, authReady, refresh, syncViewerFromServer, submitNewUserPin],
+    [state, authReady, refresh, syncViewerFromServer, submitNewUserPin, signOut],
   );
 
   return (

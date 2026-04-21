@@ -466,8 +466,9 @@ function ShareProfileSection({
 export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
-  const { authReady, isAuthenticated, state, syncViewerFromServer } = useTelegramSession();
+  const { authReady, isAuthenticated, state, syncViewerFromServer, signOut } = useTelegramSession();
   const [addOpen, setAddOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
@@ -795,6 +796,28 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 </li>
               ))}
             </ul>
+
+            <button
+              type="button"
+              disabled={signingOut}
+              onClick={async () => {
+                if (signingOut) return;
+                const ok = typeof window === "undefined" ? true : window.confirm(
+                  "Выйти из аккаунта? Потребуется войти заново — по email или коду из Telegram.",
+                );
+                if (!ok) return;
+                setSigningOut(true);
+                try {
+                  await signOut();
+                } finally {
+                  setSigningOut(false);
+                }
+              }}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50/60 px-4 py-3 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+            >
+              <MaterialIcon name="logout" className="text-red-700" />
+              {signingOut ? "Выход…" : "Выйти из аккаунта"}
+            </button>
 
             <p className="text-center text-[10px] text-[#70787d]">
               Версия 0.1 · Кыргызстан 🇰🇬
