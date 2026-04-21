@@ -27,7 +27,7 @@ model Profile {
   displayName    String
   /// Вход с сайта без Telegram; уникален среди заполненных.
   email          String?    @unique
-  /// scrypt-хеш пароля (только для email-аккаунтов).
+  /// Хеш пароля (bcrypt; legacy scrypt поддерживается на входе).
   passwordHash   String?
   /// Set when the person uses the Telegram Mini App; null for managed relatives.
   telegramUserId String?    @unique
