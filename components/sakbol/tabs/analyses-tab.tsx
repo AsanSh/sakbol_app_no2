@@ -1,8 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { FamilyRole } from "@prisma/client";
 import { FamilyAnalysesWorkspace } from "@/components/family-analyses-workspace";
 import { FamilySwitcher } from "@/components/family-switcher";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
@@ -21,22 +19,15 @@ type Props = {
 export function AnalysesTab({ family, onAnalysesChanged }: Props) {
   const { lang } = useLanguage();
   const { authReady, isAuthenticated, state } = useTelegramSession();
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
   const device = useDeviceType();
   const isDesktopWeb = device === "desktop-web";
-
-  const admin = useMemo(
-    () => family?.profiles.find((p) => p.familyRole === FamilyRole.ADMIN),
-    [family?.profiles],
-  );
 
   const headerSwitcher =
     authReady && isAuthenticated && family?.profiles?.length ? (
       <FamilySwitcher
         variant="header"
         profiles={family.profiles}
-        canAddMember={!!admin}
-        onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+        canAddMember={false}
       />
     ) : null;
 
@@ -75,8 +66,6 @@ export function AnalysesTab({ family, onAnalysesChanged }: Props) {
             compactUpload={false}
             onAnalysesChanged={onAnalysesChanged}
             hideFamilySwitcher
-            addMemberModalOpen={addMemberOpen}
-            onAddMemberModalOpenChange={setAddMemberOpen}
             hidePreviewHeader
           />
         ) : null}

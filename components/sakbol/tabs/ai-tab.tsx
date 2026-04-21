@@ -135,7 +135,7 @@ export function AiTab({ family, reloadFamily }: Props) {
           ) : null}
         </div>
 
-        <div className="sticky bottom-0 border-t border-[#e7e8e9] bg-[#f8f9fa]/90 py-2 backdrop-blur-md">
+        <div className="sticky -bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] border-t border-[#e7e8e9] bg-[#f8f9fa]/90 py-2 backdrop-blur-md md:bottom-0">
           <div className="flex items-end gap-2 rounded-2xl border border-[#e7e8e9] bg-white p-2 shadow-sm">
             <textarea
               ref={taRef}

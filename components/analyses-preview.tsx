@@ -139,6 +139,7 @@ export function AnalysesPreview({
   const [docsLoading, setDocsLoading] = useState(false);
   const [deleteDocBusyId, setDeleteDocBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [autoRefreshTick, setAutoRefreshTick] = useState(0);
 
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
@@ -153,6 +154,23 @@ export function AnalysesPreview({
   }, [profiles, activeProfileId]);
 
   const ageMonths = useMemo(() => ageInMonthsFromDob(activeDob), [activeDob]);
+
+  useEffect(() => {
+    if (!activeProfileId) return;
+    const refresh = () => setAutoRefreshTick((v) => v + 1);
+    const intervalId = window.setInterval(refresh, 20_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    const onFocus = () => refresh();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [activeProfileId]);
 
   useEffect(() => {
     if (!activeProfileId) {
@@ -200,7 +218,7 @@ export function AnalysesPreview({
     return () => {
       cancelled = true;
     };
-  }, [activeProfileId, refreshKey, lang]);
+  }, [activeProfileId, refreshKey, autoRefreshTick, lang]);
 
   useEffect(() => {
     if (!activeProfileId || isTrends) {
@@ -244,7 +262,7 @@ export function AnalysesPreview({
     return () => {
       cancelled = true;
     };
-  }, [activeProfileId, refreshKey, isTrends]);
+  }, [activeProfileId, refreshKey, autoRefreshTick, isTrends]);
 
   useEffect(() => {
     setStatusFilter("all");
