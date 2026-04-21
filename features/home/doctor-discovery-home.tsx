@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2,
@@ -19,7 +20,7 @@ import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
 import type { DoctorSummary } from "@/lib/doctors-kg/types";
 import { decodeHtmlEntities } from "@/lib/html-entities";
-import { normalizeTelHref } from "@/lib/doctors-kg/tel";
+import { openTelDial } from "@/lib/doctors-kg/tel";
 import { cn } from "@/lib/utils";
 
 type MetaCategory = { slug: string; label: string };
@@ -87,6 +88,9 @@ export function DoctorDiscoveryHome({
   initialCategorySlug = null,
 }: Props) {
   const { lang } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mainTab, setMainTab] = useState<"doctors" | "clinics">("doctors");
   const [meta, setMeta] = useState<MetaPayload | null>(null);
   const [metaErr, setMetaErr] = useState<string | null>(null);
@@ -112,8 +116,7 @@ export function DoctorDiscoveryHome({
     const list = (phones ?? []).map((p) => p.trim()).filter(Boolean);
     if (!list.length) return;
     if (list.length === 1) {
-      const href = normalizeTelHref(list[0]);
-      if (href) window.location.href = `tel:${href}`;
+      openTelDial(list[0]);
       return;
     }
     setPhonePicker(list);
@@ -183,6 +186,15 @@ export function DoctorDiscoveryHome({
     return m;
   }, [meta]);
 
+  const stripDoctorCatFromUrl = useCallback(() => {
+    const q = new URLSearchParams(searchParams.toString());
+    if (!q.has("doctorCat")) return;
+    q.delete("doctorCat");
+    const qs = q.toString();
+    const href = qs ? `${pathname}?${qs}` : pathname;
+    router.replace(href, { scroll: false });
+  }, [router, pathname, searchParams]);
+
   const loadDoctors = useCallback(async () => {
     if (mainTab !== "doctors") return;
     abortRef.current?.abort();
@@ -236,6 +248,7 @@ export function DoctorDiscoveryHome({
     setCity(null);
     setSearch("");
     setFiltersOpen(false);
+    stripDoctorCatFromUrl();
   };
 
   const applyLabel =
@@ -313,9 +326,9 @@ export function DoctorDiscoveryHome({
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
-              className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-[15px] font-semibold text-white shadow-sm hover:bg-slate-800 lg:flex-none"
+              className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-5 text-[15px] font-semibold text-teal-900 shadow-sm ring-1 ring-teal-100/80 hover:bg-teal-100/90 lg:flex-none"
             >
-              <SlidersHorizontal className="h-5 w-5" aria-hidden />
+              <SlidersHorizontal className="h-5 w-5 text-teal-800" aria-hidden />
               {t(lang, "home.search.filters")}
             </button>
           </div>
@@ -329,7 +342,10 @@ export function DoctorDiscoveryHome({
                   type="button"
                   className="rounded-full p-0.5 hover:bg-teal-100"
                   aria-label="clear"
-                  onClick={() => setCategory(null)}
+                  onClick={() => {
+                    setCategory(null);
+                    stripDoctorCatFromUrl();
+                  }}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -389,19 +405,19 @@ export function DoctorDiscoveryHome({
                   transition={{ duration: 0.2, delay: idx * 0.02 }}
                   className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80"
                 >
-                  <div className="flex gap-3 p-4">
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200">
+                  <div className="flex flex-col gap-3 p-4 sm:flex-row sm:gap-4">
+                    <div className="relative mx-auto h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200 sm:mx-0 sm:h-[4.5rem] sm:w-[4.5rem]">
                       {d.image ? (
                         <Image
                           src={d.image}
                           alt=""
                           fill
                           className="object-cover"
-                          sizes="64px"
+                          sizes="80px"
                           unoptimized
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs font-bold text-slate-500">
+                        <div className="flex h-full w-full items-center justify-center text-sm font-bold text-slate-500">
                           {d.name
                             .split(/\s+/)
                             .map((w) => w[0])
@@ -410,20 +426,69 @@ export function DoctorDiscoveryHome({
                         </div>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-manrope text-[15px] font-semibold leading-snug text-slate-900">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <h3 className="font-manrope text-base font-semibold leading-snug text-slate-900 break-words">
                         {d.name}
                       </h3>
-                      <p className="mt-0.5 text-caption text-teal-800">
-                        {d.categorySlugs.map((s) => catLabel.get(s) ?? s).join(" · ")}
-                      </p>
-                      <p className="mt-1 flex items-center gap-1 text-caption text-slate-500">
-                        <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        {d.locality
-                          ? decodeHtmlEntities(d.locality)
-                          : meta?.cities.find((c) => c.code === d.cityCode)?.label ??
-                            (d.cityCode ?? "—")}
-                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {d.categorySlugs.map((s) => (
+                          <span
+                            key={s}
+                            className="inline-flex max-w-full break-words rounded-full bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold leading-snug text-teal-900 ring-1 ring-teal-100/90"
+                          >
+                            {catLabel.get(s) ?? s}
+                          </span>
+                        ))}
+                      </div>
+                      {(() => {
+                        const street = d.streetAddress
+                          ? decodeHtmlEntities(d.streetAddress).trim()
+                          : "";
+                        const loc = d.locality ? decodeHtmlEntities(d.locality).trim() : "";
+                        const reg = d.region ? decodeHtmlEntities(d.region).trim() : "";
+                        const cityOnly =
+                          meta?.cities.find((c) => c.code === d.cityCode)?.label ??
+                          d.cityCode ??
+                          "";
+                        const line1 = [street, loc || (!d.locality && reg ? reg : "")].filter(
+                          Boolean,
+                        );
+                        const line2 =
+                          cityOnly &&
+                          !line1.join(" ").toLowerCase().includes(cityOnly.toLowerCase())
+                            ? cityOnly
+                            : !line1.length
+                              ? cityOnly
+                              : "";
+                        if (!line1.length && !line2) return null;
+                        return (
+                          <div className="flex gap-2 text-[13px] leading-snug">
+                            <MapPin
+                              className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+                              aria-hidden
+                            />
+                            <div className="min-w-0 space-y-1 break-words">
+                              {line1.length ? (
+                                <p className="font-medium text-slate-800">{line1.join(", ")}</p>
+                              ) : null}
+                              {line2 ? <p className="text-slate-500">{line2}</p> : null}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      {d.priceRange ? (
+                        <p className="text-[13px] leading-snug text-slate-800 break-words">
+                          <span className="font-semibold text-slate-900">
+                            {lang === "ru" ? "Приём:" : "Кабыл алуу:"}
+                          </span>{" "}
+                          {decodeHtmlEntities(d.priceRange)}
+                        </p>
+                      ) : null}
+                      {d.description?.trim() ? (
+                        <p className="line-clamp-4 text-[13px] leading-relaxed text-slate-600 break-words">
+                          {decodeHtmlEntities(d.description.trim())}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                   <div className="mt-auto flex gap-2 border-t border-slate-100 px-4 py-3">
@@ -517,14 +582,15 @@ export function DoctorDiscoveryHome({
                 </p>
                 <div className="mt-3 space-y-1">
                   {c.phones.map((p) => (
-                    <a
+                    <button
                       key={p}
-                      href={`tel:${normalizeTelHref(p)}`}
-                      className="flex items-center gap-2 text-caption font-semibold text-health-primary"
+                      type="button"
+                      onClick={() => openTelDial(p)}
+                      className="flex w-full items-center gap-2 text-left text-caption font-semibold text-health-primary"
                     >
                       <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                      {decodeHtmlEntities(p)}
-                    </a>
+                      <span className="break-all">{decodeHtmlEntities(p)}</span>
+                    </button>
                   ))}
                 </div>
                 <button
@@ -651,7 +717,9 @@ export function DoctorDiscoveryHome({
               className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
             >
               <div className="flex justify-between gap-2">
-                <h3 className="font-manrope text-xl font-bold text-slate-900">{detail.name}</h3>
+                <h3 className="font-manrope text-xl font-bold leading-snug text-slate-900 break-words">
+                  {detail.name}
+                </h3>
                 <div className="flex shrink-0 items-center gap-1">
                   {detail.telephones?.length ? (
                     <button
@@ -673,20 +741,29 @@ export function DoctorDiscoveryHome({
                   </button>
                 </div>
               </div>
-              <p className="mt-2 text-body text-teal-800">
-                {detail.categorySlugs.map((s) => catLabel.get(s) ?? s).join(" · ")}
-              </p>
-              {detail.streetAddress ? (
-                <p className="mt-3 flex gap-2 text-caption text-slate-600">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                  <span>
-                    {decodeHtmlEntities(detail.streetAddress)}
-                    {detail.locality ? `, ${decodeHtmlEntities(detail.locality)}` : ""}
-                    {detail.region && !detail.locality
-                      ? `, ${decodeHtmlEntities(detail.region)}`
-                      : ""}
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {detail.categorySlugs.map((s) => (
+                  <span
+                    key={s}
+                    className="inline-flex max-w-full break-words rounded-full bg-teal-50 px-2.5 py-1 text-[12px] font-semibold leading-snug text-teal-900 ring-1 ring-teal-100"
+                  >
+                    {catLabel.get(s) ?? s}
                   </span>
-                </p>
+                ))}
+              </div>
+              {detail.streetAddress ? (
+                <div className="mt-3 flex gap-2 text-caption leading-relaxed text-slate-600">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                  <div className="min-w-0 space-y-1 break-words">
+                    <p className="font-medium text-slate-800">
+                      {decodeHtmlEntities(detail.streetAddress)}
+                      {detail.locality ? `, ${decodeHtmlEntities(detail.locality)}` : ""}
+                    </p>
+                    {detail.region && !detail.locality ? (
+                      <p>{decodeHtmlEntities(detail.region)}</p>
+                    ) : null}
+                  </div>
+                </div>
               ) : null}
               {detail.latitude != null && detail.longitude != null ? (
                 <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200">
@@ -709,16 +786,21 @@ export function DoctorDiscoveryHome({
                 </div>
               ) : null}
               {detail.priceRange ? (
-                <p className="mt-3 text-caption text-slate-600">
-                  {decodeHtmlEntities(detail.priceRange)}
-                </p>
+                <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2.5 ring-1 ring-slate-100">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    {lang === "ru" ? "Стоимость" : "Баасы"}
+                  </p>
+                  <p className="mt-1 text-[15px] leading-relaxed text-slate-800 break-words">
+                    {decodeHtmlEntities(detail.priceRange)}
+                  </p>
+                </div>
               ) : null}
               {detail.description?.trim() ? (
                 <div className="mt-4">
                   <p className="text-caption font-semibold text-slate-800">
-                    {lang === "ru" ? "О враче" : "Дарыер жөнүндө"}
+                    {lang === "ru" ? "О враче / услуги" : "Дарыер / кызматтар"}
                   </p>
-                  <p className="mt-1 whitespace-pre-wrap text-caption leading-relaxed text-slate-600">
+                  <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed text-slate-600 break-words">
                     {decodeHtmlEntities(detail.description.trim())}
                   </p>
                 </div>
@@ -728,23 +810,26 @@ export function DoctorDiscoveryHome({
                   <p className="text-caption font-semibold text-slate-800">
                     {lang === "ru" ? "Часы работы" : "Иш убактысы"}
                   </p>
-                  <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-caption text-slate-600">
+                  <ul className="mt-2 list-disc space-y-2 pl-5 text-[14px] leading-snug text-slate-600 marker:text-teal-600">
                     {detail.openingHoursLines.map((line) => (
-                      <li key={line}>{decodeHtmlEntities(line)}</li>
+                      <li key={line} className="break-words pl-0.5">
+                        {decodeHtmlEntities(line)}
+                      </li>
                     ))}
                   </ul>
                 </div>
               ) : null}
               <div className="mt-4 space-y-2">
                 {(detail.telephones ?? []).map((p) => (
-                  <a
+                  <button
                     key={p}
-                    href={`tel:${normalizeTelHref(p)}`}
-                    className="flex min-h-[48px] items-center gap-2 rounded-xl bg-teal-50 px-4 text-caption font-semibold text-teal-900 ring-1 ring-teal-100"
+                    type="button"
+                    onClick={() => openTelDial(p)}
+                    className="flex min-h-[48px] w-full items-center gap-2 rounded-xl bg-teal-50 px-4 text-left text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
                   >
                     <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                    {decodeHtmlEntities(p)}
-                  </a>
+                    <span className="break-all">{decodeHtmlEntities(p)}</span>
+                  </button>
                 ))}
               </div>
               {detail.website && !/doctors\.kg/i.test(detail.website) ? (
@@ -783,20 +868,20 @@ export function DoctorDiscoveryHome({
                 {t(lang, "home.card.pickPhone")}
               </h3>
               <div className="mt-4 flex flex-col gap-2">
-                {phonePicker.map((p) => {
-                  const href = normalizeTelHref(p);
-                  return (
-                    <a
-                      key={p}
-                      href={href ? `tel:${href}` : undefined}
-                      onClick={() => setPhonePicker(null)}
-                      className="flex min-h-[52px] items-center gap-3 rounded-xl bg-teal-50 px-4 text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
-                    >
-                      <Phone className="h-5 w-5 shrink-0" aria-hidden />
-                      {decodeHtmlEntities(p)}
-                    </a>
-                  );
-                })}
+                {phonePicker.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      openTelDial(p);
+                      setPhonePicker(null);
+                    }}
+                    className="flex min-h-[52px] w-full items-center gap-3 rounded-xl bg-teal-50 px-4 text-left text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
+                  >
+                    <Phone className="h-5 w-5 shrink-0" aria-hidden />
+                    <span className="break-all">{decodeHtmlEntities(p)}</span>
+                  </button>
+                ))}
               </div>
               <button
                 type="button"
