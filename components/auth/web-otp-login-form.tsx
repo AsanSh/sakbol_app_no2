@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, KeyRound, Lock, Mail, Send } from "lucide-react";
+import { ArrowLeft, Lock, Mail, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { EmailAuthPanel } from "@/components/auth/email-auth-panel";
