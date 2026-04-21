@@ -2,7 +2,7 @@
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import {
   ChevronDown,
   ChevronUp,
@@ -58,10 +58,16 @@ type UnifiedItem =
   | { kind: "lab"; sortMs: number; lab: LabAnalysisRow }
   | { kind: "doc"; sortMs: number; doc: HealthDocRow };
 
-const documentsFetcher = async (url: string): Promise<{ documents: HealthDocRow[] }> => {
+type DocumentsPage = {
+  documents: HealthDocRow[];
+  hasMore?: boolean;
+  nextCursor?: string | null;
+};
+
+const documentsFetcher = async (url: string): Promise<DocumentsPage> => {
   const r = await fetch(url, { credentials: "include" });
   if (!r.ok) throw new Error("documents_fetch_failed");
-  return (await r.json()) as { documents: HealthDocRow[] };
+  return (await r.json()) as DocumentsPage;
 };
 
 const DocumentSkeleton = () => (
@@ -165,18 +171,34 @@ export function AnalysesPreview({
   const labReqIdRef = useRef(0);
 
   const docsApiUrl =
-    activeProfileId && !isTrends ? `/api/documents?profileId=${encodeURIComponent(activeProfileId)}` : null;
+    activeProfileId && !isTrends ? `/api/documents?profileId=${encodeURIComponent(activeProfileId)}&take=20` : null;
   const {
-    data: docsData,
+    data: docsPages,
     isLoading: docsLoading,
     mutate: mutateDocs,
-  } = useSWR<{ documents: HealthDocRow[] }>(docsApiUrl, documentsFetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: true,
-    dedupingInterval: 30_000,
-    keepPreviousData: true,
-  });
-  const docRows = docsData?.documents ?? null;
+    size: docsSize,
+    setSize: setDocsSize,
+  } = useSWRInfinite<DocumentsPage>(
+    (pageIndex, previousPageData) => {
+      if (!docsApiUrl) return null;
+      if (pageIndex === 0) return docsApiUrl;
+      if (!previousPageData?.hasMore || !previousPageData?.nextCursor) return null;
+      return `${docsApiUrl}&cursor=${encodeURIComponent(previousPageData.nextCursor)}`;
+    },
+    documentsFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 30_000,
+      keepPreviousData: true,
+    },
+  );
+  const docRows = useMemo(
+    () => (docsPages ? docsPages.flatMap((p) => (Array.isArray(p.documents) ? p.documents : [])) : null),
+    [docsPages],
+  );
+  const docsHasMore = docsPages ? Boolean(docsPages[docsPages.length - 1]?.hasMore) : false;
+  const docsLoadingMore = docsLoading || (docsSize > 0 && !docsPages?.[docsSize - 1]);
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -253,10 +275,10 @@ export function AnalysesPreview({
   }, [docsApiUrl, refreshKey, autoRefreshTick, mutateDocs]);
 
   useEffect(() => {
-    if (!docsLoading && docsData) {
+    if (!docsLoading && docsPages) {
       setLastSyncedAt(Date.now());
     }
-  }, [docsLoading, docsData]);
+  }, [docsLoading, docsPages]);
 
   useEffect(() => {
     setStatusFilter("all");
@@ -589,6 +611,7 @@ export function AnalysesPreview({
             </div>
           ) : null}
           {!isTrends && unifiedForUi && unifiedForUi.length > 0 ? (
+            <>
             <ul
               className={cn(
                 "grid gap-2",
@@ -658,8 +681,11 @@ export function AnalysesPreview({
                               return;
                             }
                             void mutateDocs((prev) => {
-                              const current = prev?.documents ?? [];
-                              return { documents: current.filter((x) => x.id !== d.id) };
+                              if (!prev) return prev;
+                              return prev.map((page) => ({
+                                ...page,
+                                documents: page.documents.filter((x) => x.id !== d.id),
+                              }));
                             }, false);
                           })
                           .finally(() => setDeleteDocBusyId(null));
@@ -1040,6 +1066,19 @@ export function AnalysesPreview({
             );
           })}
             </ul>
+            {!compact && docsHasMore ? (
+              <div className="mt-3 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => void setDocsSize((s) => s + 1)}
+                  disabled={docsLoadingMore}
+                  className="rounded-xl border border-health-border bg-white px-4 py-2 text-sm font-semibold text-health-text shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {docsLoadingMore ? "Загрузка..." : "Загрузить еще"}
+                </button>
+              </div>
+            ) : null}
+            </>
           ) : null}
         </>
       )}
