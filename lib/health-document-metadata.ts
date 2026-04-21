@@ -28,7 +28,8 @@ type ScoredDate = { ymd: string; score: number; index: number };
 
 const HEAD_SCAN = 18_000;
 const TAIL_SCAN = 14_000;
-const BODY_MAX = 96_000;
+const BODY_MAX = 220_000;
+const OCR_SEP = "[./\\\\-\\u2012\\u2013\\u2014\\u2212\\s]{0,3}";
 
 /** Бонус, если рядом с цифрами есть типичные мед. формулировки (не имя файла). */
 function scoreNearbyMedicalContext(fullLower: string, globalIndex: number): number {
@@ -166,6 +167,16 @@ const LABELED_YMD_PATTERNS: Array<{ re: RegExp; bonus: number }> = [
   },
 ];
 
+/** OCR-friendly даты с пробелами/необычными тире между цифрами. */
+const OCR_DMY_RE = new RegExp(
+  `\\b(\\d{1,2})${OCR_SEP}(\\d{1,2})${OCR_SEP}(\\d{4})\\b`,
+  "g",
+);
+const OCR_YMD_RE = new RegExp(
+  `\\b(\\d{4})${OCR_SEP}(\\d{1,2})${OCR_SEP}(\\d{1,2})\\b`,
+  "g",
+);
+
 /**
  * Ищет даты в теле файла: приоритет подписей «дата осмотра/забора/…», затем цифры в начале и конце документа.
  */
@@ -174,7 +185,7 @@ export function extractBestDocumentDate(rawText: string): string | null {
   if (!text) return null;
 
   const body = text.length > BODY_MAX ? text.slice(0, BODY_MAX) : text;
-  const fullLower = body.toLowerCase();
+  const fullLower = text.toLowerCase();
   const candidates: ScoredDate[] = [];
 
   const pushDmy = (y: number, mo: number, d: number, globalIndex: number, bonus: number) => {
@@ -222,14 +233,24 @@ export function extractBestDocumentDate(rawText: string): string | null {
     while ((m = reSlashIso.exec(slice)) !== null) {
       pushDmy(Number(m[1]), Number(m[2]), Number(m[3]), baseOffset + m.index, 7);
     }
+
+    OCR_DMY_RE.lastIndex = 0;
+    while ((m = OCR_DMY_RE.exec(slice)) !== null) {
+      pushDmy(Number(m[3]), Number(m[2]), Number(m[1]), baseOffset + m.index, 6);
+    }
+
+    OCR_YMD_RE.lastIndex = 0;
+    while ((m = OCR_YMD_RE.exec(slice)) !== null) {
+      pushDmy(Number(m[1]), Number(m[2]), Number(m[3]), baseOffset + m.index, 7);
+    }
   };
 
   const head = body.slice(0, Math.min(HEAD_SCAN, body.length));
   collectFromSlice(head, 0);
 
-  if (body.length > HEAD_SCAN + 400) {
-    const tail = body.slice(-Math.min(TAIL_SCAN, body.length));
-    collectFromSlice(tail, body.length - tail.length);
+  if (text.length > HEAD_SCAN + 400) {
+    const tail = text.slice(-Math.min(TAIL_SCAN, text.length));
+    collectFromSlice(tail, text.length - tail.length);
   }
 
   if (!candidates.length) return null;
