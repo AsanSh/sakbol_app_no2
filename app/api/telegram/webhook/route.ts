@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { HealthDocumentCategory } from "@prisma/client";
 import { createHealthDocumentForProfile } from "@/lib/health-document-create";
+import { inferHealthDocumentFields } from "@/lib/health-document-infer";
 import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { prisma } from "@/lib/prisma";
 import { telegramDownloadFile, telegramSendPlainMessage } from "@/lib/telegram-bot-api";
@@ -183,24 +183,24 @@ export async function POST(req: NextRequest) {
         }
 
         const cap = msg?.caption?.trim();
-        const title =
+        const baseTitle =
           (doc?.file_name?.trim() ? normalizeUploadedFilename(doc.file_name) : "") ||
           (cap ? normalizeUploadedFilename(cap) : "") ||
-          `Файл из Telegram ${new Date().toLocaleDateString("ru-RU")}`;
+          "";
 
-        const docDay = new Date();
-        docDay.setHours(0, 0, 0, 0);
-
-        let category: HealthDocumentCategory = "OTHER";
-        if (mime === "application/pdf") {
-          category = "ANALYSIS";
-        }
+        const inferred = await inferHealthDocumentFields({
+          buffer: downloaded.buffer,
+          mime,
+          fileBaseName: baseTitle || `telegram_${Date.now()}`,
+          title: baseTitle || undefined,
+          category: mime === "application/pdf" ? "ANALYSIS" : "OTHER",
+        });
 
         const created = await createHealthDocumentForProfile({
           profileId: profile.id,
-          title,
-          category,
-          documentDate: docDay,
+          title: inferred.title,
+          category: inferred.category,
+          documentDate: inferred.documentDate,
           buffer: downloaded.buffer,
           mime,
         });
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
 
         await telegramSendPlainMessage(
           String(chatId),
-          `📎 Документ сохранён в хранилище SakBol: «${title.slice(0, 120)}»`,
+          `📎 Документ сохранён в хранилище SakBol: «${inferred.title.slice(0, 120)}»`,
         );
       } catch (e) {
         console.error("telegram webhook document", e);

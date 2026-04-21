@@ -10,6 +10,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "12mb",
     },
+    serverComponentsExternalPackages: ["pdf-parse", "tesseract.js"],
   },
 };
 

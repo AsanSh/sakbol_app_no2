@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHealthDocumentForProfile } from "@/lib/health-document-create";
+import { inferHealthDocumentFields } from "@/lib/health-document-infer";
 import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { parseHealthDocumentCategory } from "@/lib/health-documents-storage";
 import { findProfileForAutomation } from "@/lib/profile-resolve-automation";
@@ -68,10 +69,6 @@ export async function POST(req: Request) {
   const mime = file.type || "application/octet-stream";
   const rawFn =
     file.name && file.name !== "blob" ? normalizeUploadedFilename(file.name) : "";
-  const title =
-    titleRaw ||
-    rawFn ||
-    `Документ ${new Date().toLocaleDateString("ru-RU")}`;
 
   let documentDate: Date | null = null;
   if (dateRaw) {
@@ -79,11 +76,20 @@ export async function POST(req: Request) {
     if (!Number.isNaN(d.getTime())) documentDate = d;
   }
 
+  const inferred = await inferHealthDocumentFields({
+    buffer: buf,
+    mime,
+    fileBaseName: rawFn || "document",
+    title: titleRaw || undefined,
+    category,
+    documentDate: documentDate ?? undefined,
+  });
+
   const created = await createHealthDocumentForProfile({
     profileId: profile.id,
-    title,
-    category,
-    documentDate,
+    title: inferred.title,
+    category: inferred.category,
+    documentDate: inferred.documentDate,
     buffer: buf,
     mime,
   });

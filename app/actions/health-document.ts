@@ -3,6 +3,8 @@
 import { unlink } from "fs/promises";
 import { revalidatePath } from "next/cache";
 import { createHealthDocumentForProfile } from "@/lib/health-document-create";
+import { inferHealthDocumentFields } from "@/lib/health-document-infer";
+import { isHealthDocumentTextExtractable } from "@/lib/health-document-text-extract";
 import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { healthDocDiskPath, parseHealthDocumentCategory } from "@/lib/health-documents-storage";
 import { prisma } from "@/lib/prisma";
@@ -42,16 +44,41 @@ export async function uploadHealthDocument(formData: FormData) {
   const mime = file.type || "application/octet-stream";
   const rawName =
     file.name && file.name !== "blob" ? normalizeUploadedFilename(file.name) : "";
-  const title =
-    titleRaw.trim() ||
+
+  const explicitTitle = titleRaw.trim();
+  const explicitDateStr = documentDateRaw.trim();
+
+  let title =
+    explicitTitle ||
     rawName ||
     `Документ ${new Date().toLocaleDateString("ru-RU")}`;
+  let finalCategory = category;
+  let finalDocumentDate = documentDate;
+
+  if (
+    (!explicitTitle || !explicitDateStr || finalCategory === "OTHER") &&
+    isHealthDocumentTextExtractable(mime)
+  ) {
+    const inferred = await inferHealthDocumentFields({
+      buffer: buf,
+      mime,
+      fileBaseName: rawName || "document",
+      title: explicitTitle || undefined,
+      category: finalCategory,
+      documentDate: finalDocumentDate ?? undefined,
+    });
+    if (!explicitTitle) title = inferred.title;
+    if (!explicitDateStr) finalDocumentDate = inferred.documentDate;
+    if (finalCategory === "OTHER" && inferred.category !== "OTHER") {
+      finalCategory = inferred.category;
+    }
+  }
 
   const created = await createHealthDocumentForProfile({
     profileId,
     title,
-    category,
-    documentDate,
+    category: finalCategory,
+    documentDate: finalDocumentDate,
     buffer: buf,
     mime,
   });
