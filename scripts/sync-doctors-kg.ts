@@ -6,6 +6,7 @@
  */
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
+import { decodeHtmlEntities } from "../lib/html-entities";
 import {
   extractLocalBusinessFromHtml,
   normalizePhones,
@@ -27,20 +28,29 @@ async function enrichOne(summary: DoctorSummary): Promise<DoctorEnriched> {
   const html = await res.text();
   const ld = extractLocalBusinessFromHtml(html);
   const phones = normalizePhones(ld?.telephone);
+  const street = ld?.address?.streetAddress;
+  const locality = ld?.address?.addressLocality;
+  const region = ld?.address?.addressRegion;
   return {
     ...summary,
     telephones: phones,
-    streetAddress: ld?.address?.streetAddress ?? null,
-    locality: ld?.address?.addressLocality ?? null,
-    region: ld?.address?.addressRegion ?? null,
+    streetAddress: street ? decodeHtmlEntities(street).trim() || null : null,
+    locality: locality ? decodeHtmlEntities(locality).trim() || null : null,
+    region: region ? decodeHtmlEntities(region).trim() || null : null,
     country: ld?.address?.addressCountry ?? null,
     website: typeof ld?.url === "string" ? ld.url : null,
     image: typeof ld?.image === "string" ? ld.image : null,
-    priceRange: typeof ld?.priceRange === "string" ? ld.priceRange : null,
+    priceRange:
+      typeof ld?.priceRange === "string"
+        ? decodeHtmlEntities(ld.priceRange).trim() || null
+        : null,
     latitude: typeof ld?.geo?.latitude === "number" ? ld.geo.latitude : null,
     longitude: typeof ld?.geo?.longitude === "number" ? ld.geo.longitude : null,
-    description: typeof ld?.description === "string" ? ld.description : null,
-    openingHoursLines: openingHoursLinesFromLd(ld),
+    description:
+      typeof ld?.description === "string"
+        ? decodeHtmlEntities(ld.description).trim() || null
+        : null,
+    openingHoursLines: openingHoursLinesFromLd(ld).map((x) => decodeHtmlEntities(x)),
   };
 }
 
@@ -69,7 +79,7 @@ async function main() {
         latitude: null,
         longitude: null,
         description: null,
-        openingHoursLines: [],
+        openingHoursLines: [] as string[],
       });
     }
     await sleep(DELAY_MS);

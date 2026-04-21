@@ -18,6 +18,8 @@ import Image from "next/image";
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
 import type { DoctorSummary } from "@/lib/doctors-kg/types";
+import { decodeHtmlEntities } from "@/lib/html-entities";
+import { normalizeTelHref } from "@/lib/doctors-kg/tel";
 import { cn } from "@/lib/utils";
 
 type MetaCategory = { slug: string; label: string };
@@ -102,14 +104,38 @@ export function DoctorDiscoveryHome({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [detail, setDetail] = useState<DoctorRow | null>(null);
   const [clinicLoadErr, setClinicLoadErr] = useState<string | null>(null);
+  const [phonePicker, setPhonePicker] = useState<string[] | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+
+  const startPhoneCall = useCallback((phones: string[] | undefined) => {
+    const list = (phones ?? []).map((p) => p.trim()).filter(Boolean);
+    if (!list.length) return;
+    if (list.length === 1) {
+      const href = normalizeTelHref(list[0]);
+      if (href) window.location.href = `tel:${href}`;
+      return;
+    }
+    setPhonePicker(list);
+  }, []);
+
+  const openDoctorDetail = useCallback((d: DoctorRow) => {
+    setDetail(d);
+    void fetch(`/api/doctors-kg/live-card?slug=${encodeURIComponent(d.slug)}`)
+      .then((r) => r.json())
+      .then((j: { doctor?: DoctorRow; error?: string }) => {
+        if (j.doctor) {
+          setDetail((prev) => (prev?.slug === d.slug ? { ...prev, ...j.doctor } : prev));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const openDoctorBySlug = useCallback(
     async (slug: string) => {
       setClinicLoadErr(null);
       try {
-        const r = await fetch(`/api/doctors-kg/by-slug?slug=${encodeURIComponent(slug)}`);
+        const r = await fetch(`/api/doctors-kg/live-card?slug=${encodeURIComponent(slug)}`);
         const j = (await r.json()) as { doctor?: DoctorRow; error?: string };
         if (!r.ok || !j.doctor) {
           throw new Error(j.error ?? r.statusText);
@@ -393,21 +419,23 @@ export function DoctorDiscoveryHome({
                       </p>
                       <p className="mt-1 flex items-center gap-1 text-caption text-slate-500">
                         <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        {d.locality ??
-                          meta?.cities.find((c) => c.code === d.cityCode)?.label ??
-                          (d.cityCode ?? "—")}
+                        {d.locality
+                          ? decodeHtmlEntities(d.locality)
+                          : meta?.cities.find((c) => c.code === d.cityCode)?.label ??
+                            (d.cityCode ?? "—")}
                       </p>
                     </div>
                   </div>
                   <div className="mt-auto flex gap-2 border-t border-slate-100 px-4 py-3">
                     {d.telephones?.length ? (
-                      <a
-                        href={`tel:${d.telephones[0].replace(/\s/g, "")}`}
+                      <button
+                        type="button"
+                        onClick={() => startPhoneCall(d.telephones)}
                         className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-teal-50 py-2.5 text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
                       >
                         <Phone className="h-4 w-4 shrink-0" aria-hidden />
                         {t(lang, "home.card.call")}
-                      </a>
+                      </button>
                     ) : (
                       <span className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-slate-50 py-2.5 text-caption text-slate-500 ring-1 ring-slate-100">
                         {lang === "ru" ? "Нет телефона" : "Телефон жок"}
@@ -415,7 +443,7 @@ export function DoctorDiscoveryHome({
                     )}
                     <button
                       type="button"
-                      onClick={() => setDetail(d)}
+                      onClick={() => openDoctorDetail(d)}
                       className="min-h-[44px] flex-1 rounded-xl bg-health-primary py-2.5 text-caption font-semibold text-white shadow-sm hover:bg-teal-700"
                     >
                       {t(lang, "home.card.more")}
@@ -491,11 +519,11 @@ export function DoctorDiscoveryHome({
                   {c.phones.map((p) => (
                     <a
                       key={p}
-                      href={`tel:${p.replace(/\s/g, "")}`}
+                      href={`tel:${normalizeTelHref(p)}`}
                       className="flex items-center gap-2 text-caption font-semibold text-health-primary"
                     >
                       <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                      {p}
+                      {decodeHtmlEntities(p)}
                     </a>
                   ))}
                 </div>
@@ -624,13 +652,26 @@ export function DoctorDiscoveryHome({
             >
               <div className="flex justify-between gap-2">
                 <h3 className="font-manrope text-xl font-bold text-slate-900">{detail.name}</h3>
-                <button
-                  type="button"
-                  className="shrink-0 rounded-full p-2 hover:bg-slate-100"
-                  onClick={() => setDetail(null)}
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  {detail.telephones?.length ? (
+                    <button
+                      type="button"
+                      onClick={() => startPhoneCall(detail.telephones)}
+                      className="rounded-full p-2 text-health-primary hover:bg-teal-50"
+                      aria-label={t(lang, "home.card.call")}
+                    >
+                      <Phone className="h-5 w-5" aria-hidden />
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="rounded-full p-2 hover:bg-slate-100"
+                    onClick={() => setDetail(null)}
+                    aria-label={t(lang, "home.card.close")}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
               <p className="mt-2 text-body text-teal-800">
                 {detail.categorySlugs.map((s) => catLabel.get(s) ?? s).join(" · ")}
@@ -639,9 +680,11 @@ export function DoctorDiscoveryHome({
                 <p className="mt-3 flex gap-2 text-caption text-slate-600">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                   <span>
-                    {detail.streetAddress}
-                    {detail.locality ? `, ${detail.locality}` : ""}
-                    {detail.region && !detail.locality ? `, ${detail.region}` : ""}
+                    {decodeHtmlEntities(detail.streetAddress)}
+                    {detail.locality ? `, ${decodeHtmlEntities(detail.locality)}` : ""}
+                    {detail.region && !detail.locality
+                      ? `, ${decodeHtmlEntities(detail.region)}`
+                      : ""}
                   </span>
                 </p>
               ) : null}
@@ -666,7 +709,9 @@ export function DoctorDiscoveryHome({
                 </div>
               ) : null}
               {detail.priceRange ? (
-                <p className="mt-3 text-caption text-slate-600">{detail.priceRange}</p>
+                <p className="mt-3 text-caption text-slate-600">
+                  {decodeHtmlEntities(detail.priceRange)}
+                </p>
               ) : null}
               {detail.description?.trim() ? (
                 <div className="mt-4">
@@ -674,7 +719,7 @@ export function DoctorDiscoveryHome({
                     {lang === "ru" ? "О враче" : "Дарыер жөнүндө"}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap text-caption leading-relaxed text-slate-600">
-                    {detail.description.trim()}
+                    {decodeHtmlEntities(detail.description.trim())}
                   </p>
                 </div>
               ) : null}
@@ -685,7 +730,7 @@ export function DoctorDiscoveryHome({
                   </p>
                   <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-caption text-slate-600">
                     {detail.openingHoursLines.map((line) => (
-                      <li key={line}>{line}</li>
+                      <li key={line}>{decodeHtmlEntities(line)}</li>
                     ))}
                   </ul>
                 </div>
@@ -694,11 +739,11 @@ export function DoctorDiscoveryHome({
                 {(detail.telephones ?? []).map((p) => (
                   <a
                     key={p}
-                    href={`tel:${p.replace(/\s/g, "")}`}
+                    href={`tel:${normalizeTelHref(p)}`}
                     className="flex min-h-[48px] items-center gap-2 rounded-xl bg-teal-50 px-4 text-caption font-semibold text-teal-900 ring-1 ring-teal-100"
                   >
                     <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                    {p}
+                    {decodeHtmlEntities(p)}
                   </a>
                 ))}
               </div>
@@ -712,6 +757,54 @@ export function DoctorDiscoveryHome({
                   {detail.website.replace(/^https?:\/\//, "")}
                 </a>
               ) : null}
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {phonePicker?.length ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-4"
+            role="dialog"
+            aria-modal
+            aria-labelledby="phone-picker-title"
+          >
+            <motion.div
+              initial={{ y: 24 }}
+              animate={{ y: 0 }}
+              exit={{ y: 16 }}
+              className="w-full max-w-md rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl"
+            >
+              <h3 id="phone-picker-title" className="font-manrope text-lg font-semibold text-slate-900">
+                {t(lang, "home.card.pickPhone")}
+              </h3>
+              <div className="mt-4 flex flex-col gap-2">
+                {phonePicker.map((p) => {
+                  const href = normalizeTelHref(p);
+                  return (
+                    <a
+                      key={p}
+                      href={href ? `tel:${href}` : undefined}
+                      onClick={() => setPhonePicker(null)}
+                      className="flex min-h-[52px] items-center gap-3 rounded-xl bg-teal-50 px-4 text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
+                    >
+                      <Phone className="h-5 w-5 shrink-0" aria-hidden />
+                      {decodeHtmlEntities(p)}
+                    </a>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                className="mt-4 min-h-[48px] w-full rounded-2xl bg-slate-100 text-caption font-semibold text-slate-800"
+                onClick={() => setPhonePicker(null)}
+              >
+                {t(lang, "home.card.close")}
+              </button>
             </motion.div>
           </motion.div>
         ) : null}
