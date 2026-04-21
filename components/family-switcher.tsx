@@ -103,7 +103,7 @@ export function FamilySwitcher({
                     size={STACK_AVATAR}
                     className={cn(
                       "ring-2 ring-offset-0 ring-offset-health-bg",
-                      active ? "ring-health-primary shadow-md" : "ring-white/90",
+                      active ? "ring-health-primary shadow-md" : "ring-white/75 opacity-55",
                     )}
                   />
                 </span>
@@ -165,7 +165,7 @@ export function FamilySwitcher({
                 onClick={() => pickProfile(p.id)}
                 className={cn(
                   "flex flex-col items-center gap-0.5 rounded-xl px-0.5 pt-0.5 outline-none ring-health-primary focus-visible:ring-2",
-                  active ? "opacity-100" : "opacity-85 hover:opacity-100",
+                  active ? "opacity-100" : "opacity-55 hover:opacity-75",
                 )}
                 aria-pressed={active}
                 aria-label={`${t(lang, "profile.title")}: ${p.displayName}`}
@@ -186,7 +186,7 @@ export function FamilySwitcher({
                     className={cn(
                       "ring-2 ring-offset-2 ring-offset-health-bg transition-shadow",
                       isHeader && "ring-1 ring-offset-1",
-                      active ? "ring-health-primary shadow-md" : "ring-transparent",
+                      active ? "ring-health-primary shadow-md" : "ring-transparent opacity-70",
                     )}
                   />
                 </span>
