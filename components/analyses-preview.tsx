@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ChevronDown,
@@ -138,6 +138,14 @@ export function AnalysesPreview({
   const [docRows, setDocRows] = useState<HealthDocRow[] | null>(null);
   const [docsLoading, setDocsLoading] = useState(false);
   const [deleteDocBusyId, setDeleteDocBusyId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
+  const docRowsRef = useRef(docRows);
+  docRowsRef.current = docRows;
+  const lastLabPidRef = useRef<string | null>(null);
+  const lastDocPidRef = useRef<string | null>(null);
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -149,18 +157,33 @@ export function AnalysesPreview({
   useEffect(() => {
     if (!activeProfileId) {
       setRows(null);
+      lastLabPidRef.current = null;
       return;
     }
+    const pidChanged = lastLabPidRef.current !== activeProfileId;
+    lastLabPidRef.current = activeProfileId;
+    if (pidChanged) {
+      setRows(null);
+    }
+
     let cancelled = false;
-    setLoading(true);
+    const hadRows = !pidChanged && rowsRef.current !== null;
+    if (!hadRows) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
     setError(null);
+
     void listLabAnalysesForProfile(activeProfileId)
       .then((d) => {
         if (cancelled) return;
         if (!d.ok) {
           throw new Error(d.error);
         }
-        setRows(d.analyses);
+        startTransition(() => {
+          setRows(d.analyses);
+        });
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -168,7 +191,10 @@ export function AnalysesPreview({
         setRows(null);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       });
 
     return () => {
@@ -180,20 +206,37 @@ export function AnalysesPreview({
     if (!activeProfileId || isTrends) {
       setDocRows(null);
       setDocsLoading(false);
+      lastDocPidRef.current = null;
       return;
     }
+    const pidChanged = lastDocPidRef.current !== activeProfileId;
+    lastDocPidRef.current = activeProfileId;
+    if (pidChanged) {
+      setDocRows(null);
+    }
+
     let cancelled = false;
-    setDocsLoading(true);
+    const hadDocs = !pidChanged && docRowsRef.current !== null;
+    if (!hadDocs) {
+      setDocsLoading(true);
+    }
+
     void fetch(`/api/documents?profileId=${encodeURIComponent(activeProfileId)}`, {
       credentials: "include",
     })
       .then(async (r) => {
         const j = (await r.json().catch(() => ({}))) as { documents?: HealthDocRow[] };
         if (cancelled) return;
-        setDocRows(Array.isArray(j.documents) ? j.documents : []);
+        startTransition(() => {
+          setDocRows(Array.isArray(j.documents) ? j.documents : []);
+        });
       })
       .catch(() => {
-        if (!cancelled) setDocRows([]);
+        if (!cancelled) {
+          startTransition(() => {
+            setDocRows([]);
+          });
+        }
       })
       .finally(() => {
         if (!cancelled) setDocsLoading(false);
@@ -261,6 +304,10 @@ export function AnalysesPreview({
 
   if (!activeProfileId) return null;
 
+  /** Полный скелетон только при первом получении данных, не при фоновом обновлении после загрузки файла. */
+  const showBlockingSkeleton =
+    (rows === null && loading) || (!isTrends && docRows === null && docsLoading);
+
   const listIdle = !loading && (isTrends || !docsLoading);
   const archiveTotalCount =
     (listSourceRows?.length ?? 0) + (isTrends ? 0 : (docRows?.length ?? 0));
@@ -296,14 +343,22 @@ export function AnalysesPreview({
     >
       {!hideHeader ? (
         <>
-          <h2
-            className={cn(
-              "font-manrope font-semibold text-health-text",
-              compact ? "text-xs" : "text-h3",
-            )}
-          >
-            {isTrends ? t(lang, "trends.pageTitle") : t(lang, "analyses.title")}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2
+              className={cn(
+                "font-manrope font-semibold text-health-text",
+                compact ? "text-xs" : "text-h3",
+              )}
+            >
+              {isTrends ? t(lang, "trends.pageTitle") : t(lang, "analyses.title")}
+            </h2>
+            {refreshing ? (
+              <Loader2
+                className={cn("shrink-0 animate-spin text-health-primary", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+                aria-hidden
+              />
+            ) : null}
+          </div>
           {!compact ? (
             isTrends ? (
               <p className="mt-1 text-body text-health-text-secondary">{t(lang, "trends.pageSubtitle")}</p>
@@ -404,7 +459,7 @@ export function AnalysesPreview({
         </div>
       ) : null}
 
-      {loading || (!isTrends && docsLoading) ? (
+      {showBlockingSkeleton ? (
         <AnalysisSkeleton className={compact ? "mt-2" : "mt-3"} />
       ) : error ? (
         <p className={cn("text-health-danger", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>{error}</p>

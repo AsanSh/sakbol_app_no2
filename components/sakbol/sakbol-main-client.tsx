@@ -50,7 +50,6 @@ function TabPanels({
             family={family}
             onAnalysesChanged={() => {
               bumpAnalyses();
-              reload();
             }}
           />
         ) : null}
@@ -59,7 +58,6 @@ function TabPanels({
             family={family}
             onAnalysesChanged={() => {
               bumpAnalyses();
-              reload();
             }}
           />
         ) : null}
