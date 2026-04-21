@@ -14,28 +14,4 @@ export function normalizeTelHref(raw: string): string {
   return `+${digits}`;
 }
 
-/**
- * Вызывает набор номера (жест пользователя → программный клик по tel: часто работает в Telegram Mini App,
- * где присвоение window.location.href блокируется).
- */
-export function openTelDial(raw: string): void {
-  if (typeof document === "undefined") return;
-  const h = normalizeTelHref(raw);
-  if (!h) return;
-  const uri = `tel:${h}`;
-
-  try {
-    const tg = (window as unknown as { Telegram?: { WebApp?: { openLink?: (u: string) => void } } })
-      .Telegram?.WebApp;
-    tg?.openLink?.(uri);
-  } catch {
-    /* ignore */
-  }
-
-  const a = document.createElement("a");
-  a.href = uri;
-  a.setAttribute("rel", "noreferrer");
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
+/** Набор номера: см. `triggerPhoneCall` в `@/lib/callDoctor`. */
