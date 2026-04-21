@@ -271,16 +271,13 @@ export function DoctorDiscoveryHome({
     lang === "ru" ? "Сбросить" : "Тазалоо";
 
   return (
-    <div id="doctor-catalog" className={cn("space-y-6 pb-8 scroll-mt-4", className)}>
-      <header className="space-y-2">
-        <h1 className="font-manrope text-[2rem] font-bold leading-tight tracking-tight text-slate-900">
+    <div id="doctor-catalog" className={cn("space-y-4 pb-8 scroll-mt-4", className)}>
+      <header className="space-y-1">
+        <h1 className="font-manrope text-[1.65rem] font-bold leading-tight tracking-tight text-slate-900">
           {t(lang, "home.discovery.title")}
         </h1>
-        <p className="max-w-3xl text-[15px] leading-relaxed text-slate-600">
-          {t(lang, "home.discovery.lead")}
-        </p>
         {meta?.generatedAt ? (
-          <p className="text-caption text-slate-500">
+          <p className="text-[11px] text-slate-500">
             {lang === "ru" ? "Данные каталога обновлены:" : "Каталог жаңыланган:"}{" "}
             {new Date(meta.generatedAt).toLocaleString(lang === "ru" ? "ru-RU" : "ky-KG")} ·{" "}
             {meta.doctorCount} {lang === "ru" ? "врачей" : "дарыер"}
@@ -288,12 +285,12 @@ export function DoctorDiscoveryHome({
         ) : null}
       </header>
 
-      <div className="flex flex-wrap gap-2 rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200/90 sm:inline-flex">
+      <div className="inline-flex w-full gap-1 rounded-xl bg-white p-1 shadow-sm ring-1 ring-slate-200/90 sm:w-auto">
         <button
           type="button"
           onClick={() => setMainTab("doctors")}
           className={cn(
-            "flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl px-4 text-caption font-semibold transition-all sm:flex-none",
+            "flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition-all sm:flex-none",
             mainTab === "doctors"
               ? "bg-teal-50 text-health-primary shadow-sm ring-1 ring-teal-100"
               : "text-slate-600 hover:bg-slate-50",
@@ -306,7 +303,7 @@ export function DoctorDiscoveryHome({
           type="button"
           onClick={() => setMainTab("clinics")}
           className={cn(
-            "flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl px-4 text-caption font-semibold transition-all sm:flex-none",
+            "flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition-all sm:flex-none",
             mainTab === "clinics"
               ? "bg-teal-50 text-health-primary shadow-sm ring-1 ring-teal-100"
               : "text-slate-600 hover:bg-slate-50",
@@ -317,7 +314,7 @@ export function DoctorDiscoveryHome({
         </button>
       </div>
 
-      <div className="rounded-2xl bg-white p-4 shadow-md ring-1 ring-slate-200/80 sm:p-5">
+      <div className="rounded-xl bg-white p-3.5 shadow-md ring-1 ring-slate-200/80 sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative min-w-0 flex-1">
             <Search
@@ -329,7 +326,7 @@ export function DoctorDiscoveryHome({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t(lang, "home.search.placeholder")}
-              className="min-h-[52px] w-full rounded-2xl border-0 bg-slate-50 py-3 pl-12 pr-4 text-[15px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
+              className="min-h-[44px] w-full rounded-xl border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
               aria-label={t(lang, "home.search.placeholder")}
             />
             {listLoading ? (
@@ -340,9 +337,9 @@ export function DoctorDiscoveryHome({
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
-              className="inline-flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50 px-5 text-[15px] font-semibold text-teal-900 shadow-sm ring-1 ring-teal-100/80 hover:bg-teal-100/90 lg:flex-none"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3.5 text-[13px] font-semibold text-teal-900 shadow-sm ring-1 ring-teal-100/80 hover:bg-teal-100/90 lg:flex-none"
             >
-              <SlidersHorizontal className="h-5 w-5 text-teal-800" aria-hidden />
+              <SlidersHorizontal className="h-4 w-4 text-teal-800" aria-hidden />
               {t(lang, "home.search.filters")}
             </button>
           </div>
@@ -404,8 +401,8 @@ export function DoctorDiscoveryHome({
           ) : null}
           <div
             className={cn(
-              "grid gap-4",
-              isDesktop ? "sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-1",
+              "grid gap-3",
+              isDesktop ? "sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-2",
             )}
           >
             <AnimatePresence mode="popLayout">

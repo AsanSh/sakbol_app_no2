@@ -41,9 +41,9 @@ export function DoctorCategoryRail() {
   if (!categories.length) return null;
 
   return (
-    <section className="space-y-3">
-      <h2 className="font-manrope text-lg font-semibold text-slate-900">Категории врачей</h2>
-      <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <section className="space-y-2">
+      <h2 className="font-manrope text-base font-semibold text-slate-900">Категории врачей</h2>
+      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {categories.map((c, i) => {
           const Icon = ICONS[i % ICONS.length];
           return (
@@ -60,13 +60,13 @@ export function DoctorCategoryRail() {
                 }, 150);
               }}
               className={cn(
-                "flex min-w-[5.5rem] shrink-0 flex-col items-center gap-2 rounded-2xl bg-white px-3 py-4 shadow-sm ring-1 ring-slate-200/80 transition hover:ring-teal-200 hover:shadow-md",
+                "flex min-w-[4.7rem] shrink-0 flex-col items-center gap-1.5 rounded-xl bg-white px-2.5 py-3 shadow-sm ring-1 ring-slate-200/80 transition hover:ring-teal-200 hover:shadow-md",
               )}
             >
-              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F8FAFC] text-[#2A5298]">
-                <Icon className="h-6 w-6" aria-hidden />
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F8FAFC] text-[#2A5298]">
+                <Icon className="h-5 w-5" aria-hidden />
               </span>
-              <span className="max-w-[5.5rem] text-center text-[11px] font-semibold leading-tight text-slate-800">
+              <span className="max-w-[4.7rem] text-center text-[10px] font-semibold leading-tight text-slate-800">
                 {c.label}
               </span>
             </button>

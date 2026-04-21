@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { FamilyRole } from "@prisma/client";
 import { FamilyAnalysesWorkspace } from "@/components/family-analyses-workspace";
 import { FamilySwitcher } from "@/components/family-switcher";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
@@ -25,18 +24,12 @@ export function TrendsTab({ family, onAnalysesChanged }: Props) {
   const device = useDeviceType();
   const isDesktopWeb = device === "desktop-web";
 
-  const admin = useMemo(
-    () => family?.profiles.find((p) => p.familyRole === FamilyRole.ADMIN),
-    [family?.profiles],
-  );
-
   const headerSwitcher =
     authReady && isAuthenticated && family?.profiles?.length ? (
       <FamilySwitcher
         variant="header"
         profiles={family.profiles}
-        canAddMember={!!admin}
-        onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+        canAddMember={false}
       />
     ) : null;
 
@@ -52,18 +45,6 @@ export function TrendsTab({ family, onAnalysesChanged }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       >
-        <header>
-          <p className="text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
-            {t(lang, "trends.tabTopBar")}
-          </p>
-          <h2 className="mt-1 font-manrope text-h2 font-bold tracking-tight text-health-text">
-            {t(lang, "trends.tabHeroTitle")}
-          </h2>
-          <p className="mt-2 max-w-2xl text-body leading-relaxed text-health-text-secondary">
-            {t(lang, "trends.tabHeroSubtitle")}
-          </p>
-        </header>
-
         {!authReady ? (
           <p className="text-body text-health-text-secondary">{t(lang, "analyses.loading")}</p>
         ) : null}
@@ -90,6 +71,7 @@ export function TrendsTab({ family, onAnalysesChanged }: Props) {
             hideFamilySwitcher
             addMemberModalOpen={addMemberOpen}
             onAddMemberModalOpenChange={setAddMemberOpen}
+            hidePreviewHeader
           />
         ) : null}
       </motion.div>

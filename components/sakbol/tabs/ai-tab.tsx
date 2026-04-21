@@ -14,18 +14,12 @@ import type { FamilyWithProfiles } from "@/types/family";
 
 type Msg = { id: string; role: "user" | "assistant"; text: string; time: string };
 
-const FAQ = [
-  "Что такое ЛПНП?",
-  "Как подготовиться к анализу крови?",
-  "Норма глюкозы натощак",
-];
-
 function nowTime() {
   return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 }
 
 const INTRO_ASSISTANT =
-  "Здравствуйте! Я помогу разобраться с формулировками из анализов и подскажу в бытовых вопросах — с опорой на последнюю загрузку того профиля, который выбран сейчас. Точные статусы и нормы смотрите на вкладке «Анализы» по вашему бланку. Это не диагноз и не замена приёму у врача.";
+  "Здравствуйте! Чем могу помочь по вашим анализам?";
 
 type Props = {
   family: FamilyWithProfiles | null;
@@ -101,36 +95,6 @@ export function AiTab({ family, reloadFamily }: Props) {
       />
 
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col px-4">
-        <div className="rounded-2xl border border-[#e7e8e9] bg-white p-3 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#004253] to-[#005b71] text-white">
-              <MaterialIcon name="smart_toy" filled className="text-[24px]" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-manrope font-bold text-[#191c1d]">Sakbol — помощник</p>
-              <p className="mt-1 text-xs leading-relaxed text-[#70787d]">
-                Отвечаю простым языком, с учётом ваших последних результатов в приложении. Если чего-то нет в
-                базе — скажу честно.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {messages.length === 1 ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {FAQ.map((q) => (
-              <button
-                key={q}
-                type="button"
-                onClick={() => send(q)}
-                className="shrink-0 rounded-full border border-[#e7e8e9] bg-white px-3 py-1.5 text-[11px] font-medium text-[#40484c] shadow-sm"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
         <div className="mt-3 flex min-h-[12rem] flex-1 flex-col gap-2 overflow-y-auto pb-2 md:min-h-[18rem]">
           {messages.map((m) => (
             <div

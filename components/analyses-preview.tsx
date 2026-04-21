@@ -382,7 +382,7 @@ export function AnalysesPreview({
 
       {isTrends && !compact ? (
         <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-md shadow-slate-900/[0.04] ring-1 ring-health-border/80">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {(
               [
                 { days: null as number | null, key: "all" },
@@ -408,7 +408,7 @@ export function AnalysesPreview({
                   type="button"
                   onClick={() => setTrendsRangeDays(days)}
                   className={cn(
-                    "min-h-[44px] rounded-xl px-4 text-caption font-semibold transition-colors",
+                    "min-h-[36px] shrink-0 rounded-lg px-3 text-[12px] font-semibold transition-colors",
                     active
                       ? "bg-teal-50 text-health-primary shadow-sm ring-1 ring-teal-200"
                       : "bg-slate-50 text-health-text-secondary hover:bg-slate-100",
