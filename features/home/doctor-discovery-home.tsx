@@ -121,7 +121,10 @@ export function DoctorDiscoveryHome({
   useEffect(() => {
     if (!initialCategorySlug || !meta?.categories?.length) return;
     const ok = meta.categories.some((c) => c.slug === initialCategorySlug);
-    if (ok) setCategory(initialCategorySlug);
+    if (ok) {
+      setMainTab("doctors");
+      setCategory(initialCategorySlug);
+    }
   }, [initialCategorySlug, meta]);
 
   const catLabel = useMemo(() => {
@@ -191,7 +194,7 @@ export function DoctorDiscoveryHome({
     lang === "ru" ? "Сбросить" : "Тазалоо";
 
   return (
-    <div className={cn("space-y-6 pb-8", className)}>
+    <div id="doctor-catalog" className={cn("space-y-6 pb-8 scroll-mt-4", className)}>
       <header className="space-y-2">
         <h1 className="font-manrope text-[2rem] font-bold leading-tight tracking-tight text-slate-900">
           {t(lang, "home.discovery.title")}

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
+import { doctorCategoryLabelRu } from "@/lib/doctors-kg/doctor-category-label-ru";
 import {
   cityLabel,
   deriveClinicsFromEnriched,
   loadDoctorsKgEnrichedFile,
-  prettyCategorySlug,
 } from "@/lib/doctors-kg/enriched-store";
 import { fetchAllWpDoctorSummaries } from "@/lib/doctors-kg/wp-api";
 
@@ -23,7 +23,7 @@ export async function GET() {
       }
       const categories = Array.from(catSet)
         .sort()
-        .map((slug) => ({ slug, label: prettyCategorySlug(slug) }));
+        .map((slug) => ({ slug, label: doctorCategoryLabelRu(slug) }));
       const cities = Array.from(citySet)
         .sort()
         .map((code) => ({
@@ -51,7 +51,7 @@ export async function GET() {
     }
     const categories = Array.from(catSet)
       .sort()
-      .map((slug) => ({ slug, label: prettyCategorySlug(slug) }));
+      .map((slug) => ({ slug, label: doctorCategoryLabelRu(slug) }));
     const cities = Array.from(citySet)
       .sort()
       .map((code) => ({

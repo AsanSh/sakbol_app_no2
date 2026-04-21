@@ -1,11 +1,13 @@
 import "server-only";
 
 import { randomUUID } from "crypto";
+import { put } from "@vercel/blob";
 import type { HealthDocumentCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   HEALTH_DOCS_MAX_BYTES,
   HEALTH_DOC_ALLOWED_MIME,
+  extForMime,
   publicDocumentDownloadPath,
   writeHealthDocumentToDisk,
 } from "@/lib/health-documents-storage";
@@ -31,10 +33,20 @@ export async function createHealthDocumentForProfile(input: {
   }
 
   const id = randomUUID();
-  const fileUrl = publicDocumentDownloadPath(id);
 
+  let fileUrl: string;
   try {
-    await writeHealthDocumentToDisk(id, input.buffer, mime);
+    if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+      const ext = extForMime(mime);
+      const blob = await put(`health-docs/${id}.${ext}`, input.buffer, {
+        access: "public",
+        contentType: mime,
+      });
+      fileUrl = blob.url;
+    } else {
+      await writeHealthDocumentToDisk(id, input.buffer, mime);
+      fileUrl = publicDocumentDownloadPath(id);
+    }
     await prisma.healthDocument.create({
       data: {
         id,

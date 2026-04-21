@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { HealthDocumentCategory } from "@prisma/client";
 import { createHealthDocumentForProfile } from "@/lib/health-document-create";
+import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { prisma } from "@/lib/prisma";
 import { telegramDownloadFile, telegramSendPlainMessage } from "@/lib/telegram-bot-api";
 
@@ -181,9 +182,10 @@ export async function POST(req: NextRequest) {
           mime = pickMimeFromName(doc?.file_name, mime);
         }
 
+        const cap = msg?.caption?.trim();
         const title =
-          doc?.file_name?.trim() ||
-          msg?.caption?.trim() ||
+          (doc?.file_name?.trim() ? normalizeUploadedFilename(doc.file_name) : "") ||
+          (cap ? normalizeUploadedFilename(cap) : "") ||
           `Файл из Telegram ${new Date().toLocaleDateString("ru-RU")}`;
 
         const docDay = new Date();

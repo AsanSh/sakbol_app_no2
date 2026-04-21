@@ -107,21 +107,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
       <div className={cn("flex min-h-0 w-full flex-1 flex-col overflow-y-auto")}>
         <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-8 pt-2 md:px-6">
           {authBanner}
-          {isAuthenticated ? (
-            <div className="space-y-2">
-              <div className="flex justify-end">
-                <Link
-                  href="/?tab=analyses"
-                  className="rounded-2xl bg-[#2A5298]/10 px-4 py-2 text-sm font-semibold text-[#2A5298] ring-1 ring-[#2A5298]/20 hover:bg-[#2A5298]/15"
-                >
-                  {t(lang, "analyses.pageTitle")}
-                </Link>
-              </div>
-              <DoctorCategoryRail />
-            </div>
-          ) : (
-            <DoctorCategoryRail />
-          )}
+          <DoctorCategoryRail />
           <DoctorDiscoveryHome isDesktop initialCategorySlug={doctorCat} />
         </div>
         <AddMemberModal
@@ -151,21 +137,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
         transition={{ duration: 0.3 }}
       >
         {authBanner}
-        {isAuthenticated ? (
-          <div className="space-y-2">
-            <div className="flex justify-end">
-              <Link
-                href="/?tab=analyses"
-                className="rounded-2xl bg-[#2A5298]/10 px-4 py-2 text-sm font-semibold text-[#2A5298] ring-1 ring-[#2A5298]/20"
-              >
-                {t(lang, "analyses.pageTitle")}
-              </Link>
-            </div>
-            <DoctorCategoryRail />
-          </div>
-        ) : (
-          <DoctorCategoryRail />
-        )}
+        <DoctorCategoryRail />
         <DoctorDiscoveryHome initialCategorySlug={doctorCat} />
         {sharedSheets}
         <AddMemberModal

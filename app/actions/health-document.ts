@@ -3,6 +3,7 @@
 import { unlink } from "fs/promises";
 import { revalidatePath } from "next/cache";
 import { createHealthDocumentForProfile } from "@/lib/health-document-create";
+import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { healthDocDiskPath, parseHealthDocumentCategory } from "@/lib/health-documents-storage";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
@@ -39,9 +40,12 @@ export async function uploadHealthDocument(formData: FormData) {
 
   const buf = Buffer.from(await file.arrayBuffer());
   const mime = file.type || "application/octet-stream";
+  const rawName =
+    file.name && file.name !== "blob" ? normalizeUploadedFilename(file.name) : "";
   const title =
     titleRaw.trim() ||
-    (file.name && file.name !== "blob" ? file.name : `Документ ${new Date().toLocaleDateString("ru-RU")}`);
+    rawName ||
+    `Документ ${new Date().toLocaleDateString("ru-RU")}`;
 
   const created = await createHealthDocumentForProfile({
     profileId,
@@ -74,13 +78,16 @@ export async function deleteHealthDocument(id: string) {
 
   const doc = await prisma.healthDocument.findFirst({
     where: { id: tid, profile: { familyId: session.familyId } },
-    select: { id: true, mimeType: true },
+    select: { id: true, mimeType: true, fileUrl: true },
   });
   if (!doc) {
     return { ok: false as const, error: "Документ не найден." };
   }
 
-  if (doc.mimeType) {
+  if (doc.fileUrl.startsWith("http://") || doc.fileUrl.startsWith("https://")) {
+    const { del } = await import("@vercel/blob");
+    await del(doc.fileUrl).catch(() => {});
+  } else if (doc.mimeType) {
     await unlink(healthDocDiskPath(doc.id, doc.mimeType)).catch(() => {});
   }
 

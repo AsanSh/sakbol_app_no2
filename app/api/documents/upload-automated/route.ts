@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHealthDocumentForProfile } from "@/lib/health-document-create";
+import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { parseHealthDocumentCategory } from "@/lib/health-documents-storage";
 import { findProfileForAutomation } from "@/lib/profile-resolve-automation";
 
@@ -65,9 +66,12 @@ export async function POST(req: Request) {
 
   const buf = Buffer.from(await file.arrayBuffer());
   const mime = file.type || "application/octet-stream";
+  const rawFn =
+    file.name && file.name !== "blob" ? normalizeUploadedFilename(file.name) : "";
   const title =
     titleRaw ||
-    (file.name && file.name !== "blob" ? file.name : `Документ ${new Date().toLocaleDateString("ru-RU")}`);
+    rawFn ||
+    `Документ ${new Date().toLocaleDateString("ru-RU")}`;
 
   let documentDate: Date | null = null;
   if (dateRaw) {

@@ -23,10 +23,14 @@ export async function GET(
 
   const doc = await prisma.healthDocument.findFirst({
     where: { id: docId, profile: { familyId: session.familyId } },
-    select: { id: true, mimeType: true, title: true },
+    select: { id: true, mimeType: true, title: true, fileUrl: true },
   });
   if (!doc || !doc.mimeType) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (doc.fileUrl.startsWith("http://") || doc.fileUrl.startsWith("https://")) {
+    return NextResponse.redirect(doc.fileUrl, 302);
   }
 
   const buf = await readHealthDocumentFromDisk(doc.id, doc.mimeType);

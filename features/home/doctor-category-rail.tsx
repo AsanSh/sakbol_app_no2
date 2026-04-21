@@ -30,7 +30,7 @@ export function DoctorCategoryRail() {
       .then((r) => r.json())
       .then((j) => {
         if (cancelled || j.error) return;
-        setCategories((j.categories as MetaCategory[])?.slice(0, 12) ?? []);
+        setCategories((j.categories as MetaCategory[]) ?? []);
       })
       .catch(() => {});
     return () => {
@@ -50,7 +50,15 @@ export function DoctorCategoryRail() {
             <button
               key={c.slug}
               type="button"
-              onClick={() => router.push(`/?tab=home&doctorCat=${encodeURIComponent(c.slug)}`, { scroll: false })}
+              onClick={() => {
+                router.push(`/?tab=home&doctorCat=${encodeURIComponent(c.slug)}`, { scroll: false });
+                window.setTimeout(() => {
+                  document.getElementById("doctor-catalog")?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }, 150);
+              }}
               className={cn(
                 "flex min-w-[5.5rem] shrink-0 flex-col items-center gap-2 rounded-2xl bg-white px-3 py-4 shadow-sm ring-1 ring-slate-200/80 transition hover:ring-teal-200 hover:shadow-md",
               )}
