@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Copy, Share2, Trash2 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
@@ -314,6 +315,154 @@ type Props = {
   reload: () => void;
 };
 
+// ─── Share Profile Section ────────────────────────────────────────────────────
+
+type ShareInvite = {
+  id: string;
+  inviteToken: string;
+  inviteExpiresAt: string | null;
+  profileName: string;
+};
+
+function ShareProfileSection({
+  lang,
+  familyProfiles,
+}: {
+  lang: string;
+  familyProfiles: ProfileSummary[];
+}) {
+  const [selectedProfileId, setSelectedProfileId] = useState(familyProfiles[0]?.id ?? "");
+  const [invite, setInvite] = useState<ShareInvite | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const inviteUrl = invite
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/share-profile/${invite.inviteToken}`
+    : null;
+
+  const handleCreate = async () => {
+    if (!selectedProfileId) return;
+    setCreating(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/profile/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ profileId: selectedProfileId, expiresInDays: 30 }),
+      });
+      const j = (await res.json()) as ShareInvite & { error?: string };
+      if (!res.ok) {
+        setErr(j.error ?? "Ошибка создания ссылки");
+        return;
+      }
+      setInvite(j);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!invite) return;
+    await fetch(`/api/profile/share?id=${invite.id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    setInvite(null);
+    setCopied(false);
+  };
+
+  const handleCopy = () => {
+    if (!inviteUrl) return;
+    void navigator.clipboard?.writeText(inviteUrl).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  if (!familyProfiles.length) return null;
+
+  return (
+    <section className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-2">
+        <Share2 className="h-4 w-4 text-[#004253]" />
+        <h2 className="text-sm font-bold text-[#191c1d]">Совместный доступ</h2>
+      </div>
+      <p className="mt-1 text-xs text-[#70787d]">
+        Поделитесь профилем родственника с другим пользователем — он сможет видеть и добавлять документы только для этого профиля.
+      </p>
+
+      {!invite ? (
+        <div className="mt-3 space-y-2">
+          {familyProfiles.length > 1 && (
+            <select
+              value={selectedProfileId}
+              onChange={(e) => setSelectedProfileId(e.target.value)}
+              className="w-full rounded-xl border border-[#e7e8e9] bg-[#f8f9fa] px-3 py-2 text-sm"
+            >
+              {familyProfiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.displayName}
+                </option>
+              ))}
+            </select>
+          )}
+          {err && <p className="text-xs text-red-700">{err}</p>}
+          <button
+            type="button"
+            onClick={() => void handleCreate()}
+            disabled={creating || !selectedProfileId}
+            className="w-full rounded-xl bg-[#004253] py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {creating ? "Создание ссылки…" : "Создать ссылку-приглашение"}
+          </button>
+        </div>
+      ) : (
+        <div className="mt-3 space-y-3">
+          <div className="flex justify-center rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+            {inviteUrl && (
+              <QRCodeSVG value={inviteUrl} size={160} level="M" includeMargin />
+            )}
+          </div>
+          <p className="break-all rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-mono text-slate-700 ring-1 ring-slate-100">
+            {inviteUrl}
+          </p>
+          {invite.inviteExpiresAt && (
+            <p className="text-[11px] text-slate-500">
+              Действует до:{" "}
+              {new Date(invite.inviteExpiresAt).toLocaleDateString(
+                lang === "ru" ? "ru-RU" : "ky-KG",
+                { day: "numeric", month: "short", year: "numeric" },
+              )}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-teal-50 py-2 text-xs font-semibold text-teal-900 ring-1 ring-teal-100"
+            >
+              <Copy className="h-3.5 w-3.5" />
+              {copied ? "Скопировано!" : "Копировать"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleRevoke()}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-900 ring-1 ring-red-100"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Отозвать
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500">
+            Другой пользователь отсканирует QR-код или откроет ссылку и примет приглашение. После этого профиль появится в его переключателе.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
@@ -602,6 +751,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 <p className="mt-3 text-sm text-[#70787d]">{t(lang, "profile.noProfiles")}</p>
               )}
             </section>
+
+            <ShareProfileSection lang={lang} familyProfiles={family?.profiles ?? []} />
 
             <section className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm">
               <h2 className="text-sm font-bold text-[#191c1d]">{t(lang, "profile.language")}</h2>

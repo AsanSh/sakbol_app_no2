@@ -14,6 +14,10 @@ export type ProfileSummary = {
   heightCm: number | null;
   weightKg: number | null;
   bloodType: string | null;
+  /** true — профиль из чужой семьи, доступен по шарингу */
+  isSharedGuest?: boolean;
+  sharedAccessId?: string;
+  sharedCanWrite?: boolean;
 };
 
 export type FamilyWithProfiles = {
@@ -21,6 +25,7 @@ export type FamilyWithProfiles = {
   name: string | null;
   tier?: "FREE" | "PREMIUM";
   profiles: ProfileSummary[];
+  sharedProfiles?: ProfileSummary[];
 };
 
 export type LabAnalysisRow = {

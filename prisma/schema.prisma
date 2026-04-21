@@ -57,11 +57,44 @@ model Profile {
   medications   Medication[]
   telegramLinkCodes TelegramLinkCode[]
 
+  /// Доступы к чужим профилям, которые выданы этому профилю (он — гость).
+  grantedAccesses  ProfileAccess[] @relation("AccessGrantee")
+  /// Доступы к этому профилю, которые были выданы другим (этот профиль — источник).
+  sharedAccesses   ProfileAccess[] @relation("AccessSource")
+
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
   @@index([familyId])
   @@index([familyId, familyRole])
+}
+
+/// Совместный доступ: владелец одной семьи открывает конкретный профиль другой семье.
+/// Сценарий: поделиться профилем мамы с братом, у которого свой аккаунт.
+model ProfileAccess {
+  id               String    @id @default(cuid())
+
+  /// Профиль-источник (чьи данные расшариваются).
+  sourceProfileId  String
+  sourceProfile    Profile   @relation("AccessSource", fields: [sourceProfileId], references: [id], onDelete: Cascade)
+
+  /// Профиль-гость (кому выдан доступ). Null до принятия приглашения.
+  granteeProfileId String?
+  grantee          Profile?  @relation("AccessGrantee", fields: [granteeProfileId], references: [id], onDelete: SetNull)
+
+  /// Может ли гость добавлять документы/анализы.
+  canWrite         Boolean   @default(true)
+
+  /// Одноразовый токен для QR / ссылки-приглашения.
+  inviteToken      String    @unique @default(cuid())
+  inviteExpiresAt  DateTime?
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([sourceProfileId])
+  @@index([granteeProfileId])
+  @@index([inviteToken])
 }
 
 /// Временный код: веб «Привязать Telegram» → пользователь /start КОД у бота.

@@ -7,24 +7,37 @@ import { useTelegramSession } from "@/context/telegram-session-context";
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
 
+function normalizeProfile(p: FamilyWithProfiles["profiles"][number]) {
+  return {
+    ...p,
+    email: p.email ?? null,
+    biologicalSex: p.biologicalSex ?? BiologicalSex.UNKNOWN,
+    dateOfBirth:
+      p.dateOfBirth == null
+        ? null
+        : typeof p.dateOfBirth === "string"
+          ? p.dateOfBirth
+          : new Date(p.dateOfBirth as unknown as Date).toISOString(),
+    heightCm: p.heightCm ?? null,
+    weightKg: p.weightKg ?? null,
+    bloodType: p.bloodType ?? null,
+  };
+}
+
 function normalizeFamily(raw: unknown): FamilyWithProfiles {
-  const f = raw as FamilyWithProfiles;
+  const f = raw as FamilyWithProfiles & { sharedProfiles?: FamilyWithProfiles["profiles"] };
+  const ownProfiles = f.profiles.map(normalizeProfile);
+  // Расшаренные профили добавляем в конец общего списка
+  const sharedProfiles = (f.sharedProfiles ?? []).map((p) => ({
+    ...normalizeProfile(p),
+    isSharedGuest: true,
+    sharedAccessId: (p as { sharedAccessId?: string }).sharedAccessId,
+    sharedCanWrite: (p as { sharedCanWrite?: boolean }).sharedCanWrite ?? true,
+  }));
   return {
     ...f,
-    profiles: f.profiles.map((p) => ({
-      ...p,
-      email: p.email ?? null,
-      biologicalSex: p.biologicalSex ?? BiologicalSex.UNKNOWN,
-      dateOfBirth:
-        p.dateOfBirth == null
-          ? null
-          : typeof p.dateOfBirth === "string"
-            ? p.dateOfBirth
-            : new Date(p.dateOfBirth as unknown as Date).toISOString(),
-      heightCm: p.heightCm ?? null,
-      weightKg: p.weightKg ?? null,
-      bloodType: p.bloodType ?? null,
-    })),
+    profiles: [...ownProfiles, ...sharedProfiles],
+    sharedProfiles,
   };
 }
 

@@ -31,11 +31,37 @@ export async function GET(req: Request) {
   const category =
     cat && CATEGORIES.has(cat) ? (cat as HealthDocumentCategory) : undefined;
 
+  // Проверяем гостевой доступ: если profileId задан и это не наш профиль, ищем ProfileAccess
+  let canAccessProfileId = true;
+  if (profileIdFilter) {
+    const ownProfile = await prisma.profile.findFirst({
+      where: { id: profileIdFilter, familyId: session.familyId },
+      select: { id: true },
+    });
+    if (!ownProfile) {
+      const guestAccess = await prisma.profileAccess.findFirst({
+        where: {
+          sourceProfileId: profileIdFilter,
+          granteeProfileId: session.profileId,
+          acceptedAt: { not: null },
+          revokedAt: null,
+        },
+        select: { id: true },
+      });
+      canAccessProfileId = !!guestAccess;
+    }
+  }
+
+  if (!canAccessProfileId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const docs = await prisma.healthDocument.findMany({
       where: {
-        profile: { familyId: session.familyId },
-        ...(profileIdFilter ? { profileId: profileIdFilter } : {}),
+        ...(profileIdFilter
+          ? { profileId: profileIdFilter }
+          : { profile: { familyId: session.familyId } }),
         ...(category ? { category } : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],

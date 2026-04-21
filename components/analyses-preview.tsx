@@ -423,18 +423,48 @@ export function AnalysesPreview({
     setError(null);
     setOpenDocBusyId(doc.id);
     try {
+      const isExternal =
+        doc.fileUrl.startsWith("https://") || doc.fileUrl.startsWith("http://");
+
+      if (isExternal) {
+        // Vercel Blob or any external public URL — open directly.
+        // In Telegram Mini App window.open is blocked, use openLink instead.
+        type TgWebApp = { openLink?: (u: string, o?: { try_instant_view?: boolean }) => void };
+        const tg = (window as unknown as { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp;
+        if (typeof tg?.openLink === "function") {
+          tg.openLink(doc.fileUrl, { try_instant_view: false });
+        } else {
+          window.open(doc.fileUrl, "_blank", "noopener,noreferrer");
+        }
+        return;
+      }
+
+      // Internal API URL (/api/documents/:id/file) — needs session cookie.
       const res = await fetch(doc.fileUrl, { credentials: "include" });
       if (res.status === 401) {
         setError("Сессия истекла. Войдите заново и повторите открытие документа.");
         return;
       }
       if (!res.ok) {
-        setError("Не удалось открыть документ. Попробуйте еще раз.");
+        setError("Не удалось открыть документ. Попробуйте ещё раз.");
         return;
       }
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      type TgWebApp2 = { openLink?: (u: string, o?: { try_instant_view?: boolean }) => void };
+      const tg2 = (window as unknown as { Telegram?: { WebApp?: TgWebApp2 } }).Telegram?.WebApp;
+      if (typeof tg2?.openLink === "function") {
+        // Can't open blob: via Telegram — fall back to anchor click
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = doc.title || "document";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } else {
+        window.open(blobUrl, "_blank", "noopener,noreferrer");
+      }
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch {
       setError("Ошибка сети при открытии документа.");

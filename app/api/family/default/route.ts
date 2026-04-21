@@ -4,6 +4,22 @@ import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
+const PROFILE_SELECT = {
+  id: true,
+  displayName: true,
+  avatarUrl: true,
+  email: true,
+  familyRole: true,
+  isManaged: true,
+  telegramUserId: true,
+  managedRole: true,
+  dateOfBirth: true,
+  biologicalSex: true,
+  heightCm: true,
+  weightKg: true,
+  bloodType: true,
+} as const;
+
 export async function GET() {
   const session = getSession();
   if (!session) {
@@ -11,38 +27,48 @@ export async function GET() {
   }
 
   try {
-    const family = await prisma.family.findUnique({
-      where: { id: session.familyId },
-      include: {
-        plan: { select: { tier: true } },
-        profiles: {
-          orderBy: { createdAt: "asc" },
-          select: {
-            id: true,
-            displayName: true,
-            avatarUrl: true,
-            email: true,
-            familyRole: true,
-            isManaged: true,
-            telegramUserId: true,
-            managedRole: true,
-            dateOfBirth: true,
-            biologicalSex: true,
-            heightCm: true,
-            weightKg: true,
-            bloodType: true,
+    const [family, sharedAccesses] = await Promise.all([
+      prisma.family.findUnique({
+        where: { id: session.familyId },
+        include: {
+          plan: { select: { tier: true } },
+          profiles: {
+            orderBy: { createdAt: "asc" },
+            select: PROFILE_SELECT,
           },
         },
-      },
-    });
+      }),
+      // Профили чужих семей, к которым текущий профиль имеет доступ
+      prisma.profileAccess.findMany({
+        where: {
+          granteeProfileId: session.profileId,
+          acceptedAt: { not: null },
+          revokedAt: null,
+        },
+        select: {
+          id: true,
+          canWrite: true,
+          sourceProfile: { select: PROFILE_SELECT },
+        },
+      }),
+    ]);
 
     if (!family) {
       return NextResponse.json({ error: "Family not found" }, { status: 404 });
     }
 
+    // Добавляем расшаренные профили с флагом isSharedGuest
+    const sharedProfiles = sharedAccesses.map((a) => ({
+      ...a.sourceProfile,
+      isSharedGuest: true,
+      sharedAccessId: a.id,
+      sharedCanWrite: a.canWrite,
+    }));
+
     return NextResponse.json({
       ...family,
       tier: family.plan?.tier ?? "FREE",
+      sharedProfiles,
     });
   } catch {
     return NextResponse.json(
