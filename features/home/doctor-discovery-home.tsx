@@ -20,7 +20,12 @@ import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
 import { PhoneSelectModal } from "@/components/PhoneSelectModal";
 import type { DoctorForCall, PhoneSelectEntry } from "@/lib/callDoctor";
-import { formatPhoneDisplay, getTelLinkProps, handleDoctorCall } from "@/lib/callDoctor";
+import {
+  formatPhoneDisplay,
+  getTelLinkProps,
+  handleDoctorCall,
+  notifyTelegramCallNumber,
+} from "@/lib/callDoctor";
 import type { DoctorSummary } from "@/lib/doctors-kg/types";
 import { decodeHtmlEntities } from "@/lib/html-entities";
 import { cn } from "@/lib/utils";
@@ -510,6 +515,10 @@ export function DoctorDiscoveryHome({
                       singleTelLink ? (
                         <a
                           {...singleTelLink}
+                          onClick={() => {
+                            const n = d.telephones?.[0];
+                            if (n) notifyTelegramCallNumber(n);
+                          }}
                           className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-teal-50 py-2.5 text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
                         >
                           <Phone className="h-4 w-4 shrink-0" aria-hidden />
@@ -612,6 +621,7 @@ export function DoctorDiscoveryHome({
                       <a
                         key={p}
                         {...link}
+                        onClick={() => notifyTelegramCallNumber(p)}
                         className="flex min-h-[44px] w-full items-center gap-2 text-left text-caption font-semibold text-health-primary"
                       >
                         <Phone className="h-4 w-4 shrink-0" aria-hidden />
@@ -757,6 +767,9 @@ export function DoctorDiscoveryHome({
                       return detailTelLink ? (
                         <a
                           {...detailTelLink}
+                          onClick={() => {
+                            if (first) notifyTelegramCallNumber(first);
+                          }}
                           className="rounded-full p-2 text-health-primary hover:bg-teal-50"
                           aria-label={t(lang, "home.card.call")}
                         >
@@ -869,6 +882,7 @@ export function DoctorDiscoveryHome({
                     <a
                       key={p}
                       {...link}
+                      onClick={() => notifyTelegramCallNumber(p)}
                       className="flex min-h-[48px] w-full items-center gap-2 rounded-xl bg-teal-50 px-4 text-left text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
                     >
                       <Phone className="h-4 w-4 shrink-0" aria-hidden />

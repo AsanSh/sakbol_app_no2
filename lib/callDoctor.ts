@@ -99,6 +99,40 @@ function clickTelAnchor(uri: string): void {
 }
 
 /**
+ * В Telegram Mini App ссылка tel: часто не открывает набор. Показываем номер в showAlert / alert.
+ */
+export function notifyTelegramCallNumber(raw: string): void {
+  if (typeof window === "undefined") return;
+  if (!hasTelegramWebAppBridge()) return;
+  const display = formatPhoneDisplay(raw);
+  const h = normalizeTelHref(decodeHtmlEntities(raw.trim()));
+  const digits = h ? h.replace(/\D/g, "") : raw.replace(/\D/g, "");
+  const msg =
+    `Набор из мини-приложения может быть недоступен.\n\n` +
+    `Телефон:\n${display}` +
+    (digits ? `\n\nЦифры для копирования:\n${digits}` : "");
+
+  try {
+    void navigator.clipboard?.writeText?.(digits || display.replace(/\s/g, "")).catch(() => {});
+  } catch {
+    /* noop */
+  }
+
+  try {
+    const tg = (window as unknown as { Telegram?: { WebApp?: { showAlert?: (m: string) => void } } })
+      .Telegram?.WebApp;
+    if (typeof tg?.showAlert === "function") {
+      tg.showAlert(msg);
+      return;
+    }
+  } catch {
+    /* noop */
+  }
+
+  window.alert(msg);
+}
+
+/**
  * Программный вызов (когда нет реального &lt;a&gt; в DOM): сначала «клик» по tel: в top,
  * затем Telegram.openLink, затем переход только если мы не во вложенном iframe.
  */
@@ -136,6 +170,12 @@ export function triggerPhoneCall(raw: string): void {
     }
   } catch {
     /* noop */
+  }
+
+  if (hasTelegramWebAppBridge()) {
+    queueMicrotask(() => {
+      notifyTelegramCallNumber(raw);
+    });
   }
 }
 

@@ -26,66 +26,216 @@ function toYmd(y: number, m: number, d: number): string | null {
 
 type ScoredDate = { ymd: string; score: number; index: number };
 
-function scoreContext(textLower: string, index: number): number {
-  const start = Math.max(0, index - 60);
-  const frag = textLower.slice(start, index + 40);
+const HEAD_SCAN = 18_000;
+const TAIL_SCAN = 14_000;
+const BODY_MAX = 96_000;
+
+/** Бонус, если рядом с цифрами есть типичные мед. формулировки (не имя файла). */
+function scoreNearbyMedicalContext(fullLower: string, globalIndex: number): number {
+  const start = Math.max(0, globalIndex - 72);
+  const frag = fullLower.slice(start, globalIndex + 48);
   let s = 0;
   if (
-    /дата\s*(забора|анализа|исследования|выписки|документа|пробы|назначения|результат)/.test(frag)
+    /дата\s*(?:осмотра|исследования|поступления|операции|приёма|приема|забора|взятия|пробы|назначения|выдачи|выписки|документа|результата|регистрации|заключения|направления|выполнения|анализа)/.test(
+      frag,
+    )
   )
-    s += 12;
-  if (/дата:/.test(frag)) s += 8;
-  if (/от\s*\d{1,2}[./]\d{1,2}[./]\d{4}/.test(frag)) s += 4;
-  if (/исследован|результат|бланк|лаборатор/.test(frag)) s += 3;
+    s += 14;
+  if (/дата\s*:/.test(frag)) s += 10;
+  if (/от\s*\d{1,2}[./]\d{1,2}[./]\d{4}/.test(frag)) s += 5;
+  if (/исследован|результат|бланк|лаборатор|биоматериал|заключение|пациент/i.test(frag)) s += 4;
   return s;
 }
 
+/** Штраф за «голую» дату в самом начале текста без слова «дата» (часто шапка/ФИО/имя файла). */
+function unlabeledLeadingMalus(fullLower: string, globalIndex: number): number {
+  const start = Math.max(0, globalIndex - 48);
+  const frag = fullLower.slice(start, globalIndex + 8);
+  const hasDateWord = /дата|date\b/i.test(frag);
+  if (hasDateWord) return 0;
+  if (globalIndex < 100) return -35;
+  if (globalIndex < 420) return -20;
+  return 0;
+}
+
 /**
- * Ищет даты DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD и варианты около «дата забора».
+ * Явные подписи «дата …» + дата на той же или следующей строке (ДД.ММ.ГГГГ / ГГГГ-ММ-ДД).
+ * Только текст тела документа — не имя файла (имя не передаётся в rawText).
+ */
+const LABELED_DMY_PATTERNS: Array<{ re: RegExp; bonus: number }> = [
+  {
+    re: /дата\s+осмотра\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 48,
+  },
+  {
+    re: /дата\s+исследования\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 48,
+  },
+  {
+    re: /дата\s+поступления(?:\s+биоматериала)?\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 48,
+  },
+  {
+    re: /дата\s+операции\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 48,
+  },
+  {
+    re: /дата\s+(?:приёма|приема)\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 48,
+  },
+  {
+    re: /дата\s+взятия\s+(?:образца|биоматериала|пробы|крови)\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 50,
+  },
+  {
+    re: /дата\s+забора(?:\s+биоматериала|\s+пробы)?\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 50,
+  },
+  {
+    re: /дата\s+пробы\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 48,
+  },
+  {
+    re: /дата\s+назначения\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 44,
+  },
+  {
+    re: /дата\s+выдачи\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 44,
+  },
+  {
+    re: /дата\s+выписки\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 44,
+  },
+  {
+    re: /дата\s+регистрации\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 42,
+  },
+  {
+    re: /дата\s+заключения\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 42,
+  },
+  {
+    re: /дата\s+направления\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 42,
+  },
+  {
+    re: /дата\s+выполнения\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 46,
+  },
+  {
+    re: /дата\s+анализа\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 46,
+  },
+  {
+    re: /дата\s+документа\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 40,
+  },
+  {
+    re: /дата\s+результата\s*(?:\n\s*)?[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 44,
+  },
+  /** Строка вида «Дата: 01.02.2024» или «Дата 01.02.2024». */
+  {
+    re: /(?:^|[\n\r])\s*дата\s*[:\s]\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 38,
+  },
+  /** Обобщённый хвост после слова «дата». */
+  {
+    re: /дата\s*(?:забора|анализа|исследования|выписки|документа|пробы|назначения|результата)?\s*[:\s.-]*(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi,
+    bonus: 28,
+  },
+];
+
+const LABELED_YMD_PATTERNS: Array<{ re: RegExp; bonus: number }> = [
+  {
+    re: /дата\s+осмотра\s*(?:\n\s*)?[:\s.-]*(\d{4})-(\d{2})-(\d{2})/gi,
+    bonus: 48,
+  },
+  {
+    re: /дата\s+исследования\s*(?:\n\s*)?[:\s.-]*(\d{4})-(\d{2})-(\d{2})/gi,
+    bonus: 48,
+  },
+  {
+    re: /дата\s+забора\s*(?:\n\s*)?[:\s.-]*(\d{4})-(\d{2})-(\d{2})/gi,
+    bonus: 50,
+  },
+  {
+    re: /(?:^|[\n\r])\s*дата\s*[:\s]\s*(\d{4})-(\d{2})-(\d{2})/gi,
+    bonus: 38,
+  },
+];
+
+/**
+ * Ищет даты в теле файла: приоритет подписей «дата осмотра/забора/…», затем цифры в начале и конце документа.
  */
 export function extractBestDocumentDate(rawText: string): string | null {
-  const t = rawText.slice(0, TEXT_WINDOW);
-  const lower = t.toLowerCase();
+  const text = rawText.replace(/\r\n/g, "\n").trim();
+  if (!text) return null;
+
+  const body = text.length > BODY_MAX ? text.slice(0, BODY_MAX) : text;
+  const fullLower = body.toLowerCase();
   const candidates: ScoredDate[] = [];
-  const push = (y: number, m: number, d: number, index: number, bonus = 0) => {
-    const ymd = toYmd(y, m, d);
+
+  const pushDmy = (y: number, mo: number, d: number, globalIndex: number, bonus: number) => {
+    const ymd = toYmd(y, mo, d);
     if (!ymd) return;
     const yearNow = new Date().getFullYear();
     if (y < 1990 || y > yearNow + 1) return;
+    const ctx = scoreNearbyMedicalContext(fullLower, globalIndex);
+    const malus = bonus >= 28 ? 0 : unlabeledLeadingMalus(fullLower, globalIndex);
     candidates.push({
       ymd,
-      score: bonus + scoreContext(lower, index),
-      index,
+      score: bonus + ctx + malus,
+      index: globalIndex,
     });
   };
 
-  const reLabeled =
-    /дата\s*(?:забора|анализа|исследования|выписки|документа|пробы|назначения|результата)?\s*[:\s]+(\d{1,2})[./-](\d{1,2})[./-](\d{4})/gi;
-  let m: RegExpExecArray | null;
-  while ((m = reLabeled.exec(t)) !== null) {
-    push(Number(m[3]), Number(m[2]), Number(m[1]), m.index, 10);
-  }
+  const collectFromSlice = (slice: string, baseOffset: number) => {
+    for (const { re, bonus } of LABELED_DMY_PATTERNS) {
+      re.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(slice)) !== null) {
+        pushDmy(Number(m[3]), Number(m[2]), Number(m[1]), baseOffset + m.index, bonus);
+      }
+    }
+    for (const { re, bonus } of LABELED_YMD_PATTERNS) {
+      re.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(slice)) !== null) {
+        pushDmy(Number(m[1]), Number(m[2]), Number(m[3]), baseOffset + m.index, bonus);
+      }
+    }
 
-  const reDmy = /\b(\d{1,2})[./](\d{1,2})[./](\d{4})\b/g;
-  while ((m = reDmy.exec(t)) !== null) {
-    push(Number(m[3]), Number(m[2]), Number(m[1]), m.index, 0);
-  }
+    const reDmy = /\b(\d{1,2})[./](\d{1,2})[./](\d{4})\b/g;
+    let m: RegExpExecArray | null;
+    while ((m = reDmy.exec(slice)) !== null) {
+      pushDmy(Number(m[3]), Number(m[2]), Number(m[1]), baseOffset + m.index, 6);
+    }
 
-  const reYmd = /\b(\d{4})-(\d{2})-(\d{2})\b/g;
-  while ((m = reYmd.exec(t)) !== null) {
-    push(Number(m[1]), Number(m[2]), Number(m[3]), m.index, 1);
-  }
+    const reYmd = /\b(\d{4})-(\d{2})-(\d{2})\b/g;
+    while ((m = reYmd.exec(slice)) !== null) {
+      pushDmy(Number(m[1]), Number(m[2]), Number(m[3]), baseOffset + m.index, 8);
+    }
 
-  const reSlashIso = /\b(\d{4})[./](\d{1,2})[./](\d{1,2})\b/g;
-  while ((m = reSlashIso.exec(t)) !== null) {
-    push(Number(m[1]), Number(m[2]), Number(m[3]), m.index, 0);
+    const reSlashIso = /\b(\d{4})[./](\d{1,2})[./](\d{1,2})\b/g;
+    while ((m = reSlashIso.exec(slice)) !== null) {
+      pushDmy(Number(m[1]), Number(m[2]), Number(m[3]), baseOffset + m.index, 7);
+    }
+  };
+
+  const head = body.slice(0, Math.min(HEAD_SCAN, body.length));
+  collectFromSlice(head, 0);
+
+  if (body.length > HEAD_SCAN + 400) {
+    const tail = body.slice(-Math.min(TAIL_SCAN, body.length));
+    collectFromSlice(tail, body.length - tail.length);
   }
 
   if (!candidates.length) return null;
 
   candidates.sort((a, b) => b.score - a.score || a.index - b.index);
-  const best = candidates[0];
-  return best?.ymd ?? null;
+  return candidates[0]?.ymd ?? null;
 }
 
 const ANALYSIS_HINTS =
@@ -134,7 +284,8 @@ export function inferTitle(
     if (re.test(head)) return title;
   }
   const base = (fileBaseName ?? "").replace(/\.[a-z0-9]+$/i, "").trim();
-  if (base.length >= 3) return base.slice(0, 200);
+  const looksLikeDateOnly = /^\d{1,2}[._-]\d{1,2}[._-]\d{2,4}$/.test(base);
+  if (base.length >= 3 && !looksLikeDateOnly) return base.slice(0, 200);
   if (category === "ANALYSIS") return "Лабораторный документ";
   if (category === "DISCHARGE_SUMMARY") return "Выписка";
   return "Документ";
