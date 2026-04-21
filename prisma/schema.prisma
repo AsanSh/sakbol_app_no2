@@ -211,6 +211,8 @@ model HealthDocument {
   documentDate DateTime?
   mimeType     String?
   bytes        Int?
+  /// Бинарник для скачивания без Blob/диска (serverless).
+  fileData     Bytes?
 
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt

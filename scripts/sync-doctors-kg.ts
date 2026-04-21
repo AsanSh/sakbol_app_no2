@@ -9,6 +9,7 @@ import path from "node:path";
 import {
   extractLocalBusinessFromHtml,
   normalizePhones,
+  openingHoursLinesFromLd,
 } from "../lib/doctors-kg/parse-ld";
 import type { DoctorEnriched, DoctorSummary } from "../lib/doctors-kg/types";
 import { fetchAllWpDoctorSummaries } from "../lib/doctors-kg/wp-api";
@@ -38,6 +39,8 @@ async function enrichOne(summary: DoctorSummary): Promise<DoctorEnriched> {
     priceRange: typeof ld?.priceRange === "string" ? ld.priceRange : null,
     latitude: typeof ld?.geo?.latitude === "number" ? ld.geo.latitude : null,
     longitude: typeof ld?.geo?.longitude === "number" ? ld.geo.longitude : null,
+    description: typeof ld?.description === "string" ? ld.description : null,
+    openingHoursLines: openingHoursLinesFromLd(ld),
   };
 }
 
@@ -65,6 +68,8 @@ async function main() {
         priceRange: null,
         latitude: null,
         longitude: null,
+        description: null,
+        openingHoursLines: [],
       });
     }
     await sleep(DELAY_MS);

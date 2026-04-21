@@ -44,8 +44,49 @@ export async function enrichSummariesFromFile<T extends { slug: string }>(
       priceRange: e.priceRange,
       latitude: e.latitude,
       longitude: e.longitude,
+      description: e.description,
+      openingHoursLines: e.openingHoursLines,
     };
   });
+}
+
+export type EnrichedListParams = {
+  page: number;
+  perPage: number;
+  search?: string;
+  categorySlug?: string;
+  cityFilterSlug?: string;
+};
+
+/** Фильтр и пагинация по локальному кэшу (WP REST не фильтрует taxonomy). */
+export function filterEnrichedDoctorsPage(
+  doctors: DoctorEnriched[],
+  params: EnrichedListParams,
+): { doctors: DoctorEnriched[]; total: number; totalPages: number; page: number } {
+  const { perPage, search, categorySlug, cityFilterSlug } = params;
+  let page = Math.max(1, params.page);
+  let rows = doctors;
+
+  if (categorySlug) {
+    rows = rows.filter((d) => d.categorySlugs.includes(categorySlug));
+  }
+  if (cityFilterSlug) {
+    rows = rows.filter((d) => d.cityFilterSlug === cityFilterSlug);
+  }
+  const q = search?.trim().toLowerCase();
+  if (q) {
+    rows = rows.filter((d) => d.name.toLowerCase().includes(q));
+  }
+
+  const collator = new Intl.Collator("ru");
+  rows = [...rows].sort((a, b) => collator.compare(a.name, b.name));
+
+  const total = rows.length;
+  const totalPages = total === 0 ? 1 : Math.ceil(total / perPage);
+  page = Math.min(page, totalPages);
+  const start = (page - 1) * perPage;
+  const slice = rows.slice(start, start + perPage);
+  return { doctors: slice, total, totalPages, page };
 }
 
 const CITY_LABELS: Record<string, string> = {

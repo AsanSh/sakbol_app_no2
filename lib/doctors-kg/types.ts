@@ -29,6 +29,13 @@ export type LocalBusinessLd = {
   sameAs?: string;
   image?: string;
   priceRange?: string;
+  openingHours?: string | string[];
+  openingHoursSpecification?: Array<{
+    "@type"?: string;
+    dayOfWeek?: string | string[];
+    opens?: string;
+    closes?: string;
+  }>;
   address?: {
     streetAddress?: string;
     addressLocality?: string;
@@ -49,6 +56,8 @@ export type DoctorEnriched = DoctorSummary & {
   priceRange: string | null;
   latitude: number | null;
   longitude: number | null;
+  description?: string | null;
+  openingHoursLines?: string[];
 };
 
 export type ClinicDerived = {

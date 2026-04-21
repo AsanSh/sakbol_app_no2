@@ -35,3 +35,45 @@ export function normalizePhones(tel: LocalBusinessLd["telephone"]): string[] {
   const arr = Array.isArray(tel) ? tel : [tel];
   return arr.map((s) => s.trim()).filter(Boolean);
 }
+
+const DAY_SHORT_RU: Record<string, string> = {
+  Monday: "пн",
+  Tuesday: "вт",
+  Wednesday: "ср",
+  Thursday: "чт",
+  Friday: "пт",
+  Saturday: "сб",
+  Sunday: "вс",
+};
+
+function shortenDay(raw: string): string {
+  const u = raw.replace(/https?:\/\/schema\.org\//i, "").split("/").pop() ?? raw;
+  return DAY_SHORT_RU[u] ?? u.slice(0, 2).toLowerCase();
+}
+
+/** Человекочитаемые строки часов работы из JSON-LD LocalBusiness. */
+export function openingHoursLinesFromLd(ld: LocalBusinessLd | null): string[] {
+  if (!ld) return [];
+  const out: string[] = [];
+  if (ld.openingHours) {
+    const arr = Array.isArray(ld.openingHours) ? ld.openingHours : [ld.openingHours];
+    for (const s of arr) {
+      const t = String(s).trim();
+      if (t) out.push(t);
+    }
+  }
+  const specs = ld.openingHoursSpecification;
+  if (Array.isArray(specs)) {
+    for (const s of specs) {
+      const days = s.dayOfWeek;
+      const dayList = Array.isArray(days) ? days : days ? [days] : [];
+      const dayStr = dayList.map((d) => shortenDay(String(d))).join(", ");
+      if (s.opens && s.closes) {
+        out.push(dayStr ? `${dayStr}: ${s.opens}–${s.closes}` : `${s.opens}–${s.closes}`);
+      } else if (s.opens) {
+        out.push(dayStr ? `${dayStr}: ${s.opens}` : s.opens);
+      }
+    }
+  }
+  return out;
+}

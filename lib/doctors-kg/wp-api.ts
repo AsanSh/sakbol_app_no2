@@ -28,6 +28,7 @@ export type FetchWpDoctorsParams = {
   page?: number;
   perPage?: number;
   search?: string;
+  /** Не используется: WP REST игнорирует doctors_dir_cat. Фильтр — в enriched JSON. */
   categorySlug?: string;
   cityFilterSlug?: string;
 };
@@ -43,7 +44,6 @@ export async function fetchWpDoctorsPage(params: FetchWpDoctorsParams): Promise<
   q.set("page", String(page));
   q.set("per_page", String(perPage));
   if (params.search?.trim()) q.set("search", params.search.trim());
-  if (params.categorySlug) q.set("doctors_dir_cat", params.categorySlug);
   if (params.cityFilterSlug) q.set("doctors_loc_loc", params.cityFilterSlug);
 
   const url = `${DOCTORS_KG_WP_BASE}?${q.toString()}`;

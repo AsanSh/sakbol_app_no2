@@ -45,11 +45,14 @@ type DoctorRow = DoctorSummary & {
   telephones?: string[];
   streetAddress?: string | null;
   locality?: string | null;
+  region?: string | null;
   website?: string | null;
   image?: string | null;
   priceRange?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  description?: string | null;
+  openingHoursLines?: string[];
 };
 
 type ListPayload = {
@@ -98,8 +101,29 @@ export function DoctorDiscoveryHome({
   const [listErr, setListErr] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [detail, setDetail] = useState<DoctorRow | null>(null);
+  const [clinicLoadErr, setClinicLoadErr] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
+
+  const openDoctorBySlug = useCallback(
+    async (slug: string) => {
+      setClinicLoadErr(null);
+      try {
+        const r = await fetch(`/api/doctors-kg/by-slug?slug=${encodeURIComponent(slug)}`);
+        const j = (await r.json()) as { doctor?: DoctorRow; error?: string };
+        if (!r.ok || !j.doctor) {
+          throw new Error(j.error ?? r.statusText);
+        }
+        setMainTab("doctors");
+        setDetail(j.doctor);
+      } catch {
+        setClinicLoadErr(
+          lang === "ru" ? "Не удалось открыть карточку врача." : "Дарыердин карточкасы ачылган жок.",
+        );
+      }
+    },
+    [lang],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -317,43 +341,6 @@ export function DoctorDiscoveryHome({
         </p>
       ) : null}
 
-      {mainTab === "doctors" && meta?.categories?.length ? (
-        <section>
-          <h2 className="font-manrope text-lg font-semibold text-slate-900 sm:text-[1.5rem]">
-            {t(lang, "home.categories.title")}
-          </h2>
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <button
-              type="button"
-              onClick={() => setCategory(null)}
-              className={cn(
-                "shrink-0 rounded-full px-4 py-2.5 text-caption font-semibold shadow-sm ring-1 transition-colors",
-                !category
-                  ? "bg-health-primary text-white ring-health-primary"
-                  : "bg-white text-slate-800 ring-slate-200 hover:bg-teal-50",
-              )}
-            >
-              {lang === "ru" ? "Все" : "Баары"}
-            </button>
-            {meta.categories.map((c) => (
-              <button
-                key={c.slug}
-                type="button"
-                onClick={() => setCategory((prev) => (prev === c.slug ? null : c.slug))}
-                className={cn(
-                  "shrink-0 rounded-full px-4 py-2.5 text-caption font-semibold shadow-sm ring-1 transition-colors",
-                  category === c.slug
-                    ? "bg-health-primary text-white ring-health-primary"
-                    : "bg-white text-slate-800 ring-slate-200 hover:bg-teal-50",
-                )}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       {mainTab === "doctors" ? (
         <>
           {listErr ? (
@@ -410,18 +397,22 @@ export function DoctorDiscoveryHome({
                           meta?.cities.find((c) => c.code === d.cityCode)?.label ??
                           (d.cityCode ?? "—")}
                       </p>
-                      {d.telephones?.length ? (
-                        <a
-                          href={`tel:${d.telephones[0].replace(/\s/g, "")}`}
-                          className="mt-1 inline-flex items-center gap-1 text-caption font-semibold text-health-primary"
-                        >
-                          <Phone className="h-3.5 w-3.5" aria-hidden />
-                          {d.telephones[0]}
-                        </a>
-                      ) : null}
                     </div>
                   </div>
                   <div className="mt-auto flex gap-2 border-t border-slate-100 px-4 py-3">
+                    {d.telephones?.length ? (
+                      <a
+                        href={`tel:${d.telephones[0].replace(/\s/g, "")}`}
+                        className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-teal-50 py-2.5 text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
+                      >
+                        <Phone className="h-4 w-4 shrink-0" aria-hidden />
+                        {t(lang, "home.card.call")}
+                      </a>
+                    ) : (
+                      <span className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-slate-50 py-2.5 text-caption text-slate-500 ring-1 ring-slate-100">
+                        {lang === "ru" ? "Нет телефона" : "Телефон жок"}
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => setDetail(d)}
@@ -429,14 +420,6 @@ export function DoctorDiscoveryHome({
                     >
                       {t(lang, "home.card.more")}
                     </button>
-                    <a
-                      href={d.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-white py-2.5 text-caption font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50"
-                    >
-                      doctors.kg
-                    </a>
                   </div>
                 </motion.article>
               ))}
@@ -483,9 +466,12 @@ export function DoctorDiscoveryHome({
           </h2>
           <p className="mt-1 text-caption text-slate-500">
             {lang === "ru"
-              ? "Адреса и телефоны собраны из открытых карточек врачей на doctors.kg."
-              : "Даректер doctors.kg ачык карточкаларынан алынган."}
+              ? "Адреса и телефоны — в каталоге SakBol, без перехода на сторонние сайты."
+              : "Даректер SakBol каталогунда, башка сайттарга өтпөстөн."}
           </p>
+          {clinicLoadErr ? (
+            <p className="mt-2 text-sm text-red-700">{clinicLoadErr}</p>
+          ) : null}
           <div
             className={cn(
               "mt-4 grid gap-4",
@@ -513,14 +499,13 @@ export function DoctorDiscoveryHome({
                     </a>
                   ))}
                 </div>
-                <a
-                  href={`https://doctors.kg/directory-doctors/listing/${c.sampleDoctorSlug}/`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-white text-caption font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50"
+                <button
+                  type="button"
+                  onClick={() => void openDoctorBySlug(c.sampleDoctorSlug)}
+                  className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-health-primary text-caption font-semibold text-white shadow-sm hover:bg-teal-700"
                 >
-                  {t(lang, "home.card.open")}
-                </a>
+                  {t(lang, "home.card.more")}
+                </button>
               </article>
             ))}
           </div>
@@ -563,8 +548,8 @@ export function DoctorDiscoveryHome({
               </div>
               <p className="mt-2 text-caption text-slate-500">
                 {lang === "ru"
-                  ? "Фильтры запрашивают doctors.kg напрямую (как официальный каталог)."
-                  : "Фильтрлер doctors.kg менен шайкеш."}
+                  ? "Город и поиск применяются к локальному каталогу в приложении."
+                  : "Шаар жана издөө колдонмодогу каталогко колдонулат."}
               </p>
               <div className="mt-4">
                 <p className="text-caption font-semibold text-slate-700">
@@ -653,23 +638,57 @@ export function DoctorDiscoveryHome({
               {detail.streetAddress ? (
                 <p className="mt-3 flex gap-2 text-caption text-slate-600">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                  {detail.streetAddress}
-                  {detail.locality ? `, ${detail.locality}` : ""}
+                  <span>
+                    {detail.streetAddress}
+                    {detail.locality ? `, ${detail.locality}` : ""}
+                    {detail.region && !detail.locality ? `, ${detail.region}` : ""}
+                  </span>
                 </p>
               ) : null}
-              {detail.priceRange ? (
-                <p className="mt-2 text-caption text-slate-600">{detail.priceRange}</p>
-              ) : null}
               {detail.latitude != null && detail.longitude != null ? (
-                <a
-                  href={`https://www.google.com/maps?q=${detail.latitude},${detail.longitude}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-50 px-4 text-caption font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-100"
-                >
-                  <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-                  {lang === "ru" ? "Открыть на карте" : "Картада ачуу"}
-                </a>
+                <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200">
+                  <iframe
+                    title={lang === "ru" ? "Карта" : "Карта"}
+                    className="h-48 w-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps?q=${detail.latitude},${detail.longitude}&z=16&output=embed`}
+                  />
+                  <a
+                    href={`https://www.google.com/maps?q=${detail.latitude},${detail.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex min-h-[44px] items-center justify-center gap-2 bg-slate-50 px-4 text-caption font-semibold text-slate-800 hover:bg-slate-100"
+                  >
+                    <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                    {lang === "ru" ? "Открыть в Google Картах" : "Google картасы"}
+                  </a>
+                </div>
+              ) : null}
+              {detail.priceRange ? (
+                <p className="mt-3 text-caption text-slate-600">{detail.priceRange}</p>
+              ) : null}
+              {detail.description?.trim() ? (
+                <div className="mt-4">
+                  <p className="text-caption font-semibold text-slate-800">
+                    {lang === "ru" ? "О враче" : "Дарыер жөнүндө"}
+                  </p>
+                  <p className="mt-1 whitespace-pre-wrap text-caption leading-relaxed text-slate-600">
+                    {detail.description.trim()}
+                  </p>
+                </div>
+              ) : null}
+              {detail.openingHoursLines?.length ? (
+                <div className="mt-4">
+                  <p className="text-caption font-semibold text-slate-800">
+                    {lang === "ru" ? "Часы работы" : "Иш убактысы"}
+                  </p>
+                  <ul className="mt-1.5 list-inside list-disc space-y-0.5 text-caption text-slate-600">
+                    {detail.openingHoursLines.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
               ) : null}
               <div className="mt-4 space-y-2">
                 {(detail.telephones ?? []).map((p) => (
@@ -683,7 +702,7 @@ export function DoctorDiscoveryHome({
                   </a>
                 ))}
               </div>
-              {detail.website ? (
+              {detail.website && !/doctors\.kg/i.test(detail.website) ? (
                 <a
                   href={detail.website}
                   target="_blank"
@@ -693,14 +712,6 @@ export function DoctorDiscoveryHome({
                   {detail.website.replace(/^https?:\/\//, "")}
                 </a>
               ) : null}
-              <a
-                href={detail.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-6 flex min-h-[48px] w-full items-center justify-center rounded-2xl bg-slate-900 text-caption font-semibold text-white"
-              >
-                doctors.kg — {lang === "ru" ? "полная карточка" : "толук карточка"}
-              </a>
             </motion.div>
           </motion.div>
         ) : null}

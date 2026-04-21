@@ -35,6 +35,7 @@ export async function createHealthDocumentForProfile(input: {
   const id = randomUUID();
 
   let fileUrl: string;
+  let fileData: Buffer | null = null;
   try {
     if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
       const ext = extForMime(mime);
@@ -46,6 +47,7 @@ export async function createHealthDocumentForProfile(input: {
     } else {
       await writeHealthDocumentToDisk(id, input.buffer, mime);
       fileUrl = publicDocumentDownloadPath(id);
+      fileData = input.buffer;
     }
     await prisma.healthDocument.create({
       data: {
@@ -57,6 +59,7 @@ export async function createHealthDocumentForProfile(input: {
         documentDate: input.documentDate,
         mimeType: mime,
         bytes: input.buffer.length,
+        fileData,
       },
     });
     return { ok: true, id, fileUrl };
