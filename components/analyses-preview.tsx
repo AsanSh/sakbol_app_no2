@@ -140,6 +140,7 @@ export function AnalysesPreview({
   const [deleteDocBusyId, setDeleteDocBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshTick, setAutoRefreshTick] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
@@ -201,6 +202,7 @@ export function AnalysesPreview({
         }
         startTransition(() => {
           setRows(d.analyses);
+          setLastSyncedAt(Date.now());
         });
       })
       .catch((e: unknown) => {
@@ -247,6 +249,7 @@ export function AnalysesPreview({
         if (cancelled) return;
         startTransition(() => {
           setDocRows(Array.isArray(j.documents) ? j.documents : []);
+          setLastSyncedAt(Date.now());
         });
       })
       .catch(() => {
@@ -349,6 +352,30 @@ export function AnalysesPreview({
     return t(lang, "dynamics.insightFalling");
   };
 
+  const syncedLabel = (() => {
+    if (!lastSyncedAt) return null;
+    const diffMs = Date.now() - lastSyncedAt;
+    if (diffMs < 10_000) {
+      return lang === "ru" ? "Синхронизировано только что" : "Азыр эле жаңыртылды";
+    }
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 60) {
+      return lang === "ru"
+        ? `Синхронизировано ${sec} сек назад`
+        : `${sec} сек мурун жаңыртылды`;
+    }
+    const min = Math.floor(sec / 60);
+    if (min < 60) {
+      return lang === "ru"
+        ? `Синхронизировано ${min} мин назад`
+        : `${min} мин мурун жаңыртылды`;
+    }
+    const h = Math.floor(min / 60);
+    return lang === "ru"
+      ? `Синхронизировано ${h} ч назад`
+      : `${h} саат мурун жаңыртылды`;
+  })();
+
   return (
     <section
       className={cn(
@@ -396,6 +423,12 @@ export function AnalysesPreview({
             </p>
           )}
         </>
+      ) : null}
+
+      {!isTrends && syncedLabel ? (
+        <p className={cn("text-[10px] text-health-text-secondary", hideHeader ? "mt-0.5" : "mt-1")}>
+          {syncedLabel}
+        </p>
       ) : null}
 
       {isTrends && !compact ? (
