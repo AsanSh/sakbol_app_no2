@@ -61,43 +61,48 @@ export function formatPhoneDisplay(raw: string): string {
   return h;
 }
 
-type TelegramWebApp = { openLink?: (url: string) => void };
+type TelegramWebApp = { openLink?: (url: string, options?: { try_instant_view?: boolean }) => void };
+
+/** Готовый URI для href (без лишнего encode — + сохраняется). */
+export function buildTelUri(raw: string): string | null {
+  const h = normalizeTelHref(decodeHtmlEntities(raw).trim());
+  if (!h) return null;
+  return `tel:${h}`;
+}
 
 /**
- * Универсальный набор: Telegram Mini App → window.open → location → программный &lt;a tel:&gt;.
+ * Универсальный набор: Telegram Mini App + ссылка tel: с target=_top (выход из iframe) + assign.
  */
 export function triggerPhoneCall(raw: string): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
-  const h = normalizeTelHref(decodeHtmlEntities(raw).trim());
-  if (!h) return;
-  const uri = `tel:${h}`;
+  const uri = buildTelUri(raw);
+  if (!uri) return;
 
   try {
     const tg = (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram
       ?.WebApp;
-    tg?.openLink?.(uri);
+    tg?.openLink?.(uri, { try_instant_view: false });
   } catch {
     /* noop */
   }
 
   try {
-    window.open(uri, "_self", "noopener,noreferrer");
+    const a = document.createElement("a");
+    a.href = uri;
+    a.target = "_top";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   } catch {
     /* noop */
   }
 
   try {
-    window.location.href = uri;
+    window.location.assign(uri);
   } catch {
     /* noop */
   }
-
-  const a = document.createElement("a");
-  a.href = uri;
-  a.setAttribute("rel", "noreferrer");
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
 }
 
 export type HandleDoctorCallUi = {

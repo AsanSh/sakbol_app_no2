@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Phone, X } from "lucide-react";
 import type { PhoneSelectEntry } from "@/lib/callDoctor";
-import { formatPhoneDisplay, triggerPhoneCall } from "@/lib/callDoctor";
+import { buildTelUri, formatPhoneDisplay } from "@/lib/callDoctor";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -79,28 +79,31 @@ export function PhoneSelectModal({
             <p className="mt-1 text-caption text-slate-500">{callActionLabel}</p>
 
             <ul className="mt-4 flex flex-col gap-2" role="list">
-              {entries.map((e) => (
-                <li key={e.raw}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      triggerPhoneCall(e.raw);
-                      onClose();
-                    }}
-                    className="flex min-h-[52px] w-full flex-col items-start justify-center gap-0.5 rounded-2xl bg-teal-50 px-4 py-3 text-left ring-1 ring-teal-100 transition hover:bg-teal-100"
-                  >
-                    <span className="flex w-full items-center gap-2">
-                      <Phone className="h-5 w-5 shrink-0 text-teal-800" aria-hidden />
-                      <span className="text-[16px] font-semibold tracking-tight text-teal-950">
-                        {formatPhoneDisplay(e.raw)}
+              {entries.map((e) => {
+                const href = buildTelUri(e.raw);
+                if (!href) return null;
+                return (
+                  <li key={e.raw}>
+                    <a
+                      href={href}
+                      target="_top"
+                      rel="noopener noreferrer"
+                      onClick={() => onClose()}
+                      className="flex min-h-[52px] w-full flex-col items-start justify-center gap-0.5 rounded-2xl bg-teal-50 px-4 py-3 text-left ring-1 ring-teal-100 transition hover:bg-teal-100"
+                    >
+                      <span className="flex w-full items-center gap-2">
+                        <Phone className="h-5 w-5 shrink-0 text-teal-800" aria-hidden />
+                        <span className="text-[16px] font-semibold tracking-tight text-teal-950">
+                          {formatPhoneDisplay(e.raw)}
+                        </span>
                       </span>
-                    </span>
-                    {e.label ? (
-                      <span className="pl-7 text-[13px] text-teal-800/90">{e.label}</span>
-                    ) : null}
-                  </button>
-                </li>
-              ))}
+                      {e.label ? (
+                        <span className="pl-7 text-[13px] text-teal-800/90">{e.label}</span>
+                      ) : null}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
 
             <button

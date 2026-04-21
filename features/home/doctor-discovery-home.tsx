@@ -20,7 +20,7 @@ import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
 import { PhoneSelectModal } from "@/components/PhoneSelectModal";
 import type { DoctorForCall, PhoneSelectEntry } from "@/lib/callDoctor";
-import { formatPhoneDisplay, handleDoctorCall, triggerPhoneCall } from "@/lib/callDoctor";
+import { buildTelUri, formatPhoneDisplay, handleDoctorCall } from "@/lib/callDoctor";
 import type { DoctorSummary } from "@/lib/doctors-kg/types";
 import { decodeHtmlEntities } from "@/lib/html-entities";
 import { cn } from "@/lib/utils";
@@ -502,14 +502,26 @@ export function DoctorDiscoveryHome({
                   </div>
                   <div className="mt-auto flex gap-2 border-t border-slate-100 px-4 py-3">
                     {d.telephones?.length ? (
-                      <button
-                        type="button"
-                        onClick={() => invokeDoctorCall({ telephones: d.telephones })}
-                        className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-teal-50 py-2.5 text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
-                      >
-                        <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                        {t(lang, "home.card.call")}
-                      </button>
+                      d.telephones.length === 1 && buildTelUri(d.telephones[0]) ? (
+                        <a
+                          href={buildTelUri(d.telephones[0])!}
+                          target="_top"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-teal-50 py-2.5 text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
+                        >
+                          <Phone className="h-4 w-4 shrink-0" aria-hidden />
+                          {t(lang, "home.card.call")}
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => invokeDoctorCall({ telephones: d.telephones })}
+                          className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-teal-50 py-2.5 text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
+                        >
+                          <Phone className="h-4 w-4 shrink-0" aria-hidden />
+                          {t(lang, "home.card.call")}
+                        </button>
+                      )
                     ) : (
                       <span className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-slate-50 py-2.5 text-caption text-slate-500 ring-1 ring-slate-100">
                         {lang === "ru" ? "Нет телефона" : "Телефон жок"}
@@ -590,17 +602,21 @@ export function DoctorDiscoveryHome({
                   {c.city} · {lang === "ru" ? "врачей:" : "дарыер:"} {c.doctorCount}
                 </p>
                 <div className="mt-3 space-y-1">
-                  {c.phones.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => invokeDoctorCall({ phones: [p] })}
-                      className="flex w-full items-center gap-2 text-left text-caption font-semibold text-health-primary"
-                    >
-                      <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                      <span className="break-all">{formatPhoneDisplay(p)}</span>
-                    </button>
-                  ))}
+                  {c.phones.map((p) => {
+                    const href = buildTelUri(p);
+                    return href ? (
+                      <a
+                        key={p}
+                        href={href}
+                        target="_top"
+                        rel="noopener noreferrer"
+                        className="flex min-h-[44px] w-full items-center gap-2 text-left text-caption font-semibold text-health-primary"
+                      >
+                        <Phone className="h-4 w-4 shrink-0" aria-hidden />
+                        <span className="break-words">{formatPhoneDisplay(p)}</span>
+                      </a>
+                    ) : null;
+                  })}
                 </div>
                 <button
                   type="button"
@@ -731,14 +747,26 @@ export function DoctorDiscoveryHome({
                 </h3>
                 <div className="flex shrink-0 items-center gap-1">
                   {detail.telephones?.length ? (
-                    <button
-                      type="button"
-                      onClick={() => invokeDoctorCall({ telephones: detail.telephones })}
-                      className="rounded-full p-2 text-health-primary hover:bg-teal-50"
-                      aria-label={t(lang, "home.card.call")}
-                    >
-                      <Phone className="h-5 w-5" aria-hidden />
-                    </button>
+                    detail.telephones.length === 1 && buildTelUri(detail.telephones[0]) ? (
+                      <a
+                        href={buildTelUri(detail.telephones[0])!}
+                        target="_top"
+                        rel="noopener noreferrer"
+                        className="rounded-full p-2 text-health-primary hover:bg-teal-50"
+                        aria-label={t(lang, "home.card.call")}
+                      >
+                        <Phone className="h-5 w-5" aria-hidden />
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => invokeDoctorCall({ telephones: detail.telephones })}
+                        className="rounded-full p-2 text-health-primary hover:bg-teal-50"
+                        aria-label={t(lang, "home.card.call")}
+                      >
+                        <Phone className="h-5 w-5" aria-hidden />
+                      </button>
+                    )
                   ) : null}
                   <button
                     type="button"
@@ -829,17 +857,21 @@ export function DoctorDiscoveryHome({
                 </div>
               ) : null}
               <div className="mt-4 space-y-2">
-                {(detail.telephones ?? []).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => triggerPhoneCall(p)}
-                    className="flex min-h-[48px] w-full items-center gap-2 rounded-xl bg-teal-50 px-4 text-left text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
-                  >
-                    <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="break-words">{formatPhoneDisplay(p)}</span>
-                  </button>
-                ))}
+                {(detail.telephones ?? []).map((p) => {
+                  const href = buildTelUri(p);
+                  return href ? (
+                    <a
+                      key={p}
+                      href={href}
+                      target="_top"
+                      rel="noopener noreferrer"
+                      className="flex min-h-[48px] w-full items-center gap-2 rounded-xl bg-teal-50 px-4 text-left text-caption font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100"
+                    >
+                      <Phone className="h-4 w-4 shrink-0" aria-hidden />
+                      <span className="break-words">{formatPhoneDisplay(p)}</span>
+                    </a>
+                  ) : null;
+                })}
               </div>
               {detail.website && !/doctors\.kg/i.test(detail.website) ? (
                 <a
