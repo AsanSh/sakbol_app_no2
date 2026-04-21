@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Phone, X } from "lucide-react";
 import type { PhoneSelectEntry } from "@/lib/callDoctor";
-import { buildTelUri, formatPhoneDisplay } from "@/lib/callDoctor";
+import { formatPhoneDisplay, getTelLinkProps } from "@/lib/callDoctor";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -80,14 +80,12 @@ export function PhoneSelectModal({
 
             <ul className="mt-4 flex flex-col gap-2" role="list">
               {entries.map((e) => {
-                const href = buildTelUri(e.raw);
-                if (!href) return null;
+                const link = getTelLinkProps(e.raw);
+                if (!link) return null;
                 return (
                   <li key={e.raw}>
                     <a
-                      href={href}
-                      target="_top"
-                      rel="noopener noreferrer"
+                      {...link}
                       onClick={() => onClose()}
                       className="flex min-h-[52px] w-full flex-col items-start justify-center gap-0.5 rounded-2xl bg-teal-50 px-4 py-3 text-left ring-1 ring-teal-100 transition hover:bg-teal-100"
                     >

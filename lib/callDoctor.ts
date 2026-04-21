@@ -1,3 +1,4 @@
+import { hasTelegramWebAppBridge } from "@/lib/client-twa-detection";
 import { decodeHtmlEntities } from "@/lib/html-entities";
 import { normalizeTelHref } from "@/lib/doctors-kg/tel";
 
@@ -70,8 +71,36 @@ export function buildTelUri(raw: string): string | null {
   return `tel:${h}`;
 }
 
+/** Атрибуты для нативной ссылки (лучший вариант для Telegram WebView: выход из iframe). */
+export function getTelLinkProps(
+  raw: string,
+): { href: string; target: "_top"; rel: string } | null {
+  const href = buildTelUri(raw);
+  if (!href) return null;
+  return { href, target: "_top", rel: "noopener noreferrer" };
+}
+
+function clickTelAnchor(uri: string): void {
+  const a = document.createElement("a");
+  a.setAttribute("href", uri);
+  a.setAttribute("target", "_top");
+  a.setAttribute("rel", "noopener noreferrer");
+  a.style.position = "fixed";
+  a.style.left = "0";
+  a.style.top = "0";
+  a.style.width = "1px";
+  a.style.height = "1px";
+  a.style.opacity = "0";
+  a.style.pointerEvents = "none";
+  document.body.appendChild(a);
+  a.click();
+  a.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+  a.remove();
+}
+
 /**
- * Универсальный набор: Telegram Mini App + ссылка tel: с target=_top (выход из iframe) + assign.
+ * Программный вызов (когда нет реального &lt;a&gt; в DOM): сначала «клик» по tel: в top,
+ * затем Telegram.openLink, затем переход только если мы не во вложенном iframe.
  */
 export function triggerPhoneCall(raw: string): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
@@ -79,27 +108,32 @@ export function triggerPhoneCall(raw: string): void {
   if (!uri) return;
 
   try {
-    const tg = (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram
-      ?.WebApp;
-    tg?.openLink?.(uri, { try_instant_view: false });
+    clickTelAnchor(uri);
   } catch {
     /* noop */
   }
 
   try {
-    const a = document.createElement("a");
-    a.href = uri;
-    a.target = "_top";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    if (hasTelegramWebAppBridge()) {
+      (window as unknown as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp?.openLink?.(
+        uri,
+        { try_instant_view: false },
+      );
+    }
   } catch {
     /* noop */
   }
 
   try {
-    window.location.assign(uri);
+    window.open(uri, "_top", "noopener,noreferrer");
+  } catch {
+    /* noop */
+  }
+
+  try {
+    if (window.self === window.top) {
+      window.location.assign(uri);
+    }
   } catch {
     /* noop */
   }
