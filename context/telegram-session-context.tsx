@@ -110,6 +110,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
 
     async function authenticate() {
       setState({ status: "loading" });
+      setAuthReady(false);
       pendingInitDataRef.current = null;
 
       /** Обычный браузер (Chrome, Safari): без моста Telegram не трогаем SDK — только cookie-сессия. */
@@ -171,6 +172,15 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       }
 
       if (!initData) {
+        // Нет initData — пробуем cookie-сессию (email-логин внутри Telegram)
+        const cookieRes = await fetch("/api/auth/session", { credentials: "same-origin" });
+        if (cancelled) return;
+        if (cookieRes.ok) {
+          const cookieData = (await cookieRes.json()) as { profile: TelegramViewer };
+          setState({ status: "authenticated", viewer: cookieData.profile });
+          setAuthReady(true);
+          return;
+        }
         if (!cancelled) {
           setState({
             status: "unauthenticated",
@@ -198,21 +208,41 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
           setAuthReady(true);
           return;
         }
-        setState({
-          status: "unauthenticated",
-          reason: j.error ?? res.statusText,
-        });
-        setAuthReady(true);
+        // Telegram-auth не прошёл — проверяем cookie (email-логин)
+        const cookieFallback = await fetch("/api/auth/session", { credentials: "same-origin" });
+        if (!cancelled && cookieFallback.ok) {
+          const cookieData = (await cookieFallback.json()) as { profile: TelegramViewer };
+          setState({ status: "authenticated", viewer: cookieData.profile });
+          setAuthReady(true);
+          return;
+        }
+        if (!cancelled) {
+          setState({
+            status: "unauthenticated",
+            reason: j.error ?? res.statusText,
+          });
+          setAuthReady(true);
+        }
         return;
       }
 
       if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        setState({
-          status: "unauthenticated",
-          reason: j.error ?? res.statusText,
-        });
-        setAuthReady(true);
+        // Telegram-auth не прошёл — проверяем cookie (email-логин)
+        const cookieFallback = await fetch("/api/auth/session", { credentials: "same-origin" });
+        if (!cancelled && cookieFallback.ok) {
+          const cookieData = (await cookieFallback.json()) as { profile: TelegramViewer };
+          setState({ status: "authenticated", viewer: cookieData.profile });
+          setAuthReady(true);
+          return;
+        }
+        if (!cancelled) {
+          const j = (await res.json().catch(() => ({}))) as { error?: string };
+          setState({
+            status: "unauthenticated",
+            reason: j.error ?? res.statusText,
+          });
+          setAuthReady(true);
+        }
         return;
       }
 

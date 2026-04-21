@@ -30,7 +30,7 @@ export function HomeEntry() {
   const { authReady, isAuthenticated, state } = useTelegramSession();
   const looksLikeTwa = useHydratedLooksLikeTwa();
 
-  if (!authReady) {
+  if (!authReady || state.status === "loading") {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-health-bg">
         <div
