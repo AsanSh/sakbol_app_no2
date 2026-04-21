@@ -2,9 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, ChevronUp, Loader2, PlusCircle, Stethoscope, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Loader2,
+  PlusCircle,
+  Stethoscope,
+  Trash2,
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { listLabAnalysesForProfile } from "@/app/actions/analyses";
+import { deleteHealthDocument } from "@/app/actions/health-document";
 import { deleteLabAnalysis } from "@/app/actions/health-record";
 import { createShareToken } from "@/app/actions/share";
 import { useLanguage } from "@/context/language-context";
@@ -31,7 +40,22 @@ import type { ParsedBiomarker } from "@/types/biomarker";
 import { categoryForBiomarkerKey } from "@/constants/biomarker-categories";
 import { downloadLabPdfClient } from "@/lib/download-lab-pdf";
 import { AnalysisComparePanel } from "@/components/analysis-compare-panel";
+import { archivePrimaryDateLabel, ARCHIVE_CATEGORY_RU } from "@/lib/archive-display-dates";
 import { effectiveAnalysisTimeMs } from "@/lib/lab-analysis-dates";
+
+type HealthDocRow = {
+  id: string;
+  title: string;
+  fileUrl: string;
+  category: string;
+  documentDate: string | null;
+  createdAt: string;
+  mimeType: string | null;
+};
+
+type UnifiedItem =
+  | { kind: "lab"; sortMs: number; lab: LabAnalysisRow }
+  | { kind: "doc"; sortMs: number; doc: HealthDocRow };
 
 function biomarkerCount(data: unknown): number | null {
   if (!data || typeof data !== "object") return null;
@@ -111,6 +135,9 @@ export function AnalysesPreview({
   const [statusFilter, setStatusFilter] = useState<"all" | MedicalStatus>("all");
   const [trendsRangeDays, setTrendsRangeDays] = useState<number | null>(null);
   const [trendsFocusKey, setTrendsFocusKey] = useState<string | null>(null);
+  const [docRows, setDocRows] = useState<HealthDocRow[] | null>(null);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [deleteDocBusyId, setDeleteDocBusyId] = useState<string | null>(null);
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -150,6 +177,33 @@ export function AnalysesPreview({
   }, [activeProfileId, refreshKey, lang]);
 
   useEffect(() => {
+    if (!activeProfileId || isTrends) {
+      setDocRows(null);
+      setDocsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDocsLoading(true);
+    void fetch(`/api/documents?profileId=${encodeURIComponent(activeProfileId)}`, {
+      credentials: "include",
+    })
+      .then(async (r) => {
+        const j = (await r.json().catch(() => ({}))) as { documents?: HealthDocRow[] };
+        if (cancelled) return;
+        setDocRows(Array.isArray(j.documents) ? j.documents : []);
+      })
+      .catch(() => {
+        if (!cancelled) setDocRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDocsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeProfileId, refreshKey, isTrends]);
+
+  useEffect(() => {
     setStatusFilter("all");
   }, [activeProfileId, refreshKey]);
 
@@ -185,9 +239,31 @@ export function AnalysesPreview({
     return listSourceRows.filter((a) => analysisWorstStatus(a.data, activeDob) === statusFilter);
   }, [listSourceRows, activeProfileId, compact, statusFilter, activeDob, isTrends, archiveNeutral]);
 
+  const unifiedForUi = useMemo((): UnifiedItem[] | null => {
+    if (isTrends) return null;
+    const labs = filteredRows ?? [];
+    const docs = docRows ?? [];
+    const items: UnifiedItem[] = [
+      ...labs.map((lab) => ({
+        kind: "lab" as const,
+        sortMs: effectiveAnalysisTimeMs(lab),
+        lab,
+      })),
+      ...docs.map((doc) => ({
+        kind: "doc" as const,
+        sortMs: doc.documentDate ? Date.parse(doc.documentDate) : Date.parse(doc.createdAt),
+        doc,
+      })),
+    ];
+    items.sort((a, b) => b.sortMs - a.sortMs);
+    return compact ? items.slice(0, 2) : items;
+  }, [filteredRows, docRows, isTrends, compact]);
+
   if (!activeProfileId) return null;
 
-  const rowsForUi = compact ? filteredRows?.slice(0, 2) : filteredRows;
+  const listIdle = !loading && (isTrends || !docsLoading);
+  const archiveTotalCount =
+    (listSourceRows?.length ?? 0) + (isTrends ? 0 : (docRows?.length ?? 0));
 
   const filterKeys = [
     { id: "all" as const, label: t(lang, "analyses.filterAll") },
@@ -328,11 +404,14 @@ export function AnalysesPreview({
         </div>
       ) : null}
 
-      {loading ? (
+      {loading || (!isTrends && docsLoading) ? (
         <AnalysisSkeleton className={compact ? "mt-2" : "mt-3"} />
       ) : error ? (
         <p className={cn("text-health-danger", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>{error}</p>
-      ) : rows?.length === 0 ? (
+      ) : listIdle &&
+        (isTrends
+          ? (rows?.length ?? 0) === 0
+          : (rows?.length ?? 0) === 0 && docRows !== null && docRows.length === 0) ? (
         <div
           className={cn(
             "flex flex-col items-center justify-center text-center",
@@ -393,7 +472,11 @@ export function AnalysesPreview({
               />
             </div>
           ) : null}
-          {!isTrends && !rowsForUi?.length ? (
+          {!isTrends &&
+          unifiedForUi &&
+          unifiedForUi.length === 0 &&
+          (listSourceRows?.length ?? 0) > 0 &&
+          statusFilter !== "all" ? (
             <div
               className={cn(
                 "rounded-xl bg-slate-50/90 text-center text-health-text-secondary ring-1 ring-health-border/70",
@@ -403,7 +486,7 @@ export function AnalysesPreview({
               {t(lang, "analyses.filterEmpty")}
             </div>
           ) : null}
-          {!isTrends && rowsForUi?.length ? (
+          {!isTrends && unifiedForUi && unifiedForUi.length > 0 ? (
             <ul
               className={cn(
                 "grid gap-2",
@@ -412,7 +495,83 @@ export function AnalysesPreview({
                   : "mt-4 grid-cols-1 gap-3 sm:grid-cols-2",
               )}
             >
-          {rowsForUi?.map((a, idx) => {
+          {unifiedForUi.map((item, idx) => {
+            if (item.kind === "doc") {
+              const d = item.doc;
+              const loc = lang === "ru" ? "ru-RU" : "ky-KG";
+              const { primary, hint } = archivePrimaryDateLabel(d.documentDate, d.createdAt, loc);
+              return (
+                <motion.li
+                  key={`doc-${d.id}`}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, delay: idx * 0.05, ease: "easeOut" }}
+                  className={cn(
+                    "rounded-2xl bg-white text-health-text shadow-sm ring-1 ring-slate-200/90 transition-all duration-300 hover:shadow-lg",
+                    compact ? "px-2.5 py-2 text-xs" : "px-4 py-3 text-sm",
+                  )}
+                >
+                  <div className="flex items-stretch gap-2">
+                    <a
+                      href={d.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex min-h-[3rem] min-w-0 flex-1 items-start gap-3 text-left"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-health-primary">
+                        <FileText className="h-5 w-5" aria-hidden />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[10px] font-semibold uppercase tracking-wide text-health-text-secondary">
+                          {ARCHIVE_CATEGORY_RU[d.category] ?? d.category}
+                        </span>
+                        <span className="font-semibold text-health-text">{d.title}</span>
+                        <span className="mt-1 block text-xs text-health-text-secondary">
+                          {primary}
+                          {hint ? (
+                            <span className="mt-0.5 block text-[11px] text-health-text-secondary/85">
+                              {hint}
+                            </span>
+                          ) : null}
+                        </span>
+                      </span>
+                    </a>
+                    <button
+                      type="button"
+                      disabled={deleteDocBusyId === d.id}
+                      title={t(lang, "analyses.delete")}
+                      aria-label={t(lang, "analyses.delete")}
+                      className={cn(
+                        "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-red-50/90 px-2 py-1.5 text-red-800 ring-1 ring-red-200/80 shadow-sm transition-colors hover:bg-red-100/90 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
+                        compact && "min-w-10 px-1.5 py-1",
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!window.confirm(t(lang, "analyses.deleteDocConfirm"))) return;
+                        setDeleteDocBusyId(d.id);
+                        void deleteHealthDocument(d.id)
+                          .then((r) => {
+                            if (!r.ok) {
+                              setError(r.error);
+                              return;
+                            }
+                            setDocRows((prev) => prev?.filter((x) => x.id !== d.id) ?? null);
+                          })
+                          .finally(() => setDeleteDocBusyId(null));
+                      }}
+                    >
+                      {deleteDocBusyId === d.id ? (
+                        <Loader2 className={cn("animate-spin", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
+                      ) : (
+                        <Trash2 className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
+                      )}
+                    </button>
+                  </div>
+                </motion.li>
+              );
+            }
+
+            const a = item.lab;
             const n = biomarkerCount(a.data);
             const worst = analysisWorstStatus(a.data, activeDob);
             const open = !compact && expandedId === a.id;
@@ -780,14 +939,14 @@ export function AnalysesPreview({
         </>
       )}
 
-      {compact && rows && rows.length > 2 && onOpenAnalyses ? (
+      {compact && archiveTotalCount > 2 && onOpenAnalyses ? (
         <button
           type="button"
           onClick={onOpenAnalyses}
           className="mt-1.5 shrink-0 rounded-xl bg-teal-50 py-2 text-center text-caption font-semibold text-health-primary ring-1 ring-teal-100 transition-colors hover:bg-teal-100/80"
         >
           {t(lang, "analyses.viewAll")}
-          <span className="text-health-text-secondary"> · +{rows.length - 2}</span>
+          <span className="text-health-text-secondary"> · +{archiveTotalCount - 2}</span>
         </button>
       ) : null}
 

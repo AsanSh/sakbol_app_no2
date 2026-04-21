@@ -63,3 +63,27 @@ export async function telegramSendPlainMessage(
   }
   return { ok: true };
 }
+
+type GetFileResult = { file_id: string; file_path: string };
+
+/** Скачать файл, отправленный пользователем боту (document / сжатый снимок). */
+export async function telegramDownloadFile(
+  fileId: string,
+): Promise<{ ok: true; buffer: Buffer; mime: string } | { ok: false; description: string }> {
+  const j = await tgCall<GetFileResult>(`getFile?file_id=${encodeURIComponent(fileId)}`);
+  if (!j.ok || !j.result?.file_path) {
+    return { ok: false, description: j.ok ? "no file_path" : (j.description ?? "getFile failed") };
+  }
+  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  if (!botToken) {
+    return { ok: false, description: "TELEGRAM_BOT_TOKEN missing" };
+  }
+  const url = `https://api.telegram.org/file/bot${botToken}/${j.result.file_path}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    return { ok: false, description: `download failed ${res.status}` };
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  const mime = res.headers.get("content-type")?.split(";")[0]?.trim() || "application/octet-stream";
+  return { ok: true, buffer: buf, mime };
+}

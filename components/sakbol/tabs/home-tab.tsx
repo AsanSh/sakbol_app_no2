@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { FamilyRole } from "@prisma/client";
 import { AddMemberModal } from "@/components/add-member-modal";
@@ -12,6 +13,7 @@ import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useDeviceType } from "@/hooks/use-device-type";
 import type { FamilyWithProfiles } from "@/types/family";
+import { DoctorCategoryRail } from "@/features/home/doctor-category-rail";
 import { DoctorDiscoveryHome } from "@/features/home/doctor-discovery-home";
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
@@ -23,6 +25,8 @@ type Props = {
 };
 
 export function HomeTab({ family, reloadFamily }: Props) {
+  const searchParams = useSearchParams();
+  const doctorCat = searchParams.get("doctorCat");
   const { lang } = useLanguage();
   const device = useDeviceType();
   const isDesktopWeb = device === "desktop-web";
@@ -81,7 +85,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
               : state.status === "unauthenticated" && state.reason === "no_init_data"
                 ? t(lang, "dashboard.authBodyNoTg")
                 : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
-                  ? "Мини-приложение: закройте и откройте снова из бота. Или войдите через сайт в браузере."
+                  ? t(lang, "dashboard.tgLoginHint")
                   : t(lang, "dashboard.authBody")}
           </p>
           {state.status === "unauthenticated" &&
@@ -103,7 +107,22 @@ export function HomeTab({ family, reloadFamily }: Props) {
       <div className={cn("flex min-h-0 w-full flex-1 flex-col overflow-y-auto")}>
         <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-8 pt-2 md:px-6">
           {authBanner}
-          <DoctorDiscoveryHome isDesktop />
+          {isAuthenticated ? (
+            <div className="space-y-2">
+              <div className="flex justify-end">
+                <Link
+                  href="/?tab=analyses"
+                  className="rounded-2xl bg-[#2A5298]/10 px-4 py-2 text-sm font-semibold text-[#2A5298] ring-1 ring-[#2A5298]/20 hover:bg-[#2A5298]/15"
+                >
+                  {t(lang, "analyses.pageTitle")}
+                </Link>
+              </div>
+              <DoctorCategoryRail />
+            </div>
+          ) : (
+            <DoctorCategoryRail />
+          )}
+          <DoctorDiscoveryHome isDesktop initialCategorySlug={doctorCat} />
         </div>
         <AddMemberModal
           open={addMemberOpen}
@@ -132,7 +151,22 @@ export function HomeTab({ family, reloadFamily }: Props) {
         transition={{ duration: 0.3 }}
       >
         {authBanner}
-        <DoctorDiscoveryHome />
+        {isAuthenticated ? (
+          <div className="space-y-2">
+            <div className="flex justify-end">
+              <Link
+                href="/?tab=analyses"
+                className="rounded-2xl bg-[#2A5298]/10 px-4 py-2 text-sm font-semibold text-[#2A5298] ring-1 ring-[#2A5298]/20"
+              >
+                {t(lang, "analyses.pageTitle")}
+              </Link>
+            </div>
+            <DoctorCategoryRail />
+          </div>
+        ) : (
+          <DoctorCategoryRail />
+        )}
+        <DoctorDiscoveryHome initialCategorySlug={doctorCat} />
         {sharedSheets}
         <AddMemberModal
           open={addMemberOpen}

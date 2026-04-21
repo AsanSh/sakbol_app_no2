@@ -11,6 +11,7 @@ import { AnalysesPreview } from "@/components/analyses-preview";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { PaywallModal } from "@/components/paywall-modal";
 import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
+import { UploadHealthDocumentModal } from "@/components/upload-health-document-modal";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useDeviceType } from "@/hooks/use-device-type";
 import { t } from "@/lib/i18n";
@@ -79,6 +80,7 @@ export function FamilyAnalysesWorkspace({
     else setAddOpenInternal(open);
   };
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadDocOpen, setUploadDocOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [analysesRefresh, setAnalysesRefresh] = useState(0);
   const load = useCallback(() => {
@@ -158,16 +160,36 @@ export function FamilyAnalysesWorkspace({
 
       {/* Подсказка + кнопка «Добавить члена» (компактная) */}
       {activeProfileId ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-caption text-health-text-secondary">{t(lang, "dashboard.quickUploadHint")}</p>
-          {admin ? (
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              className="shrink-0 rounded-xl bg-health-surface px-3 py-2 text-caption font-semibold text-health-primary shadow-sm ring-1 ring-health-border/80 transition-all duration-300 hover:shadow-md"
-            >
-              {t(lang, "family.addMemberShort")}
-            </button>
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-caption text-health-text-secondary">{t(lang, "dashboard.quickUploadHint")}</p>
+            {admin ? (
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                className="shrink-0 rounded-xl bg-health-surface px-3 py-2 text-caption font-semibold text-health-primary shadow-sm ring-1 ring-health-border/80 transition-all duration-300 hover:shadow-md"
+              >
+                {t(lang, "family.addMemberShort")}
+              </button>
+            ) : null}
+          </div>
+          {!isTrends ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                onClick={() => setUploadOpen(true)}
+                className="min-h-[44px] flex-1 rounded-2xl bg-health-primary px-4 py-2.5 text-center text-caption font-semibold text-white shadow-md hover:bg-teal-700 sm:flex-none sm:px-5"
+              >
+                {lang === "ru" ? "Загрузить с расшифровкой (ИИ)" : "ИИ менен жүктөө"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setUploadDocOpen(true)}
+                className="min-h-[44px] flex-1 rounded-2xl bg-white px-4 py-2.5 text-center text-caption font-semibold text-health-text shadow-sm ring-1 ring-health-border/80 hover:bg-slate-50 sm:flex-none sm:px-5"
+              >
+                {lang === "ru" ? "Сохранить документ" : "Документ сактоо"}
+              </button>
+            </div>
           ) : null}
         </div>
       ) : null}
@@ -198,15 +220,26 @@ export function FamilyAnalysesWorkspace({
       />
 
       {activeProfileId ? (
-        <UploadAnalysisModal
-          open={uploadOpen}
-          onClose={() => setUploadOpen(false)}
-          profileId={activeProfileId}
-          onSuccess={() => {
-            setAnalysesRefresh((k) => k + 1);
-            onAnalysesChanged?.();
-          }}
-        />
+        <>
+          <UploadAnalysisModal
+            open={uploadOpen}
+            onClose={() => setUploadOpen(false)}
+            profileId={activeProfileId}
+            onSuccess={() => {
+              setAnalysesRefresh((k) => k + 1);
+              onAnalysesChanged?.();
+            }}
+          />
+          <UploadHealthDocumentModal
+            open={uploadDocOpen}
+            onClose={() => setUploadDocOpen(false)}
+            profileId={activeProfileId}
+            onSuccess={() => {
+              setAnalysesRefresh((k) => k + 1);
+              onAnalysesChanged?.();
+            }}
+          />
+        </>
       ) : null}
 
       <PaywallModal

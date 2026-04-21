@@ -74,7 +74,9 @@ export function AnalysesTab({ family, onAnalysesChanged }: Props) {
             <p className="mt-1 text-caption text-amber-900/90">
               {state.status === "unauthenticated" && state.reason === "no_init_data"
                 ? t(lang, "dashboard.authBodyNoTg")
-                : t(lang, "dashboard.authBody")}
+                : state.status === "unauthenticated" && state.reason === "telegram_init_data_missing"
+                  ? t(lang, "dashboard.tgLoginHint")
+                  : t(lang, "dashboard.authBody")}
             </p>
           </div>
         ) : null}

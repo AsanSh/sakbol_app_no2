@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import {
   LayoutDashboard,
   Stethoscope,
   TrendingUp,
   BotMessageSquare,
   UserCircle,
+  FileStack,
+  Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -87,7 +90,37 @@ export function SakbolDesktopSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto h-2 shrink-0 border-t border-health-border/60" aria-hidden />
+      <div className="mt-auto space-y-1 border-t border-health-border/60 px-3 pb-4 pt-3">
+        <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          Хранилище
+        </p>
+        <Link
+          href="/?tab=analyses"
+          className={cn(
+            "flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-3 text-body font-medium transition-colors",
+            tab === "analyses"
+              ? "bg-teal-50 text-health-primary ring-1 ring-teal-100"
+              : "text-health-text-secondary hover:bg-slate-50 hover:text-health-text",
+          )}
+        >
+          <FileStack className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+          {t(lang, "nav.archiveShort")}
+        </Link>
+        <Link
+          href="/?tab=trends"
+          className={cn(
+            "flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-3 text-body font-medium transition-colors",
+            tab === "trends"
+              ? "bg-teal-50 text-health-primary ring-1 ring-teal-100"
+              : "text-health-text-secondary hover:bg-slate-50 hover:text-health-text",
+          )}
+        >
+          <Activity className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
+          {t(lang, "nav.trends")}
+        </Link>
+      </div>
+
+      <div className="h-2 shrink-0" aria-hidden />
     </aside>
   );
 }

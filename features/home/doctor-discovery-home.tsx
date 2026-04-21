@@ -69,9 +69,18 @@ function useDebounced<T>(value: T, ms: number): T {
   return v;
 }
 
-type Props = { isDesktop?: boolean; className?: string };
+type Props = {
+  isDesktop?: boolean;
+  className?: string;
+  /** Предвыбор специальности из URL (?doctorCat=slug). */
+  initialCategorySlug?: string | null;
+};
 
-export function DoctorDiscoveryHome({ isDesktop = false, className }: Props) {
+export function DoctorDiscoveryHome({
+  isDesktop = false,
+  className,
+  initialCategorySlug = null,
+}: Props) {
   const { lang } = useLanguage();
   const [mainTab, setMainTab] = useState<"doctors" | "clinics">("doctors");
   const [meta, setMeta] = useState<MetaPayload | null>(null);
@@ -108,6 +117,12 @@ export function DoctorDiscoveryHome({ isDesktop = false, className }: Props) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!initialCategorySlug || !meta?.categories?.length) return;
+    const ok = meta.categories.some((c) => c.slug === initialCategorySlug);
+    if (ok) setCategory(initialCategorySlug);
+  }, [initialCategorySlug, meta]);
 
   const catLabel = useMemo(() => {
     const m = new Map<string, string>();

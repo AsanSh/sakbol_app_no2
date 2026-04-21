@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { BottomTabBar } from "@/components/sakbol/bottom-tab-bar";
@@ -39,7 +40,11 @@ function TabPanels({
         transition={{ duration: 0.2 }}
         className={cn("flex min-h-0 min-w-0 flex-1 flex-col", "overflow-y-auto")}
       >
-        {tab === "home" ? <HomeTab family={family} reloadFamily={reload} /> : null}
+        {tab === "home" ? (
+          <Suspense fallback={<div className="min-h-[40vh]" />}>
+            <HomeTab family={family} reloadFamily={reload} />
+          </Suspense>
+        ) : null}
         {tab === "analyses" ? (
           <AnalysesTab
             family={family}
