@@ -38,6 +38,9 @@ export async function extractPlainTextFromHealthDocumentBuffer(
     try {
       const { createWorker } = await import("tesseract.js");
       const worker = await createWorker("rus+eng");
+      await worker.setParameters({
+        preserve_interword_spaces: "1",
+      });
       const {
         data: { text },
       } = await worker.recognize(buffer);

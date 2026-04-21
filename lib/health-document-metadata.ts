@@ -177,6 +177,45 @@ const OCR_YMD_RE = new RegExp(
   "g",
 );
 
+const MONTHS_RU: Record<string, number> = {
+  января: 1,
+  январь: 1,
+  феврал: 2,
+  марта: 3,
+  март: 3,
+  апреля: 4,
+  апрел: 4,
+  мая: 5,
+  май: 5,
+  июня: 6,
+  июн: 6,
+  июля: 7,
+  июл: 7,
+  августа: 8,
+  август: 8,
+  сентября: 9,
+  сентябр: 9,
+  октября: 10,
+  октябр: 10,
+  ноября: 11,
+  ноябр: 11,
+  декабря: 12,
+  декабр: 12,
+};
+
+function parseOcrDigits(token: string): number | null {
+  const norm = token
+    .replace(/[OoОо]/g, "0")
+    .replace(/[I|lІ]/g, "1")
+    .replace(/[SЅ]/g, "5")
+    .replace(/[BВ]/g, "8")
+    .replace(/[Zz]/g, "2")
+    .replace(/[^\d]/g, "");
+  if (!norm) return null;
+  const n = Number(norm);
+  return Number.isFinite(n) ? n : null;
+}
+
 /**
  * Ищет даты в теле файла: приоритет подписей «дата осмотра/забора/…», затем цифры в начале и конце документа.
  */
@@ -242,6 +281,34 @@ export function extractBestDocumentDate(rawText: string): string | null {
     OCR_YMD_RE.lastIndex = 0;
     while ((m = OCR_YMD_RE.exec(slice)) !== null) {
       pushDmy(Number(m[1]), Number(m[2]), Number(m[3]), baseOffset + m.index, 7);
+    }
+
+    // OCR-шум: 2O.O1.2O24, I2-03-2024 и т.п.
+    const noisyDmyRe =
+      /\b([0-9OОoоI|lІSЅBВZz]{1,2})[^0-9A-Za-zА-Яа-я]{0,3}([0-9OОoоI|lІSЅBВZz]{1,2})[^0-9A-Za-zА-Яа-я]{0,3}([0-9OОoоI|lІSЅBВZz]{4})\b/g;
+    while ((m = noisyDmyRe.exec(slice)) !== null) {
+      const d = parseOcrDigits(m[1]);
+      const mo = parseOcrDigits(m[2]);
+      const y = parseOcrDigits(m[3]);
+      if (d != null && mo != null && y != null) {
+        pushDmy(y, mo, d, baseOffset + m.index, 9);
+      }
+    }
+
+    // Формат "12 марта 2024" / "дата осмотра 7 апр 2023".
+    const monthWordsRe =
+      /\b(\d{1,2})\s+(январ[ья]|феврал[ья]|март[а]?|апрел[ья]|ма[йя]|июн[ья]?|июл[ья]?|август[а]?|сентябр[ья]|октябр[ья]|ноябр[ья]|декабр[ья])\s+(\d{4})\b/gi;
+    while ((m = monthWordsRe.exec(slice)) !== null) {
+      const d = Number(m[1]);
+      const y = Number(m[3]);
+      const key = m[2].toLowerCase();
+      const mo =
+        MONTHS_RU[key] ??
+        Object.entries(MONTHS_RU).find(([k]) => key.startsWith(k))?.[1] ??
+        null;
+      if (mo != null) {
+        pushDmy(y, mo, d, baseOffset + m.index, 14);
+      }
     }
   };
 

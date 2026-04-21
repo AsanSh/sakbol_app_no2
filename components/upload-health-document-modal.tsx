@@ -32,11 +32,12 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
   const [phase, setPhase] = useState<Phase>("idle");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [category, setCategory] = useState("OTHER");
   const [documentDate, setDocumentDate] = useState("");
   const [title, setTitle] = useState("");
   const [mentionHint, setMentionHint] = useState<Mentioned>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -49,11 +50,12 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
     setPhase("idle");
     setBusy(false);
     setErr(null);
-    setFile(null);
+    setFiles([]);
     setCategory("OTHER");
     setDocumentDate("");
     setTitle("");
     setMentionHint(null);
+    setProgress(null);
   }, []);
 
   useEffect(() => {
@@ -111,9 +113,10 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
     onClose();
   };
 
-  const onFileChange = (picked: File | null) => {
-    setFile(picked);
-    if (!picked) {
+  const onFileChange = (pickedList: FileList | null) => {
+    const next = pickedList ? Array.from(pickedList).slice(0, 10) : [];
+    setFiles(next);
+    if (next.length === 0) {
       setPhase("idle");
       setTitle("");
       setDocumentDate("");
@@ -121,12 +124,19 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
       setMentionHint(null);
       return;
     }
-    void runExtract(picked);
+    if (next.length > 1) {
+      setPhase("ready");
+      setTitle("");
+      setDocumentDate("");
+      setMentionHint(null);
+      return;
+    }
+    void runExtract(next[0]);
   };
 
   const submit = async () => {
-    if (!file) {
-      setErr("Выберите файл.");
+    if (files.length === 0) {
+      setErr("Выберите файл(ы).");
       return;
     }
     if (phase === "analyzing") {
@@ -136,17 +146,28 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
     setErr(null);
     setBusy(true);
     hapticImpact("light");
-    const fd = new FormData();
-    fd.set("profileId", profileId);
-    fd.set("file", file);
-    fd.set("category", category);
-    if (documentDate) fd.set("documentDate", documentDate);
-    if (title.trim()) fd.set("title", title.trim());
     try {
-      const r = await uploadHealthDocument(fd);
-      if (!r.ok) {
-        setErr(r.error);
-        return;
+      for (let i = 0; i < files.length; i += 1) {
+        const file = files[i];
+        setProgress({ current: i + 1, total: files.length });
+        const fd = new FormData();
+        fd.set("profileId", profileId);
+        fd.set("file", file);
+        fd.set("category", category);
+        // Для пачки полагаемся на автопарсер каждого файла; ручные поля — только для одиночного.
+        if (files.length === 1) {
+          if (documentDate) fd.set("documentDate", documentDate);
+          if (title.trim()) fd.set("title", title.trim());
+        }
+        const r = await uploadHealthDocument(fd);
+        if (!r.ok) {
+          setErr(
+            files.length > 1
+              ? `Файл ${i + 1}/${files.length}: ${r.error}`
+              : r.error,
+          );
+          return;
+        }
       }
       onSuccess();
       handleClose();
@@ -154,6 +175,7 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
       setErr(e instanceof Error ? e.message : "Ошибка загрузки");
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -173,15 +195,30 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
         </p>
 
         <label className="mt-4 block text-caption font-medium text-health-text-secondary">
-          Файл (PDF, фото, DOC…)
+          Файлы (до 10): PDF, фото, DOC…
           <input
             type="file"
             className="mt-1 block w-full text-sm"
             accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,application/pdf,image/*"
+            multiple
             disabled={busy || phase === "analyzing"}
-            onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+            onChange={(e) => onFileChange(e.target.files)}
           />
         </label>
+        {files.length > 0 ? (
+          <p className="mt-2 text-caption text-health-text-secondary">
+            Выбрано: {files.length} из 10
+          </p>
+        ) : null}
+        {files.length > 1 ? (
+          <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto rounded-xl bg-slate-50 p-2 text-[12px] text-slate-700 ring-1 ring-health-border/80">
+            {files.map((f) => (
+              <li key={`${f.name}-${f.size}`} className="truncate">
+                {f.name}
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         {phase === "analyzing" ? (
           <div
@@ -212,39 +249,52 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
               </select>
             </label>
 
-            <label className="mt-3 block text-caption font-medium text-health-text-secondary">
-              Дата на документе (необязательно)
-              <input
-                type="date"
-                value={documentDate}
-                onChange={(e) => setDocumentDate(e.target.value)}
-                disabled={busy}
-                className="mt-1 min-h-[44px] w-full rounded-xl border-0 bg-slate-50 px-3 text-body text-health-text ring-1 ring-health-border/80"
-              />
-            </label>
+            {files.length <= 1 ? (
+              <>
+                <label className="mt-3 block text-caption font-medium text-health-text-secondary">
+                  Дата на документе (необязательно)
+                  <input
+                    type="date"
+                    value={documentDate}
+                    onChange={(e) => setDocumentDate(e.target.value)}
+                    disabled={busy}
+                    className="mt-1 min-h-[44px] w-full rounded-xl border-0 bg-slate-50 px-3 text-body text-health-text ring-1 ring-health-border/80"
+                  />
+                </label>
 
-            <label className="mt-3 block text-caption font-medium text-health-text-secondary">
-              Название
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={busy}
-                placeholder="Например: выписка из Ошского ЦРБ"
-                className="mt-1 min-h-[44px] w-full rounded-xl border-0 bg-slate-50 px-3 text-body text-health-text ring-1 ring-health-border/80"
-              />
-            </label>
+                <label className="mt-3 block text-caption font-medium text-health-text-secondary">
+                  Название
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    disabled={busy}
+                    placeholder="Например: выписка из Ошского ЦРБ"
+                    className="mt-1 min-h-[44px] w-full rounded-xl border-0 bg-slate-50 px-3 text-body text-health-text ring-1 ring-health-border/80"
+                  />
+                </label>
 
-            {mentionHint && mentionHint.id !== profileId ? (
-              <p className="mt-3 rounded-xl bg-amber-50/95 px-3 py-2 text-caption text-amber-950 ring-1 ring-amber-200/80">
-                В тексте встречается «{mentionHint.displayName}». Убедитесь, что сохраняете файл в
-                нужный профиль семьи.
+                {mentionHint && mentionHint.id !== profileId ? (
+                  <p className="mt-3 rounded-xl bg-amber-50/95 px-3 py-2 text-caption text-amber-950 ring-1 ring-amber-200/80">
+                    В тексте встречается «{mentionHint.displayName}». Убедитесь, что сохраняете файл в
+                    нужный профиль семьи.
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-caption text-slate-700 ring-1 ring-health-border/80">
+                Для пачки файлов дата и название определяются автоматически по каждому файлу.
               </p>
-            ) : null}
+            )}
           </>
         )}
 
         {err ? <p className="mt-3 text-sm text-red-700">{err}</p> : null}
+        {busy && progress ? (
+          <p className="mt-2 text-xs text-health-text-secondary">
+            Загружаю {progress.current} из {progress.total}…
+          </p>
+        ) : null}
 
         <div className="mt-5 flex gap-2">
           <button
@@ -258,14 +308,14 @@ export function UploadHealthDocumentModal({ open, onClose, profileId, onSuccess 
           <button
             type="button"
             onClick={() => void submit()}
-            disabled={busy || !file || phase === "analyzing"}
+            disabled={busy || files.length === 0 || phase === "analyzing"}
             className={cn(
               "inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white",
               "bg-health-primary shadow-sm hover:bg-teal-700 disabled:opacity-50",
             )}
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <FileUp className="h-4 w-4" aria-hidden />}
-            Сохранить
+            {files.length > 1 ? "Сохранить все" : "Сохранить"}
           </button>
         </div>
       </div>

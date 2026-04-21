@@ -13,7 +13,6 @@ import { PaywallModal } from "@/components/paywall-modal";
 import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
 import { UploadHealthDocumentModal } from "@/components/upload-health-document-modal";
 import { useActiveProfile } from "@/context/active-profile-context";
-import { useDeviceType } from "@/hooks/use-device-type";
 import { t } from "@/lib/i18n";
 import { UploadFab } from "@/components/upload-fab";
 
@@ -65,7 +64,6 @@ export function FamilyAnalysesWorkspace({
   onAddMemberModalOpenChange,
 }: Props) {
   const isTrends = variant === "trends";
-  const device = useDeviceType();
   const { lang } = useLanguage();
   const { authReady, isAuthenticated } = useTelegramSession();
   const { activeProfileId } = useActiveProfile();
@@ -81,6 +79,7 @@ export function FamilyAnalysesWorkspace({
   };
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadDocOpen, setUploadDocOpen] = useState(false);
+  const [uploadMenuOpen, setUploadMenuOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [analysesRefresh, setAnalysesRefresh] = useState(0);
   const load = useCallback(() => {
@@ -174,22 +173,11 @@ export function FamilyAnalysesWorkspace({
             ) : null}
           </div>
           {!isTrends ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                onClick={() => setUploadOpen(true)}
-                className="min-h-[44px] flex-1 rounded-2xl bg-health-primary px-4 py-2.5 text-center text-caption font-semibold text-white shadow-md hover:bg-teal-700 sm:flex-none sm:px-5"
-              >
-                {lang === "ru" ? "Загрузить с расшифровкой (ИИ)" : "ИИ менен жүктөө"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setUploadDocOpen(true)}
-                className="min-h-[44px] flex-1 rounded-2xl bg-white px-4 py-2.5 text-center text-caption font-semibold text-health-text shadow-sm ring-1 ring-health-border/80 hover:bg-slate-50 sm:flex-none sm:px-5"
-              >
-                {lang === "ru" ? "Сохранить документ" : "Документ сактоо"}
-              </button>
-            </div>
+            <p className="text-[11px] text-health-text-secondary">
+              {lang === "ru"
+                ? "Загрузка файлов доступна через кнопку + внизу экрана."
+                : "Файл жүктөө төмөнкү + баскычы аркылуу жеткиликтүү."}
+            </p>
           ) : null}
         </div>
       ) : null}
@@ -197,9 +185,51 @@ export function FamilyAnalysesWorkspace({
       {/* FAB: плавающая кнопка загрузки (мобилка) */}
       {activeProfileId ? (
         <UploadFab
-          onClick={() => setUploadOpen(true)}
-          mobileOnly={device !== "desktop-web"}
+          onClick={() => setUploadMenuOpen(true)}
+          mobileOnly={false}
         />
+      ) : null}
+
+      {uploadMenuOpen ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-900/45 p-4 sm:items-center"
+          role="dialog"
+          aria-modal
+        >
+          <button
+            type="button"
+            aria-label="close"
+            className="absolute inset-0"
+            onClick={() => setUploadMenuOpen(false)}
+          />
+          <div className="relative w-full max-w-sm rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-health-border/80">
+            <h3 className="font-manrope text-base font-semibold text-health-text">
+              {lang === "ru" ? "Выберите тип загрузки" : "Жүктөө түрүн тандаңыз"}
+            </h3>
+            <div className="mt-3 space-y-2">
+              <button
+                type="button"
+                className="min-h-[48px] w-full rounded-2xl bg-health-primary px-4 py-2 text-caption font-semibold text-white"
+                onClick={() => {
+                  setUploadMenuOpen(false);
+                  setUploadOpen(true);
+                }}
+              >
+                {lang === "ru" ? "Анализ с расшифровкой (ИИ)" : "ИИ менен анализ"}
+              </button>
+              <button
+                type="button"
+                className="min-h-[48px] w-full rounded-2xl bg-white px-4 py-2 text-caption font-semibold text-health-text ring-1 ring-health-border/80"
+                onClick={() => {
+                  setUploadMenuOpen(false);
+                  setUploadDocOpen(true);
+                }}
+              >
+                {lang === "ru" ? "Сохранить документ(ы)" : "Документ(тер) сактоо"}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       <AnalysesPreview
