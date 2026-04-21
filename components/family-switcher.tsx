@@ -54,6 +54,12 @@ export function FamilySwitcher({
   const avatarSize = isHeader ? 40 : 56;
   const addBtnClass = isHeader ? "h-10 w-10" : "h-14 w-14";
   const plusClass = isHeader ? "h-5 w-5" : "h-6 w-6";
+  const pulseTransition = {
+    duration: 1.6,
+    repeat: Infinity,
+    repeatType: "loop" as const,
+    ease: "easeOut" as const,
+  };
 
   function pickProfile(id: string) {
     hapticImpact("medium");
@@ -83,6 +89,14 @@ export function FamilySwitcher({
                   className={cn("relative rounded-full ring-2 ring-health-bg", i > 0 && "-ml-2.5")}
                   style={{ zIndex: active ? 50 : 10 + i }}
                 >
+                  {active ? (
+                    <motion.span
+                      aria-hidden
+                      className="pointer-events-none absolute -inset-1 rounded-full border border-health-primary/40"
+                      animate={{ scale: [1, 1.16], opacity: [0.5, 0] }}
+                      transition={pulseTransition}
+                    />
+                  ) : null}
                   <ProfileAvatar
                     src={p.avatarUrl}
                     name={p.displayName}
@@ -156,16 +170,26 @@ export function FamilySwitcher({
                 aria-pressed={active}
                 aria-label={`${t(lang, "profile.title")}: ${p.displayName}`}
               >
-                <ProfileAvatar
-                  src={p.avatarUrl}
-                  name={p.displayName}
-                  size={avatarSize}
-                  className={cn(
-                    "ring-2 ring-offset-2 ring-offset-health-bg transition-shadow",
-                    isHeader && "ring-1 ring-offset-1",
-                    active ? "ring-health-primary shadow-md" : "ring-transparent",
-                  )}
-                />
+                <span className="relative">
+                  {isHeader && active ? (
+                    <motion.span
+                      aria-hidden
+                      className="pointer-events-none absolute -inset-1 rounded-full border border-health-primary/40"
+                      animate={{ scale: [1, 1.18], opacity: [0.55, 0] }}
+                      transition={pulseTransition}
+                    />
+                  ) : null}
+                  <ProfileAvatar
+                    src={p.avatarUrl}
+                    name={p.displayName}
+                    size={avatarSize}
+                    className={cn(
+                      "ring-2 ring-offset-2 ring-offset-health-bg transition-shadow",
+                      isHeader && "ring-1 ring-offset-1",
+                      active ? "ring-health-primary shadow-md" : "ring-transparent",
+                    )}
+                  />
+                </span>
                 <span className="flex max-w-[4.5rem] flex-col items-center gap-0 leading-tight">
                   <span
                     className={cn(
