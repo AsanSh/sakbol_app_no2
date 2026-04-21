@@ -65,7 +65,7 @@ export function EmailAuthPanel() {
   }, [displayName, email, password, pin, refresh, router]);
 
   return (
-    <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+    <div className="space-y-4">
       <div className="flex rounded-xl bg-slate-100 p-1 text-[11px] font-semibold">
         <button
           type="button"
