@@ -36,8 +36,15 @@ export async function GET(req: Request) {
         ...(category ? { category } : {}),
       },
       orderBy: { createdAt: "desc" },
-      include: {
-        profile: { select: { id: true, displayName: true } },
+      take: 20,
+      select: {
+        id: true,
+        title: true,
+        fileUrl: true,
+        category: true,
+        documentDate: true,
+        createdAt: true,
+        mimeType: true,
       },
     });
     return NextResponse.json({ documents });

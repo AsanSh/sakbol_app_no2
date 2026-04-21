@@ -2,6 +2,7 @@
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import useSWR from "swr";
 import {
   ChevronDown,
   ChevronUp,
@@ -56,6 +57,24 @@ type HealthDocRow = {
 type UnifiedItem =
   | { kind: "lab"; sortMs: number; lab: LabAnalysisRow }
   | { kind: "doc"; sortMs: number; doc: HealthDocRow };
+
+const documentsFetcher = async (url: string): Promise<{ documents: HealthDocRow[] }> => {
+  const r = await fetch(url, { credentials: "include" });
+  if (!r.ok) throw new Error("documents_fetch_failed");
+  return (await r.json()) as { documents: HealthDocRow[] };
+};
+
+const DocumentSkeleton = () => (
+  <div className="flex items-center gap-3 rounded-xl bg-white p-3 animate-pulse">
+    <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-200" />
+    <div className="flex-1 space-y-2">
+      <div className="h-3 w-1/4 rounded bg-gray-200" />
+      <div className="h-4 w-3/4 rounded bg-gray-200" />
+      <div className="h-3 w-1/2 rounded bg-gray-200" />
+    </div>
+    <div className="h-8 w-8 flex-shrink-0 rounded-lg bg-gray-100" />
+  </div>
+);
 
 function biomarkerCount(data: unknown): number | null {
   if (!data || typeof data !== "object") return null;
@@ -135,8 +154,6 @@ export function AnalysesPreview({
   const [statusFilter, setStatusFilter] = useState<"all" | MedicalStatus>("all");
   const [trendsRangeDays, setTrendsRangeDays] = useState<number | null>(null);
   const [trendsFocusKey, setTrendsFocusKey] = useState<string | null>(null);
-  const [docRows, setDocRows] = useState<HealthDocRow[] | null>(null);
-  const [docsLoading, setDocsLoading] = useState(false);
   const [deleteDocBusyId, setDeleteDocBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshTick, setAutoRefreshTick] = useState(0);
@@ -144,12 +161,22 @@ export function AnalysesPreview({
 
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
-  const docRowsRef = useRef(docRows);
-  docRowsRef.current = docRows;
   const lastLabPidRef = useRef<string | null>(null);
-  const lastDocPidRef = useRef<string | null>(null);
   const labReqIdRef = useRef(0);
-  const docReqIdRef = useRef(0);
+
+  const docsApiUrl =
+    activeProfileId && !isTrends ? `/api/documents?profileId=${encodeURIComponent(activeProfileId)}` : null;
+  const {
+    data: docsData,
+    isLoading: docsLoading,
+    mutate: mutateDocs,
+  } = useSWR<{ documents: HealthDocRow[] }>(docsApiUrl, documentsFetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 30_000,
+    keepPreviousData: true,
+  });
+  const docRows = docsData?.documents ?? null;
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -221,46 +248,15 @@ export function AnalysesPreview({
   }, [activeProfileId, refreshKey, autoRefreshTick, lang]);
 
   useEffect(() => {
-    if (!activeProfileId || isTrends) {
-      setDocRows(null);
-      setDocsLoading(false);
-      lastDocPidRef.current = null;
-      return;
-    }
-    const pidChanged = lastDocPidRef.current !== activeProfileId;
-    lastDocPidRef.current = activeProfileId;
-    if (pidChanged) {
-      setDocRows(null);
-    }
+    if (!docsApiUrl) return;
+    void mutateDocs();
+  }, [docsApiUrl, refreshKey, autoRefreshTick, mutateDocs]);
 
-    const reqId = ++docReqIdRef.current;
-    const hadDocs = !pidChanged && docRowsRef.current !== null;
-    if (!hadDocs) {
-      setDocsLoading(true);
+  useEffect(() => {
+    if (!docsLoading && docsData) {
+      setLastSyncedAt(Date.now());
     }
-
-    void fetch(`/api/documents?profileId=${encodeURIComponent(activeProfileId)}`, {
-      credentials: "include",
-    })
-      .then(async (r) => {
-        const j = (await r.json().catch(() => ({}))) as { documents?: HealthDocRow[] };
-        if (reqId !== docReqIdRef.current) return;
-        startTransition(() => {
-          setDocRows(Array.isArray(j.documents) ? j.documents : []);
-          setLastSyncedAt(Date.now());
-        });
-      })
-      .catch(() => {
-        if (reqId === docReqIdRef.current) {
-          startTransition(() => {
-            setDocRows([]);
-          });
-        }
-      })
-      .finally(() => {
-        if (reqId === docReqIdRef.current) setDocsLoading(false);
-      });
-  }, [activeProfileId, refreshKey, autoRefreshTick, isTrends]);
+  }, [docsLoading, docsData]);
 
   useEffect(() => {
     setStatusFilter("all");
@@ -321,8 +317,7 @@ export function AnalysesPreview({
   if (!activeProfileId) return null;
 
   /** Полный скелетон только при первом получении данных, не при фоновом обновлении после загрузки файла. */
-  const showBlockingSkeleton =
-    (rows === null && loading) || (!isTrends && docRows === null && docsLoading);
+  const showBlockingSkeleton = (rows === null && loading) || (!isTrends && docRows === null && docsLoading);
 
   const listIdle = !loading && (isTrends || !docsLoading);
   const archiveTotalCount =
@@ -507,6 +502,12 @@ export function AnalysesPreview({
 
       {showBlockingSkeleton ? (
         <AnalysisSkeleton className={compact ? "mt-2" : "mt-3"} />
+      ) : !isTrends && docsLoading && docRows !== null && docRows.length > 0 ? (
+        <div className={cn("space-y-2", compact ? "mt-2" : "mt-3")}>
+          {[1, 2, 3].map((i) => (
+            <DocumentSkeleton key={i} />
+          ))}
+        </div>
       ) : error ? (
         <p className={cn("text-health-danger", compact ? "mt-2 text-xs" : "mt-3 text-sm")}>{error}</p>
       ) : listIdle &&
@@ -656,7 +657,10 @@ export function AnalysesPreview({
                               setError(r.error);
                               return;
                             }
-                            setDocRows((prev) => prev?.filter((x) => x.id !== d.id) ?? null);
+                            void mutateDocs((prev) => {
+                              const current = prev?.documents ?? [];
+                              return { documents: current.filter((x) => x.id !== d.id) };
+                            }, false);
                           })
                           .finally(() => setDeleteDocBusyId(null));
                       }}
