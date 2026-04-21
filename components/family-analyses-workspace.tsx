@@ -51,6 +51,8 @@ type Props = {
   /** Управление модалкой «Добавить члена» снаружи (кнопка + в шапке). */
   addMemberModalOpen?: boolean;
   onAddMemberModalOpenChange?: (open: boolean) => void;
+  /** Скрыть заголовок/подпись блока архива внутри AnalysesPreview. */
+  hidePreviewHeader?: boolean;
 };
 
 export function FamilyAnalysesWorkspace({
@@ -62,6 +64,7 @@ export function FamilyAnalysesWorkspace({
   hideFamilySwitcher = false,
   addMemberModalOpen: addMemberModalOpenProp,
   onAddMemberModalOpenChange,
+  hidePreviewHeader = false,
 }: Props) {
   const isTrends = variant === "trends";
   const { lang } = useLanguage();
@@ -160,8 +163,7 @@ export function FamilyAnalysesWorkspace({
       {/* Подсказка + кнопка «Добавить члена» (компактная) */}
       {activeProfileId ? (
         <div className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-caption text-health-text-secondary">{t(lang, "dashboard.quickUploadHint")}</p>
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {admin ? (
               <button
                 type="button"
@@ -238,6 +240,7 @@ export function FamilyAnalysesWorkspace({
         onRequestUpload={() => setUploadOpen(true)}
         mode={isTrends ? "trends" : "default"}
         archiveNeutral={!isTrends}
+        hideHeader={hidePreviewHeader}
       />
 
       <AddMemberModal

@@ -52,18 +52,6 @@ export function AnalysesTab({ family, onAnalysesChanged }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       >
-        <header>
-          <p className="text-caption font-semibold uppercase tracking-wider text-health-text-secondary">
-            {t(lang, "nav.analysesTab")}
-          </p>
-          <h2 className="mt-1 font-manrope text-h2 font-bold tracking-tight text-health-text">
-            {t(lang, "analyses.pageTitle")}
-          </h2>
-          <p className="mt-2 max-w-2xl text-body leading-relaxed text-health-text-secondary">
-            {t(lang, "analyses.pageLead")}
-          </p>
-        </header>
-
         {!authReady ? (
           <p className="text-body text-health-text-secondary">{t(lang, "analyses.loading")}</p>
         ) : null}
@@ -89,6 +77,7 @@ export function AnalysesTab({ family, onAnalysesChanged }: Props) {
             hideFamilySwitcher
             addMemberModalOpen={addMemberOpen}
             onAddMemberModalOpenChange={setAddMemberOpen}
+            hidePreviewHeader
           />
         ) : null}
       </motion.div>
