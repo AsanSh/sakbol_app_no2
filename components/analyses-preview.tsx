@@ -171,6 +171,7 @@ export function AnalysesPreview({
   const [editingDoc, setEditingDoc] = useState<DocEditDraft | null>(null);
   const [editDocBusy, setEditDocBusy] = useState(false);
   const [editDocError, setEditDocError] = useState<string | null>(null);
+  const [openDocBusyId, setOpenDocBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshTick, setAutoRefreshTick] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
@@ -416,6 +417,30 @@ export function AnalysesPreview({
         documents: page.documents.map((row) => (row.id === docId ? updater(row) : row)),
       }));
     }, false);
+  };
+
+  const openDocumentWithSession = async (doc: HealthDocRow) => {
+    setError(null);
+    setOpenDocBusyId(doc.id);
+    try {
+      const res = await fetch(doc.fileUrl, { credentials: "include" });
+      if (res.status === 401) {
+        setError("Сессия истекла. Войдите заново и повторите открытие документа.");
+        return;
+      }
+      if (!res.ok) {
+        setError("Не удалось открыть документ. Попробуйте еще раз.");
+        return;
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch {
+      setError("Ошибка сети при открытии документа.");
+    } finally {
+      setOpenDocBusyId(null);
+    }
   };
 
   return (
@@ -667,14 +692,18 @@ export function AnalysesPreview({
                   )}
                 >
                   <div className="flex items-stretch gap-2">
-                    <a
-                      href={d.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
                       className="flex min-h-[3rem] min-w-0 flex-1 items-start gap-3 text-left"
+                      onClick={() => void openDocumentWithSession(d)}
+                      disabled={openDocBusyId === d.id}
                     >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-health-primary">
-                        <FileText className="h-5 w-5" aria-hidden />
+                        {openDocBusyId === d.id ? (
+                          <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                        ) : (
+                          <FileText className="h-5 w-5" aria-hidden />
+                        )}
                       </span>
                       <span className="min-w-0">
                         <span className="block text-[10px] font-semibold uppercase tracking-wide text-health-text-secondary">
@@ -690,7 +719,7 @@ export function AnalysesPreview({
                           ) : null}
                         </span>
                       </span>
-                    </a>
+                    </button>
                     <div className="flex shrink-0 flex-col gap-1.5">
                       <button
                         type="button"
