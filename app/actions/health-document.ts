@@ -123,3 +123,60 @@ export async function deleteHealthDocument(id: string) {
   revalidatePath("/tests");
   return { ok: true as const };
 }
+
+export async function updateHealthDocumentMeta(input: {
+  id: string;
+  title: string;
+  category: string;
+  documentDate: string | null;
+}) {
+  const session = getSession();
+  if (!session) {
+    return { ok: false as const, error: "Требуется вход." };
+  }
+
+  const id = String(input.id ?? "").trim();
+  const title = String(input.title ?? "").trim();
+  const category = parseHealthDocumentCategory(String(input.category ?? "OTHER"));
+  const dateRaw = String(input.documentDate ?? "").trim();
+
+  if (!id) {
+    return { ok: false as const, error: "Некорректный id." };
+  }
+  if (!title) {
+    return { ok: false as const, error: "Укажите название документа." };
+  }
+  if (title.length > 180) {
+    return { ok: false as const, error: "Название слишком длинное." };
+  }
+
+  let documentDate: Date | null = null;
+  if (dateRaw) {
+    const parsed = new Date(dateRaw);
+    if (Number.isNaN(parsed.getTime())) {
+      return { ok: false as const, error: "Некорректная дата документа." };
+    }
+    documentDate = parsed;
+  }
+
+  const doc = await prisma.healthDocument.findFirst({
+    where: { id, profile: { familyId: session.familyId } },
+    select: { id: true },
+  });
+  if (!doc) {
+    return { ok: false as const, error: "Документ не найден." };
+  }
+
+  await prisma.healthDocument.update({
+    where: { id: doc.id },
+    data: {
+      title,
+      category,
+      documentDate,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/tests");
+  return { ok: true as const };
+}

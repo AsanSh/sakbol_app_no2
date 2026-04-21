@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { listLabAnalysesForProfile } from "@/app/actions/analyses";
-import { deleteHealthDocument } from "@/app/actions/health-document";
+import { deleteHealthDocument, updateHealthDocumentMeta } from "@/app/actions/health-document";
 import { deleteLabAnalysis } from "@/app/actions/health-record";
 import { createShareToken } from "@/app/actions/share";
 import { useLanguage } from "@/context/language-context";
@@ -52,6 +52,13 @@ type HealthDocRow = {
   documentDate: string | null;
   createdAt: string;
   mimeType: string | null;
+};
+
+type DocEditDraft = {
+  id: string;
+  title: string;
+  category: string;
+  documentDate: string;
 };
 
 type UnifiedItem =
@@ -161,6 +168,9 @@ export function AnalysesPreview({
   const [trendsRangeDays, setTrendsRangeDays] = useState<number | null>(null);
   const [trendsFocusKey, setTrendsFocusKey] = useState<string | null>(null);
   const [deleteDocBusyId, setDeleteDocBusyId] = useState<string | null>(null);
+  const [editingDoc, setEditingDoc] = useState<DocEditDraft | null>(null);
+  const [editDocBusy, setEditDocBusy] = useState(false);
+  const [editDocError, setEditDocError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshTick, setAutoRefreshTick] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
@@ -387,6 +397,26 @@ export function AnalysesPreview({
       ? `Синхронизировано ${h} ч назад`
       : `${h} саат мурун жаңыртылды`;
   })();
+
+  const startEditDoc = (d: HealthDocRow) => {
+    setEditDocError(null);
+    setEditingDoc({
+      id: d.id,
+      title: d.title,
+      category: d.category || "OTHER",
+      documentDate: d.documentDate ? d.documentDate.slice(0, 10) : "",
+    });
+  };
+
+  const applyDocEditPatch = (docId: string, updater: (row: HealthDocRow) => HealthDocRow) => {
+    void mutateDocs((prev) => {
+      if (!prev) return prev;
+      return prev.map((page) => ({
+        ...page,
+        documents: page.documents.map((row) => (row.id === docId ? updater(row) : row)),
+      }));
+    }, false);
+  };
 
   return (
     <section
@@ -661,43 +691,137 @@ export function AnalysesPreview({
                         </span>
                       </span>
                     </a>
-                    <button
-                      type="button"
-                      disabled={deleteDocBusyId === d.id}
-                      title={t(lang, "analyses.delete")}
-                      aria-label={t(lang, "analyses.delete")}
-                      className={cn(
-                        "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-red-50/90 px-2 py-1.5 text-red-800 ring-1 ring-red-200/80 shadow-sm transition-colors hover:bg-red-100/90 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
-                        compact && "min-w-10 px-1.5 py-1",
-                      )}
-                      onClick={(e) => {
+                    <div className="flex shrink-0 flex-col gap-1.5">
+                      <button
+                        type="button"
+                        disabled={editDocBusy && editingDoc?.id === d.id}
+                        className="rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-100 disabled:opacity-50"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          startEditDoc(d);
+                        }}
+                      >
+                        Изменить
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deleteDocBusyId === d.id}
+                        title={t(lang, "analyses.delete")}
+                        aria-label={t(lang, "analyses.delete")}
+                        className={cn(
+                          "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-red-50/90 px-2 py-1.5 text-red-800 ring-1 ring-red-200/80 shadow-sm transition-colors hover:bg-red-100/90 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
+                          compact && "min-w-10 px-1.5 py-1",
+                        )}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (!window.confirm(t(lang, "analyses.deleteDocConfirm"))) return;
+                          setDeleteDocBusyId(d.id);
+                          void deleteHealthDocument(d.id)
+                            .then((r) => {
+                              if (!r.ok) {
+                                setError(r.error);
+                                return;
+                              }
+                              void mutateDocs((prev) => {
+                                if (!prev) return prev;
+                                return prev.map((page) => ({
+                                  ...page,
+                                  documents: page.documents.filter((x) => x.id !== d.id),
+                                }));
+                              }, false);
+                            })
+                            .finally(() => setDeleteDocBusyId(null));
+                        }}
+                      >
+                        {deleteDocBusyId === d.id ? (
+                          <Loader2 className={cn("animate-spin", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
+                        ) : (
+                          <Trash2 className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  {editingDoc?.id === d.id ? (
+                    <form
+                      className="mt-2 grid gap-2 rounded-xl bg-slate-50 p-2 ring-1 ring-slate-200"
+                      onSubmit={(e) => {
                         e.preventDefault();
-                        if (!window.confirm(t(lang, "analyses.deleteDocConfirm"))) return;
-                        setDeleteDocBusyId(d.id);
-                        void deleteHealthDocument(d.id)
+                        if (!editingDoc) return;
+                        setEditDocBusy(true);
+                        setEditDocError(null);
+                        void updateHealthDocumentMeta({
+                          id: editingDoc.id,
+                          title: editingDoc.title,
+                          category: editingDoc.category,
+                          documentDate: editingDoc.documentDate || null,
+                        })
                           .then((r) => {
                             if (!r.ok) {
-                              setError(r.error);
+                              setEditDocError(r.error);
                               return;
                             }
-                            void mutateDocs((prev) => {
-                              if (!prev) return prev;
-                              return prev.map((page) => ({
-                                ...page,
-                                documents: page.documents.filter((x) => x.id !== d.id),
-                              }));
-                            }, false);
+                            applyDocEditPatch(editingDoc.id, (row) => ({
+                              ...row,
+                              title: editingDoc.title.trim(),
+                              category: editingDoc.category,
+                              documentDate: editingDoc.documentDate || null,
+                            }));
+                            setEditingDoc(null);
                           })
-                          .finally(() => setDeleteDocBusyId(null));
+                          .finally(() => setEditDocBusy(false));
                       }}
                     >
-                      {deleteDocBusyId === d.id ? (
-                        <Loader2 className={cn("animate-spin", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
-                      ) : (
-                        <Trash2 className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
-                      )}
-                    </button>
-                  </div>
+                      <input
+                        value={editingDoc.title}
+                        onChange={(e) =>
+                          setEditingDoc((prev) => (prev ? { ...prev, title: e.target.value } : prev))
+                        }
+                        placeholder="Название документа"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={editingDoc.category}
+                          onChange={(e) =>
+                            setEditingDoc((prev) => (prev ? { ...prev, category: e.target.value } : prev))
+                          }
+                          className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                        >
+                          {Object.entries(ARCHIVE_CATEGORY_RU).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="date"
+                          value={editingDoc.documentDate}
+                          onChange={(e) =>
+                            setEditingDoc((prev) => (prev ? { ...prev, documentDate: e.target.value } : prev))
+                          }
+                          className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
+                        />
+                      </div>
+                      {editDocError ? <p className="text-[11px] text-red-700">{editDocError}</p> : null}
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={editDocBusy}
+                          className="rounded-lg bg-health-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                        >
+                          {editDocBusy ? "Сохранение..." : "Сохранить"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={editDocBusy}
+                          onClick={() => setEditingDoc(null)}
+                          className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
                 </motion.li>
               );
             }
