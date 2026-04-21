@@ -551,10 +551,10 @@ export function DoctorDiscoveryHome({
                   <div
                     className={cn(
                       "mt-auto border-t border-slate-100",
-                      compactCards ? "px-3 py-2.5" : "px-4 py-3",
+                      compactCards ? "px-3 pb-3 pt-2" : "px-4 py-3",
                     )}
                   >
-                    <div className={cn(compactCards ? "grid grid-cols-2 gap-2" : "flex gap-2")}>
+                    <div className="grid grid-cols-2 gap-2">
                     {d.telephones?.length ? (
                       singleTelLink ? (
                         <a
@@ -564,47 +564,45 @@ export function DoctorDiscoveryHome({
                             if (n) notifyTelegramCallNumber(n);
                           }}
                           className={cn(
-                            "inline-flex items-center justify-center rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100",
-                            compactCards ? "min-h-[36px] gap-1 px-2 text-[12px]" : "min-h-[44px] flex-1 gap-1.5 py-2.5 text-caption",
+                            "flex w-full items-center justify-center gap-1 rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100 overflow-hidden",
+                            compactCards ? "min-h-[36px] text-[11px]" : "min-h-[44px] text-caption",
                           )}
                         >
-                          <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                          {t(lang, "home.card.call")}
+                          <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span className="truncate">{t(lang, "home.card.call")}</span>
                         </a>
                       ) : (
                         <button
                           type="button"
                           onClick={() => invokeDoctorCall({ telephones: d.telephones })}
                           className={cn(
-                            "inline-flex items-center justify-center rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100",
-                            compactCards ? "min-h-[36px] gap-1 px-2 text-[12px]" : "min-h-[44px] flex-1 gap-1.5 py-2.5 text-caption",
+                            "flex w-full items-center justify-center gap-1 rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100 overflow-hidden",
+                            compactCards ? "min-h-[36px] text-[11px]" : "min-h-[44px] text-caption",
                           )}
                         >
-                          <Phone className="h-4 w-4 shrink-0" aria-hidden />
-                          {t(lang, "home.card.call")}
+                          <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <span className="truncate">{t(lang, "home.card.call")}</span>
                         </button>
                       )
                     ) : (
                       <span
                         className={cn(
-                          "inline-flex items-center justify-center rounded-xl bg-slate-50 text-slate-500 ring-1 ring-slate-100",
-                          compactCards ? "min-h-[36px] text-[12px]" : "min-h-[44px] flex-1 py-2.5 text-caption",
+                          "flex w-full items-center justify-center rounded-xl bg-slate-50 text-slate-400 ring-1 ring-slate-100",
+                          compactCards ? "min-h-[36px] text-[11px]" : "min-h-[44px] text-caption",
                         )}
                       >
-                        {lang === "ru" ? "Нет телефона" : "Телефон жок"}
+                        <span className="truncate">{lang === "ru" ? "Нет тел." : "Тел. жок"}</span>
                       </span>
                     )}
                     <button
                       type="button"
                       onClick={() => openDoctorDetail(d)}
                       className={cn(
-                        "rounded-xl bg-health-primary font-semibold text-white shadow-sm hover:bg-teal-700",
-                        compactCards
-                          ? "min-h-[36px] px-2 text-[12px] leading-tight"
-                          : "min-h-[44px] flex-1 py-2.5 text-caption",
+                        "flex w-full items-center justify-center overflow-hidden rounded-xl bg-health-primary font-semibold text-white shadow-sm hover:bg-teal-700",
+                        compactCards ? "min-h-[36px] text-[11px]" : "min-h-[44px] text-caption",
                       )}
                     >
-                      {t(lang, "home.card.more")}
+                      <span className="truncate">{t(lang, "home.card.more")}</span>
                     </button>
                     </div>
                   </div>
