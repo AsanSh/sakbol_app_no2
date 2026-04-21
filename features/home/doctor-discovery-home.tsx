@@ -404,6 +404,7 @@ export function DoctorDiscoveryHome({
             className={cn(
               "grid gap-3",
               isDesktop ? "sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-2",
+              !isDesktop && "px-3",
             )}
           >
             <AnimatePresence mode="popLayout">
@@ -422,15 +423,20 @@ export function DoctorDiscoveryHome({
                   transition={{ duration: 0.2, delay: idx * 0.02 }}
                   className={cn(
                     "flex flex-col overflow-hidden bg-white shadow-md ring-1 ring-slate-200/80",
-                    compactCards ? "rounded-xl" : "rounded-2xl",
+                    compactCards ? "min-h-[320px] rounded-2xl shadow-sm" : "rounded-2xl",
                   )}
                 >
-                  <div className={cn("flex flex-col", compactCards ? "gap-2 p-2.5" : "gap-3 p-4 sm:flex-row sm:gap-4")}>
+                  <div
+                    className={cn(
+                      "flex flex-col",
+                      compactCards ? "gap-2 p-3" : "gap-3 p-4 sm:flex-row sm:gap-4",
+                    )}
+                  >
                     <div
                       className={cn(
                         "relative shrink-0 overflow-hidden bg-slate-100 ring-1 ring-slate-200",
                         compactCards
-                          ? "mx-auto h-14 w-14 rounded-xl"
+                          ? "mx-auto h-12 w-12 rounded-xl"
                           : "mx-auto h-20 w-20 rounded-2xl sm:mx-0 sm:h-[4.5rem] sm:w-[4.5rem]",
                       )}
                     >
@@ -454,7 +460,14 @@ export function DoctorDiscoveryHome({
                       )}
                     </div>
                     <div className="min-w-0 flex-1 space-y-2">
-                      <h3 className={cn("font-manrope font-semibold leading-snug text-slate-900 break-words", compactCards ? "text-[14px]" : "text-base")}>
+                      <h3
+                        className={cn(
+                          "font-manrope font-semibold text-slate-900 break-words",
+                          compactCards
+                            ? "min-h-[40px] text-[15px] leading-5 line-clamp-2"
+                            : "text-base leading-snug",
+                        )}
+                      >
                         {d.name}
                       </h3>
                       <div className={cn("flex flex-wrap", compactCards ? "gap-1" : "gap-1.5")}>
@@ -492,22 +505,36 @@ export function DoctorDiscoveryHome({
                               : "";
                         if (!line1.length && !line2) return null;
                         return (
-                          <div className={cn("flex gap-2 leading-snug", compactCards ? "text-[12px]" : "text-[13px]")}>
+                          <div
+                            className={cn(
+                              "flex gap-1.5 leading-snug",
+                              compactCards ? "text-[12px]" : "text-[13px]",
+                            )}
+                          >
                             <MapPin
                               className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
                               aria-hidden
                             />
                             <div className="min-w-0 space-y-1 break-words">
                               {line1.length ? (
-                                <p className="font-medium text-slate-800">{line1.join(", ")}</p>
+                                <p className={cn("font-medium text-slate-800", compactCards && "line-clamp-2")}>
+                                  {line1.join(", ")}
+                                </p>
                               ) : null}
-                              {line2 ? <p className="text-slate-500">{line2}</p> : null}
+                              {line2 ? (
+                                <p className={cn("text-slate-500", compactCards && "line-clamp-1")}>{line2}</p>
+                              ) : null}
                             </div>
                           </div>
                         );
                       })()}
                       {d.priceRange ? (
-                        <p className={cn("leading-snug text-slate-800 break-words", compactCards ? "text-[12px]" : "text-[13px]")}>
+                        <p
+                          className={cn(
+                            "leading-snug text-slate-800 break-words",
+                            compactCards ? "text-[12px] line-clamp-2" : "text-[13px]",
+                          )}
+                        >
                           <span className="font-semibold text-slate-900">
                             {lang === "ru" ? "Приём:" : "Кабыл алуу:"}
                           </span>{" "}
@@ -521,7 +548,13 @@ export function DoctorDiscoveryHome({
                       ) : null}
                     </div>
                   </div>
-                  <div className={cn("mt-auto flex gap-2 border-t border-slate-100", compactCards ? "px-2.5 py-2" : "px-4 py-3")}>
+                  <div
+                    className={cn(
+                      "mt-auto border-t border-slate-100",
+                      compactCards ? "px-3 py-2.5" : "px-4 py-3",
+                    )}
+                  >
+                    <div className={cn(compactCards ? "grid grid-cols-2 gap-2" : "flex gap-2")}>
                     {d.telephones?.length ? (
                       singleTelLink ? (
                         <a
@@ -531,8 +564,8 @@ export function DoctorDiscoveryHome({
                             if (n) notifyTelegramCallNumber(n);
                           }}
                           className={cn(
-                            "inline-flex flex-1 items-center justify-center rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100",
-                            compactCards ? "min-h-[34px] gap-1 px-2 text-[12px]" : "min-h-[44px] gap-1.5 py-2.5 text-caption",
+                            "inline-flex items-center justify-center rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100",
+                            compactCards ? "min-h-[36px] gap-1 px-2 text-[12px]" : "min-h-[44px] flex-1 gap-1.5 py-2.5 text-caption",
                           )}
                         >
                           <Phone className="h-4 w-4 shrink-0" aria-hidden />
@@ -543,8 +576,8 @@ export function DoctorDiscoveryHome({
                           type="button"
                           onClick={() => invokeDoctorCall({ telephones: d.telephones })}
                           className={cn(
-                            "inline-flex flex-1 items-center justify-center rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100",
-                            compactCards ? "min-h-[34px] gap-1 px-2 text-[12px]" : "min-h-[44px] gap-1.5 py-2.5 text-caption",
+                            "inline-flex items-center justify-center rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100",
+                            compactCards ? "min-h-[36px] gap-1 px-2 text-[12px]" : "min-h-[44px] flex-1 gap-1.5 py-2.5 text-caption",
                           )}
                         >
                           <Phone className="h-4 w-4 shrink-0" aria-hidden />
@@ -552,7 +585,12 @@ export function DoctorDiscoveryHome({
                         </button>
                       )
                     ) : (
-                      <span className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-slate-50 py-2.5 text-caption text-slate-500 ring-1 ring-slate-100">
+                      <span
+                        className={cn(
+                          "inline-flex items-center justify-center rounded-xl bg-slate-50 text-slate-500 ring-1 ring-slate-100",
+                          compactCards ? "min-h-[36px] text-[12px]" : "min-h-[44px] flex-1 py-2.5 text-caption",
+                        )}
+                      >
                         {lang === "ru" ? "Нет телефона" : "Телефон жок"}
                       </span>
                     )}
@@ -560,12 +598,15 @@ export function DoctorDiscoveryHome({
                       type="button"
                       onClick={() => openDoctorDetail(d)}
                       className={cn(
-                        "flex-1 rounded-xl bg-health-primary font-semibold text-white shadow-sm hover:bg-teal-700",
-                        compactCards ? "min-h-[34px] px-2 text-[12px] leading-tight" : "min-h-[44px] py-2.5 text-caption",
+                        "rounded-xl bg-health-primary font-semibold text-white shadow-sm hover:bg-teal-700",
+                        compactCards
+                          ? "min-h-[36px] px-2 text-[12px] leading-tight"
+                          : "min-h-[44px] flex-1 py-2.5 text-caption",
                       )}
                     >
                       {t(lang, "home.card.more")}
                     </button>
+                    </div>
                   </div>
                 </motion.article>
                 );
