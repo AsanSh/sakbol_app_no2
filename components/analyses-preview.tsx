@@ -148,6 +148,8 @@ export function AnalysesPreview({
   docRowsRef.current = docRows;
   const lastLabPidRef = useRef<string | null>(null);
   const lastDocPidRef = useRef<string | null>(null);
+  const labReqIdRef = useRef(0);
+  const docReqIdRef = useRef(0);
 
   const activeDob = useMemo(() => {
     if (!activeProfileId) return null;
@@ -185,7 +187,7 @@ export function AnalysesPreview({
       setRows(null);
     }
 
-    let cancelled = false;
+    const reqId = ++labReqIdRef.current;
     const hadRows = !pidChanged && rowsRef.current !== null;
     if (!hadRows) {
       setLoading(true);
@@ -196,7 +198,7 @@ export function AnalysesPreview({
 
     void listLabAnalysesForProfile(activeProfileId)
       .then((d) => {
-        if (cancelled) return;
+        if (reqId !== labReqIdRef.current) return;
         if (!d.ok) {
           throw new Error(d.error);
         }
@@ -206,20 +208,16 @@ export function AnalysesPreview({
         });
       })
       .catch((e: unknown) => {
-        if (cancelled) return;
+        if (reqId !== labReqIdRef.current) return;
         setError(e instanceof Error ? e.message : t(lang, "analyses.errorLoad"));
         setRows(null);
       })
       .finally(() => {
-        if (!cancelled) {
+        if (reqId === labReqIdRef.current) {
           setLoading(false);
           setRefreshing(false);
         }
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [activeProfileId, refreshKey, autoRefreshTick, lang]);
 
   useEffect(() => {
@@ -235,7 +233,7 @@ export function AnalysesPreview({
       setDocRows(null);
     }
 
-    let cancelled = false;
+    const reqId = ++docReqIdRef.current;
     const hadDocs = !pidChanged && docRowsRef.current !== null;
     if (!hadDocs) {
       setDocsLoading(true);
@@ -246,25 +244,22 @@ export function AnalysesPreview({
     })
       .then(async (r) => {
         const j = (await r.json().catch(() => ({}))) as { documents?: HealthDocRow[] };
-        if (cancelled) return;
+        if (reqId !== docReqIdRef.current) return;
         startTransition(() => {
           setDocRows(Array.isArray(j.documents) ? j.documents : []);
           setLastSyncedAt(Date.now());
         });
       })
       .catch(() => {
-        if (!cancelled) {
+        if (reqId === docReqIdRef.current) {
           startTransition(() => {
             setDocRows([]);
           });
         }
       })
       .finally(() => {
-        if (!cancelled) setDocsLoading(false);
+        if (reqId === docReqIdRef.current) setDocsLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
   }, [activeProfileId, refreshKey, autoRefreshTick, isTrends]);
 
   useEffect(() => {
