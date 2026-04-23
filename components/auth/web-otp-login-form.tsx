@@ -90,11 +90,13 @@ function TelegramOtpForm({
   const router = useRouter();
   const { refresh } = useTelegramSession();
   const [telegram, setTelegram] = useState("");
+  const [phone, setPhone] = useState("");
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"request" | "verify" | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  const canRequest = Boolean(telegram.trim()) || Boolean(phone.trim());
   const requestCode = useCallback(async () => {
     setErr(null);
     setBusy("request");
@@ -102,7 +104,7 @@ function TelegramOtpForm({
       const res = await fetch("/api/auth/web-otp/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ telegram: telegram.trim() }),
+        body: JSON.stringify({ telegram: telegram.trim(), phone: phone.trim() }),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string; challengeId?: string };
       if (!res.ok) { setErr(j.error ?? `Ошибка ${res.status}`); return; }
@@ -112,7 +114,7 @@ function TelegramOtpForm({
     } finally {
       setBusy(null);
     }
-  }, [telegram]);
+  }, [telegram, phone]);
 
   const verifyCode = useCallback(async () => {
     if (!challengeId) return;
@@ -166,7 +168,9 @@ function TelegramOtpForm({
       ) : null}
 
       <p className="text-[11px] leading-relaxed text-slate-500">
-        Введите @username или числовой id Telegram. Бот пришлёт одноразовый код — нажмите Start, если не делали этого раньше.
+        Укажите <strong className="font-semibold text-slate-600">@username, ссылку t.me, id</strong> (после /start
+        у бота) и/или <strong className="font-semibold text-slate-600">телефон</strong>, тот же, что в разделе
+        «Вход на сайт по коду» в Профиле приложения, если @username боту не срабатывал.
       </p>
 
       <label className="block text-left text-xs font-medium text-slate-600">
@@ -178,7 +182,22 @@ function TelegramOtpForm({
           value={telegram}
           onChange={(e) => setTelegram(e.target.value)}
           disabled={Boolean(challengeId)}
-          placeholder="@username или id"
+          placeholder="@username, t.me/…, id (можно пусто, если есть телефон)"
+          className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#229ED9] disabled:bg-slate-50"
+        />
+      </label>
+
+      <label className="block text-left text-xs font-medium text-slate-600">
+        Телефон (сохранённый в Профиле)
+        <input
+          type="tel"
+          name="webLoginPhone"
+          inputMode="tel"
+          autoComplete="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          disabled={Boolean(challengeId)}
+          placeholder="Например +996 555 12 34 56 (необязательно)"
           className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#229ED9] disabled:bg-slate-50"
         />
       </label>
@@ -186,7 +205,7 @@ function TelegramOtpForm({
       {!challengeId ? (
         <button
           type="button"
-          disabled={busy !== null || !telegram.trim()}
+          disabled={busy !== null || !canRequest}
           onClick={() => void requestCode()}
           className="w-full rounded-2xl bg-[#229ED9] px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1e8bc7] disabled:opacity-50"
         >

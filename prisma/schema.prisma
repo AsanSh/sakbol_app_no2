@@ -31,6 +31,8 @@ model Profile {
   passwordHash   String?
   /// Set when the person uses the Telegram Mini App; null for managed relatives.
   telegramUserId String?    @unique
+  /// Только цифры (E.164 без +) для входа на сайт по коду, если @username id не сработал.
+  webLoginPhoneDigits String? @unique
   avatarUrl      String?
 
   /// HMAC-якорь ПИН/ИНН (КР); сырой ПИН в БД не хранится. Обязателен для всех профилей после миграции.

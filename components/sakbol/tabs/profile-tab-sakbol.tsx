@@ -6,6 +6,7 @@ import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
 import { ChevronDown, Copy, Share2, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
+import { WebLoginPhoneCard } from "@/components/profile/web-login-phone-card";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -652,6 +653,10 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
             {sessionProfile && !sessionProfile.telegramUserId ? (
               <LinkTelegramCard onReload={() => reload()} />
+            ) : null}
+
+            {sessionProfile && sessionProfile.telegramUserId ? (
+              <WebLoginPhoneCard onSaved={() => reload()} />
             ) : null}
 
             <button
