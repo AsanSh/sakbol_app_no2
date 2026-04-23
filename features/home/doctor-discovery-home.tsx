@@ -73,6 +73,35 @@ type ListPayload = {
   perPage: number;
 };
 
+/**
+ * merge с /api/doctors-kg/live-card: JSON присылает пустые [] / null, которые нельзя
+ * класть поверх списка — иначе в модалке остаётся только имя.
+ */
+function mergeLiveDoctorDetail(listRow: DoctorRow, live: DoctorRow): DoctorRow {
+  const out: DoctorRow = { ...listRow, ...live };
+  if (!live.telephones?.length && listRow.telephones?.length) {
+    out.telephones = listRow.telephones;
+  }
+  if (!live.categorySlugs?.length && listRow.categorySlugs?.length) {
+    out.categorySlugs = listRow.categorySlugs;
+  }
+  if (!live.streetAddress && listRow.streetAddress) out.streetAddress = listRow.streetAddress;
+  if (!live.locality && listRow.locality) out.locality = listRow.locality;
+  if (!live.region && listRow.region) out.region = listRow.region;
+  if (!live.description?.trim() && listRow.description?.trim()) {
+    out.description = listRow.description;
+  }
+  if (!live.openingHoursLines?.length && listRow.openingHoursLines?.length) {
+    out.openingHoursLines = listRow.openingHoursLines;
+  }
+  if (!live.priceRange && listRow.priceRange) out.priceRange = listRow.priceRange;
+  if (live.latitude == null && listRow.latitude != null) out.latitude = listRow.latitude;
+  if (live.longitude == null && listRow.longitude != null) out.longitude = listRow.longitude;
+  if (!live.image && listRow.image) out.image = listRow.image;
+  if (!live.website && listRow.website) out.website = listRow.website;
+  return out;
+}
+
 function useDebounced<T>(value: T, ms: number): T {
   const [v, setV] = useState(value);
   useEffect(() => {
@@ -142,7 +171,11 @@ export function DoctorDiscoveryHome({
       .then((r) => r.json())
       .then((j: { doctor?: DoctorRow; error?: string }) => {
         if (j.doctor) {
-          setDetail((prev) => (prev?.slug === d.slug ? { ...prev, ...j.doctor } : prev));
+          const doc = j.doctor;
+          setDetail((prev) => {
+            if (prev?.slug !== d.slug) return prev;
+            return mergeLiveDoctorDetail(prev, doc);
+          });
         }
       })
       .catch(() => {});
@@ -430,7 +463,7 @@ export function DoctorDiscoveryHome({
                     className={cn(
                       "flex flex-col",
                       compactCards
-                        ? "min-h-0 flex-1 gap-2 p-3"
+                        ? "min-h-0 flex-1 gap-2 overflow-y-auto p-3"
                         : "gap-3 p-4 sm:flex-row sm:gap-4",
                     )}
                   >
@@ -558,7 +591,7 @@ export function DoctorDiscoveryHome({
                   <div
                     className={cn(
                       "mt-auto border-t border-slate-100",
-                      compactCards ? "px-3 pb-3 pt-2" : "px-4 py-3",
+                      compactCards ? "shrink-0 px-3 pb-3 pt-2" : "px-4 py-3",
                     )}
                   >
                     <div className="grid grid-cols-2 gap-2">
