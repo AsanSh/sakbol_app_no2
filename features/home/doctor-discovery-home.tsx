@@ -423,13 +423,15 @@ export function DoctorDiscoveryHome({
                   transition={{ duration: 0.2, delay: idx * 0.02 }}
                   className={cn(
                     "flex flex-col overflow-hidden bg-white shadow-md ring-1 ring-slate-200/80",
-                    compactCards ? "min-h-[320px] rounded-2xl shadow-sm" : "rounded-2xl",
+                    compactCards ? "h-[320px] rounded-2xl shadow-sm" : "rounded-2xl",
                   )}
                 >
                   <div
                     className={cn(
                       "flex flex-col",
-                      compactCards ? "gap-2 p-3" : "gap-3 p-4 sm:flex-row sm:gap-4",
+                      compactCards
+                        ? "min-h-0 flex-1 gap-2 p-3"
+                        : "gap-3 p-4 sm:flex-row sm:gap-4",
                     )}
                   >
                     <div
@@ -459,7 +461,12 @@ export function DoctorDiscoveryHome({
                         </div>
                       )}
                     </div>
-                    <div className="min-w-0 flex-1 space-y-2">
+                    <div
+                      className={cn(
+                        "min-w-0 flex-1 space-y-2",
+                        compactCards && "min-h-0 overflow-hidden",
+                      )}
+                    >
                       <h3
                         className={cn(
                           "font-manrope font-semibold text-slate-900 break-words",
@@ -565,7 +572,7 @@ export function DoctorDiscoveryHome({
                           }}
                           className={cn(
                             "flex w-full items-center justify-center gap-1 rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100 overflow-hidden",
-                            compactCards ? "min-h-[36px] text-[11px]" : "min-h-[44px] text-caption",
+                            compactCards ? "min-h-[40px] text-[12px] leading-tight" : "min-h-[44px] text-caption",
                           )}
                         >
                           <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -577,7 +584,7 @@ export function DoctorDiscoveryHome({
                           onClick={() => invokeDoctorCall({ telephones: d.telephones })}
                           className={cn(
                             "flex w-full items-center justify-center gap-1 rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100 overflow-hidden",
-                            compactCards ? "min-h-[36px] text-[11px]" : "min-h-[44px] text-caption",
+                            compactCards ? "min-h-[40px] text-[12px] leading-tight" : "min-h-[44px] text-caption",
                           )}
                         >
                           <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -588,7 +595,7 @@ export function DoctorDiscoveryHome({
                       <span
                         className={cn(
                           "flex w-full items-center justify-center rounded-xl bg-slate-50 text-slate-400 ring-1 ring-slate-100",
-                          compactCards ? "min-h-[36px] text-[11px]" : "min-h-[44px] text-caption",
+                          compactCards ? "min-h-[40px] text-[12px] leading-tight" : "min-h-[44px] text-caption",
                         )}
                       >
                         <span className="truncate">{lang === "ru" ? "Нет тел." : "Тел. жок"}</span>
@@ -599,7 +606,7 @@ export function DoctorDiscoveryHome({
                       onClick={() => openDoctorDetail(d)}
                       className={cn(
                         "flex w-full items-center justify-center overflow-hidden rounded-xl bg-health-primary font-semibold text-white shadow-sm hover:bg-teal-700",
-                        compactCards ? "min-h-[36px] text-[11px]" : "min-h-[44px] text-caption",
+                        compactCards ? "min-h-[40px] text-[12px] leading-tight" : "min-h-[44px] text-caption",
                       )}
                     >
                       <span className="truncate">{t(lang, "home.card.more")}</span>
