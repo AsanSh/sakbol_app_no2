@@ -1,12 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { useTelegramSession } from "@/context/telegram-session-context";
 
 export function EmailAuthPanel() {
-  const router = useRouter();
-  const { refresh } = useTelegramSession();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,12 +26,11 @@ export function EmailAuthPanel() {
         setErr(j.error ?? `Ошибка ${res.status}`);
         return;
       }
-      refresh();
-      router.replace("/");
+      window.location.assign("/");
     } finally {
       setBusy(false);
     }
-  }, [email, password, refresh, router]);
+  }, [email, password]);
 
   const submitRegister = useCallback(async () => {
     setErr(null);
@@ -57,12 +52,11 @@ export function EmailAuthPanel() {
         setErr(j.error ?? `Ошибка ${res.status}`);
         return;
       }
-      refresh();
-      router.replace("/");
+      window.location.assign("/");
     } finally {
       setBusy(false);
     }
-  }, [displayName, email, password, pin, refresh, router]);
+  }, [displayName, email, password, pin]);
 
   return (
     <div className="space-y-4">

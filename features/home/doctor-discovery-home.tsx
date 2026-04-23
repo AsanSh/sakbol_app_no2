@@ -99,6 +99,9 @@ function mergeLiveDoctorDetail(listRow: DoctorRow, live: DoctorRow): DoctorRow {
   if (live.longitude == null && listRow.longitude != null) out.longitude = listRow.longitude;
   if (!live.image && listRow.image) out.image = listRow.image;
   if (!live.website && listRow.website) out.website = listRow.website;
+  if (!live.sourceUrl?.trim() && listRow.sourceUrl?.trim()) {
+    out.sourceUrl = listRow.sourceUrl;
+  }
   return out;
 }
 
@@ -897,29 +900,49 @@ export function DoctorDiscoveryHome({
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {detail.categorySlugs.map((s) => (
-                  <span
-                    key={s}
-                    className="inline-flex max-w-full break-words rounded-full bg-teal-50 px-2.5 py-1 text-[12px] font-semibold leading-snug text-teal-900 ring-1 ring-teal-100"
-                  >
-                    {catLabel.get(s) ?? s}
-                  </span>
-                ))}
+                {detail.categorySlugs.length ? (
+                  detail.categorySlugs.map((s) => (
+                    <span
+                      key={s}
+                      className="inline-flex max-w-full break-words rounded-full bg-teal-50 px-2.5 py-1 text-[12px] font-semibold leading-snug text-teal-900 ring-1 ring-teal-100"
+                    >
+                      {catLabel.get(s) ?? s}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-[12px] text-slate-500">
+                    {lang === "ru" ? "Специализация в каталоге не указана" : "Адиспециалдагы көрсөтмө жок"}
+                  </p>
+                )}
               </div>
-              {detail.streetAddress ? (
-                <div className="mt-3 flex gap-2 text-caption leading-relaxed text-slate-600">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-                  <div className="min-w-0 space-y-1 break-words">
-                    <p className="font-medium text-slate-800">
-                      {decodeHtmlEntities(detail.streetAddress)}
-                      {detail.locality ? `, ${decodeHtmlEntities(detail.locality)}` : ""}
-                    </p>
-                    {detail.region && !detail.locality ? (
-                      <p>{decodeHtmlEntities(detail.region)}</p>
-                    ) : null}
+              {(() => {
+                const street = detail.streetAddress
+                  ? decodeHtmlEntities(detail.streetAddress).trim()
+                  : "";
+                const loc = detail.locality ? decodeHtmlEntities(detail.locality).trim() : "";
+                const reg = detail.region ? decodeHtmlEntities(detail.region).trim() : "";
+                if (!street && !loc && !reg) return null;
+                return (
+                  <div className="mt-3 flex gap-2 text-caption leading-relaxed text-slate-600">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                    <div className="min-w-0 space-y-1 break-words">
+                      {street ? (
+                        <p className="font-medium text-slate-800">
+                          {street}
+                          {loc ? `, ${loc}` : ""}
+                        </p>
+                      ) : loc ? (
+                        <p className="font-medium text-slate-800">{loc}</p>
+                      ) : null}
+                      {reg && (street || loc) && reg.toLowerCase() !== loc.toLowerCase() ? (
+                        <p className="text-slate-500">{reg}</p>
+                      ) : !street && !loc && reg ? (
+                        <p className="font-medium text-slate-800">{reg}</p>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              ) : null}
+                );
+              })()}
               {detail.latitude != null && detail.longitude != null ? (
                 <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-slate-200">
                   <iframe
@@ -990,6 +1013,23 @@ export function DoctorDiscoveryHome({
                   ) : null;
                 })}
               </div>
+              {!detail.telephones?.length && detail.sourceUrl ? (
+                <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2.5 ring-1 ring-amber-100">
+                  <p className="text-[12px] leading-relaxed text-amber-950">
+                    {lang === "ru"
+                      ? "Номера нет в локальном кэше каталога. Телефон часто есть на исходной странице врача (ссылка ниже)."
+                      : "Каталогдогу кэште номер жок. Аны көбүнчө баштапкы сайтта табууга болот."}
+                  </p>
+                  <a
+                    href={detail.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-block text-caption font-semibold text-teal-800 underline decoration-teal-600/50"
+                  >
+                    {lang === "ru" ? "Открыть исходную карточку" : "Баштапкы баракчаны ачуу"}
+                  </a>
+                </div>
+              ) : null}
               {detail.website && !/doctors\.kg/i.test(detail.website) ? (
                 <a
                   href={detail.website}

@@ -87,8 +87,6 @@ function TelegramOtpForm({
 }: {
   onBack: () => void;
 }) {
-  const router = useRouter();
-  const { refresh } = useTelegramSession();
   const [telegram, setTelegram] = useState("");
   const [phone, setPhone] = useState("");
   const [challengeId, setChallengeId] = useState<string | null>(null);
@@ -129,12 +127,11 @@ function TelegramOtpForm({
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) { setErr(j.error ?? `Ошибка ${res.status}`); return; }
-      refresh();
-      router.replace("/");
+      window.location.assign("/");
     } finally {
       setBusy(null);
     }
-  }, [challengeId, code, refresh, router]);
+  }, [challengeId, code]);
 
   return (
     <motion.div
