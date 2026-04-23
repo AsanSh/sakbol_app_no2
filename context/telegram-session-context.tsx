@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * Единая сессия SakBol (веб: cookie; Telegram Mini App: initData + тот же cookie).
+ * Схема: 1) всегда GET /api/auth/session; 2) при отсутствии сессии в Telegram — initData.
+ */
 import {
   createContext,
   useCallback,
@@ -18,7 +22,6 @@ export type TelegramViewer = {
   avatarUrl: string | null;
   familyRole: string;
   familyId: string;
-  /** true — нужно ввести ПИН (миграция или первый вход без ПИН в теле запроса) */
   needsPinCompletion?: boolean;
 };
 
@@ -36,10 +39,8 @@ type TelegramSessionContextValue = {
   authReady: boolean;
   isAuthenticated: boolean;
   refresh: () => void;
-  /** Подтянуть displayName/avatar из БД без полного re-login (после сохранения профиля). */
   syncViewerFromServer: () => Promise<void>;
   submitNewUserPin: (pin: string) => Promise<SubmitPinResult>;
-  /** Завершить сессию (удалить cookie) и перенаправить на /login. */
   signOut: () => Promise<void>;
 };
 
@@ -49,7 +50,6 @@ function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));
 }
 
-/** Первый кадр в Telegram: initData может прийти чуть позже initDataUnsafe / hash. */
 function looksLikeTelegramWebApp(WebApp: {
   initDataUnsafe?: { user?: unknown };
 }): boolean {
@@ -88,7 +88,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         credentials: "same-origin",
       });
     } catch {
-      /* even if server-side logout fails, clear client state below */
+      /* ignore */
     }
     pendingInitDataRef.current = null;
     setState({ status: "unauthenticated", reason: "signed_out" });
@@ -127,21 +127,32 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    async function loadSessionFromCookie(): Promise<TelegramViewer | null> {
+      const res = await fetch("/api/auth/session", { credentials: "same-origin" });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { profile: TelegramViewer };
+      return data.profile;
+    }
+
     async function authenticate() {
       setState({ status: "loading" });
       setAuthReady(false);
       pendingInitDataRef.current = null;
 
-      /** Обычный браузер (Chrome, Safari): без моста Telegram не трогаем SDK — только cookie-сессия. */
-      if (typeof window !== "undefined" && !hasTelegramWebAppBridge()) {
-        const sessionRes = await fetch("/api/auth/session", { credentials: "same-origin" });
-        if (cancelled) return;
-        if (sessionRes.ok) {
-          const data = (await sessionRes.json()) as { profile: TelegramViewer };
-          setState({ status: "authenticated", viewer: data.profile });
-          setAuthReady(true);
-          return;
-        }
+      if (typeof window === "undefined") {
+        if (!cancelled) setAuthReady(true);
+        return;
+      }
+
+      const fromCookie = await loadSessionFromCookie();
+      if (cancelled) return;
+      if (fromCookie) {
+        setState({ status: "authenticated", viewer: fromCookie });
+        setAuthReady(true);
+        return;
+      }
+
+      if (!hasTelegramWebAppBridge()) {
         if (!cancelled) {
           setState({ status: "unauthenticated", reason: "web_login_required" });
           setAuthReady(true);
@@ -156,7 +167,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         WebApp = mod.default;
         WebApp.ready();
       } catch {
-        /* SDK / Telegram bridge not available */
+        /* no SDK */
       }
 
       let initData = "";
@@ -175,11 +186,10 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       const inTelegramMiniApp = WebApp ? looksLikeTelegramWebApp(WebApp) : false;
 
       if (!initData && !inTelegramMiniApp) {
-        const sessionRes = await fetch("/api/auth/session", { credentials: "same-origin" });
+        const again = await loadSessionFromCookie();
         if (cancelled) return;
-        if (sessionRes.ok) {
-          const data = (await sessionRes.json()) as { profile: TelegramViewer };
-          setState({ status: "authenticated", viewer: data.profile });
+        if (again) {
+          setState({ status: "authenticated", viewer: again });
           setAuthReady(true);
           return;
         }
@@ -191,12 +201,10 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       }
 
       if (!initData) {
-        // Нет initData — пробуем cookie-сессию (email-логин внутри Telegram)
-        const cookieRes = await fetch("/api/auth/session", { credentials: "same-origin" });
+        const again = await loadSessionFromCookie();
         if (cancelled) return;
-        if (cookieRes.ok) {
-          const cookieData = (await cookieRes.json()) as { profile: TelegramViewer };
-          setState({ status: "authenticated", viewer: cookieData.profile });
+        if (again) {
+          setState({ status: "authenticated", viewer: again });
           setAuthReady(true);
           return;
         }
@@ -227,11 +235,9 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
           setAuthReady(true);
           return;
         }
-        // Telegram-auth не прошёл — проверяем cookie (email-логин)
-        const cookieFallback = await fetch("/api/auth/session", { credentials: "same-origin" });
-        if (!cancelled && cookieFallback.ok) {
-          const cookieData = (await cookieFallback.json()) as { profile: TelegramViewer };
-          setState({ status: "authenticated", viewer: cookieData.profile });
+        const fb = await loadSessionFromCookie();
+        if (!cancelled && fb) {
+          setState({ status: "authenticated", viewer: fb });
           setAuthReady(true);
           return;
         }
@@ -246,11 +252,9 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       }
 
       if (!res.ok) {
-        // Telegram-auth не прошёл — проверяем cookie (email-логин)
-        const cookieFallback = await fetch("/api/auth/session", { credentials: "same-origin" });
-        if (!cancelled && cookieFallback.ok) {
-          const cookieData = (await cookieFallback.json()) as { profile: TelegramViewer };
-          setState({ status: "authenticated", viewer: cookieData.profile });
+        const fb = await loadSessionFromCookie();
+        if (!cancelled && fb) {
+          setState({ status: "authenticated", viewer: fb });
           setAuthReady(true);
           return;
         }
