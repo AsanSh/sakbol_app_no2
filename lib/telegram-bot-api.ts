@@ -64,6 +64,29 @@ export async function telegramSendPlainMessage(
   return { ok: true };
 }
 
+export async function telegramSendMessageWithUrlButton(
+  chatId: string,
+  text: string,
+  buttonText: string,
+  buttonUrl: string,
+): Promise<{ ok: true } | { ok: false; description: string }> {
+  const j = await tgCall<unknown>("sendMessage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      reply_markup: {
+        inline_keyboard: [[{ text: buttonText, url: buttonUrl }]],
+      },
+    }),
+  });
+  if (!j.ok) {
+    return { ok: false, description: j.description ?? "sendMessage failed" };
+  }
+  return { ok: true };
+}
+
 type GetFileResult = { file_id: string; file_path: string };
 
 /** Скачать файл, отправленный пользователем боту (document / сжатый снимок). */

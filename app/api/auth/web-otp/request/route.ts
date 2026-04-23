@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   let profileByPhone: Profile | null = null;
   if (phoneNorm) {
     profileByPhone = await prisma.profile.findFirst({ where: { webLoginPhoneDigits: phoneNorm } });
-    if (!profileByPhone) {
+    if (!profileByPhone && !chatInput) {
       return NextResponse.json(
         {
           error:
@@ -95,24 +95,39 @@ export async function POST(req: NextRequest) {
           );
         }
         profileByTg = p1;
-      } else if (userFilledBoth) {
-        return NextResponse.json(
-          {
-            error:
-              "Бот не видит такой @username / id. Нажмите Start, проверьте @username (Настройки → Имя пользователя) или вставьте t.me/… . Для приватного username используйте поле с номером, сохранённым в Профиле.",
-          },
-          { status: 400 },
-        );
-      } else if (profileByPhone) {
-        profileByTg = profileByPhone;
       } else {
-        return NextResponse.json(
-          {
-            error:
-              "Бот не видит такой @username / id. Сначала нажмите /start. Укажите @username, как в Telegram. Если id не срабатывает — вставьте ссылку t.me/username. Либо сохраните телефон в Профиле (приложение) и введите его в поле «телефон».",
-          },
-          { status: 400 },
-        );
+        const unameFromRef = parsed.ref.startsWith("@")
+          ? parsed.ref.slice(1).toLowerCase()
+          : null;
+        if (unameFromRef) {
+          const pDb = await prisma.profile.findFirst({
+            where: { telegramUsername: unameFromRef, NOT: { telegramUserId: null } },
+          });
+          if (pDb) {
+            profileByTg = pDb;
+          }
+        }
+        if (!profileByTg) {
+          if (userFilledBoth) {
+            return NextResponse.json(
+              {
+                error:
+                  "Бот не видит такой @username / id, а по сохранённому @username в SakBol вас тоже не нашли. Войдите в мини-приложение бота (чтобы @username обновился в SakBol) или введите номер из «Вход на сайт по коду» в Профиле. Либо нажмите /start в чате с ботом и повторите.",
+              },
+              { status: 400 },
+            );
+          } else if (profileByPhone) {
+            profileByTg = profileByPhone;
+          } else {
+            return NextResponse.json(
+              {
+                error:
+                  "Бот не видит такой @username / id. Сначала нажмите /start. Укажите @username, как в Telegram, или вставьте ссылку t.me/… . Если заходили в мини-приложение (без /start) — введите в поле «телефон» номер из раздела «Вход на сайт по кода» в Профиле.",
+              },
+              { status: 400 },
+            );
+          }
+        }
       }
     }
   } else {

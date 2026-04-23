@@ -28,6 +28,7 @@ import {
 } from "@/app/actions/profile";
 import { updateManagedProfileKinship } from "@/app/actions/family";
 import { profileKinshipLabel } from "@/lib/profile-kinship";
+import { telegramBotUsernameFromEnv } from "@/lib/telegram-public-urls";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 import { cn } from "@/lib/utils";
 
@@ -338,9 +339,14 @@ function ShareProfileSection({
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const inviteUrl = invite
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/share-profile/${invite.inviteToken}`
-    : null;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const webInvitePath = invite ? `/share-profile/${invite.inviteToken}` : "";
+  const webInviteUrl = invite ? `${origin}${webInvitePath}` : null;
+  const botU = typeof window !== "undefined" ? telegramBotUsernameFromEnv() : "";
+  /** В Telegram: открывается бот с start= (если в env задан @бот). */
+  const telegramStartUrl =
+    invite && botU ? `https://t.me/${botU}?start=share_${invite.inviteToken}` : null;
+  const qrValue = telegramStartUrl ?? webInviteUrl;
 
   const handleCreate = async () => {
     if (!selectedProfileId) return;
@@ -375,8 +381,8 @@ function ShareProfileSection({
   };
 
   const handleCopy = () => {
-    if (!inviteUrl) return;
-    void navigator.clipboard?.writeText(inviteUrl).catch(() => {});
+    if (!webInviteUrl) return;
+    void navigator.clipboard?.writeText(webInviteUrl).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -420,13 +426,25 @@ function ShareProfileSection({
         </div>
       ) : (
         <div className="mt-3 space-y-3">
+          {telegramStartUrl && (
+            <p className="text-[11px] text-slate-600">
+              QR ведёт в чат с ботом (удобно, если смотрите с телефона). Ссылка сайта — ниже, если
+              открывали в браузере.
+            </p>
+          )}
           <div className="flex justify-center rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
-            {inviteUrl && (
-              <QRCodeSVG value={inviteUrl} size={160} level="M" includeMargin />
-            )}
+            {qrValue && <QRCodeSVG value={qrValue} size={160} level="M" includeMargin />}
           </div>
+          {telegramStartUrl && (
+            <a
+              href={telegramStartUrl}
+              className="flex w-full items-center justify-center rounded-xl bg-sky-50 py-2.5 text-sm font-semibold text-sky-900 ring-1 ring-sky-200"
+            >
+              Открыть в Telegram
+            </a>
+          )}
           <p className="break-all rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-mono text-slate-700 ring-1 ring-slate-100">
-            {inviteUrl}
+            {webInviteUrl}
           </p>
           {invite.inviteExpiresAt && (
             <p className="text-[11px] text-slate-500">
@@ -456,7 +474,8 @@ function ShareProfileSection({
             </button>
           </div>
           <p className="text-[10px] text-slate-500">
-            Другой пользователь отсканирует QR-код или откроет ссылку и примет приглашение. После этого профиль появится в его переключателе.
+            Скан в камере: предпочтительно вариант в Telegram. В браузере — по ссылке на сайт. В чате с
+            ботом по QR придёт кнопка «Принять в SakBol».
           </p>
         </div>
       )}

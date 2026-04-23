@@ -111,6 +111,9 @@ export async function POST(req: NextRequest) {
           familyId: family.id,
           displayName: buildDisplayName(user),
           telegramUserId,
+          telegramUsername: user.username?.trim()
+            ? user.username.replace(/^@/, "").toLowerCase()
+            : null,
           avatarUrl: user.photo_url ?? null,
           familyRole: FamilyRole.ADMIN,
           isManaged: false,
@@ -123,6 +126,17 @@ export async function POST(req: NextRequest) {
           where: { id: profile.id },
           data: { avatarUrl: user.photo_url },
         });
+      }
+
+      if (user.username !== undefined) {
+        const uname =
+          user.username.trim() === "" ? null : user.username.replace(/^@/, "").toLowerCase();
+        if (uname !== profile.telegramUsername) {
+          profile = await prisma.profile.update({
+            where: { id: profile.id },
+            data: { telegramUsername: uname },
+          });
+        }
       }
 
       if (profile.pinAnchor == null) {

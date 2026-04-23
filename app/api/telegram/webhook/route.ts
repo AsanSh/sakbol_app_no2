@@ -3,7 +3,12 @@ import { createHealthDocumentForProfile } from "@/lib/health-document-create";
 import { inferHealthDocumentFields } from "@/lib/health-document-infer";
 import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { prisma } from "@/lib/prisma";
-import { telegramDownloadFile, telegramSendPlainMessage } from "@/lib/telegram-bot-api";
+import { getServerAppOrigin } from "@/lib/app-origin";
+import {
+  telegramDownloadFile,
+  telegramSendMessageWithUrlButton,
+  telegramSendPlainMessage,
+} from "@/lib/telegram-bot-api";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +31,19 @@ function extractStartCode(text: string): string | null {
   const m = /^\/start(?:\s+(\S+))?$/i.exec(t);
   const arg = m?.[1]?.trim();
   if (!arg) return null;
+  if (/^share_/i.test(arg)) return null;
   const digits = arg.replace(/\D/g, "");
   if (digits.length >= 5 && digits.length <= 8) return digits.slice(0, 8);
   return null;
+}
+
+function extractShareInviteToken(text: string): string | null {
+  const t = text.trim();
+  const m = /^\/start(?:\s+(\S+))?$/i.exec(t);
+  const arg = m?.[1]?.trim();
+  if (!arg) return null;
+  if (!/^share_[0-9a-f-]{36}$/i.test(arg)) return null;
+  return arg.slice("share_".length);
 }
 
 function pickMimeFromName(name: string | undefined, fallback: string): string {
@@ -74,6 +89,52 @@ export async function POST(req: NextRequest) {
   const text = msg?.text;
 
   if (text) {
+    const shareToken = extractShareInviteToken(text);
+    if (shareToken) {
+      const now = new Date();
+      try {
+        const access = await prisma.profileAccess.findFirst({
+          where: { inviteToken: shareToken, revokedAt: null },
+          include: { sourceProfile: { select: { displayName: true } } },
+        });
+        if (!access) {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Приглашение не найдено или отозвано. Попросите владельца создать ссылку снова.",
+          );
+        } else if (access.inviteExpiresAt && access.inviteExpiresAt < now) {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Срок ссылки на совместный доступ истёк. Попросите владельца создать новую.",
+          );
+        } else if (access.acceptedAt) {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Это приглашение уже принято. Откройте мини-приложение — профиль в переключателе.",
+          );
+        } else {
+          const openUrl = `${getServerAppOrigin()}/share-profile/${encodeURIComponent(shareToken)}`;
+          const name = access.sourceProfile.displayName;
+          const ok = await telegramSendMessageWithUrlButton(
+            String(chatId),
+            `Совместный доступ: профиль «${name}».\n\n` +
+              `Войдите (если ещё не вошли) и нажмите «Принять» на странице.`,
+            "Принять в SakBol",
+            openUrl,
+          );
+          if (!ok.ok) {
+            await telegramSendPlainMessage(
+              String(chatId),
+              `Совместный доступ: «${name}».\nОткройте в браузере:\n${openUrl}`,
+            );
+          }
+        }
+      } catch (e) {
+        console.error("telegram webhook share", e);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     const code = extractStartCode(text);
     if (code) {
       const tgUserId = String(fromId);

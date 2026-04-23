@@ -31,6 +31,8 @@ model Profile {
   passwordHash   String?
   /// Set when the person uses the Telegram Mini App; null for managed relatives.
   telegramUserId String?    @unique
+  /// @username (нижний регистр, без @), с initData — для web OTP без getChat, если /start у бота уже был.
+  telegramUsername String?  @unique
   /// Только цифры (E.164 без +) для входа на сайт по коду, если @username id не сработал.
   webLoginPhoneDigits String? @unique
   avatarUrl      String?
