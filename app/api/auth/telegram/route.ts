@@ -9,6 +9,7 @@ import {
 } from "@/lib/session";
 import { buildDisplayName, parseTelegramUserFromInitData } from "@/lib/telegram-init-data";
 import { verifyTelegramInitData } from "@/lib/telegram";
+import { applyPendingProfileAccessForTelegramUser } from "@/lib/profile-access-accept";
 import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
 
 export const dynamic = "force-dynamic";
@@ -141,6 +142,7 @@ export async function POST(req: NextRequest) {
 
       if (profile.pinAnchor == null) {
         if (!pinRaw) {
+          await applyPendingProfileAccessForTelegramUser(telegramUserId, profile.id);
           const tokenEarly = createSessionToken({
             profileId: profile.id,
             familyId: profile.familyId,
@@ -178,6 +180,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    await applyPendingProfileAccessForTelegramUser(telegramUserId, profile.id);
     await ensureFamilySubscription(profile.familyId);
 
     const token = createSessionToken({

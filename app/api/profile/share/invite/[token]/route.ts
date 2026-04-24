@@ -94,6 +94,7 @@ export async function POST(_req: Request, ctx: { params: { token: string } }) {
     data: {
       granteeProfileId: session.profileId,
       acceptedAt: new Date(),
+      pendingTelegramUserId: null,
     },
   });
 

@@ -86,6 +86,9 @@ model ProfileAccess {
   granteeProfileId String?
   grantee          Profile?  @relation("AccessGrantee", fields: [granteeProfileId], references: [id], onDelete: SetNull)
 
+  /// Кто нажал /start share_… до регистрации в Mini App — привязка при первом входе.
+  pendingTelegramUserId String?
+
   /// Может ли гость добавлять документы/анализы.
   canWrite         Boolean   @default(true)
 
@@ -99,6 +102,7 @@ model ProfileAccess {
   @@index([sourceProfileId])
   @@index([granteeProfileId])
   @@index([inviteToken])
+  @@index([pendingTelegramUserId])
 }
 
 /// Временный код: веб «Привязать Telegram» → пользователь /start КОД у бота.

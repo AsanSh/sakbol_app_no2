@@ -4,6 +4,7 @@ import { inferHealthDocumentFields } from "@/lib/health-document-infer";
 import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { prisma } from "@/lib/prisma";
 import { getServerAppOrigin } from "@/lib/app-origin";
+import { acceptOrDeferProfileAccessInvite } from "@/lib/profile-access-accept";
 import {
   telegramDownloadFile,
   telegramSendMessageWithUrlButton,
@@ -91,43 +92,68 @@ export async function POST(req: NextRequest) {
   if (text) {
     const shareToken = extractShareInviteToken(text);
     if (shareToken) {
-      const now = new Date();
       try {
-        const access = await prisma.profileAccess.findFirst({
-          where: { inviteToken: shareToken, revokedAt: null },
-          include: { sourceProfile: { select: { displayName: true } } },
+        const tg = String(fromId);
+        const result = await acceptOrDeferProfileAccessInvite({
+          inviteToken: shareToken,
+          telegramUserId: tg,
         });
-        if (!access) {
-          await telegramSendPlainMessage(
-            String(chatId),
-            "Приглашение не найдено или отозвано. Попросите владельца создать ссылку снова.",
-          );
-        } else if (access.inviteExpiresAt && access.inviteExpiresAt < now) {
-          await telegramSendPlainMessage(
-            String(chatId),
-            "Срок ссылки на совместный доступ истёк. Попросите владельца создать новую.",
-          );
-        } else if (access.acceptedAt) {
-          await telegramSendPlainMessage(
-            String(chatId),
-            "Это приглашение уже принято. Откройте мини-приложение — профиль в переключателе.",
-          );
-        } else {
-          const openUrl = `${getServerAppOrigin()}/share-profile/${encodeURIComponent(shareToken)}`;
-          const name = access.sourceProfile.displayName;
+        const openUrl = `${getServerAppOrigin()}/share-profile/${encodeURIComponent(shareToken)}`;
+        const nameFor = (n: string) => `«${n}»`;
+
+        if (result.status === "accepted") {
           const ok = await telegramSendMessageWithUrlButton(
             String(chatId),
-            `Совместный доступ: профиль «${name}».\n\n` +
-              `Войдите (если ещё не вошли) и нажмите «Принять» на странице.`,
-            "Принять в SakBol",
+            `✅ Доступ к профилю ${nameFor(result.sourceName)} получен.\n\n` +
+              "Откройте мини-приложение — выберите этот профиль в переключателе сверху (анализы и динамика обновятся).",
+            "Открыть SakBol",
             openUrl,
           );
           if (!ok.ok) {
             await telegramSendPlainMessage(
               String(chatId),
-              `Совместный доступ: «${name}».\nОткройте в браузере:\n${openUrl}`,
+              `✅ Доступ к ${nameFor(result.sourceName)} подключён. Откройте мини-приложение SakBol и переключите профиль вверху.`,
             );
           }
+        } else if (result.status === "pending_registration") {
+          const ok = await telegramSendMessageWithUrlButton(
+            String(chatId),
+            `✅ Приглашение к ${nameFor(result.sourceName)} сохранено.\n\n` +
+              "Дальше: откройте мини-приложение и укажите ПИН/ИНН — после регистрации совместный профиль появится в переключателе.",
+            "Открыть SakBol",
+            openUrl,
+          );
+          if (!ok.ok) {
+            await telegramSendPlainMessage(
+              String(chatId),
+              `Ссылка сохранена. Зарегистрируйтесь в SakBol (мини-приложение) с ПИН — доступ к ${nameFor(result.sourceName)} применится автоматически.`,
+            );
+          }
+        } else if (result.status === "already_accepted" || result.status === "already_has_access") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            `У вас уже есть доступ к ${nameFor(result.sourceName)}. Откройте приложение — профиль в переключателе.`,
+          );
+        } else if (result.status === "invalid") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Приглашение не найдено или отозвано. Попросите владельца создать ссылку снова.",
+          );
+        } else if (result.status === "expired") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Срок ссылки истёк. Попросите владельца создать новое приглашение.",
+          );
+        } else if (result.status === "same_family") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Совместный доступ на профиль своей семьи оформляется иначе — этот ярлык вам не нужен.",
+          );
+        } else if (result.status === "busy_other_user") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Это приглашение уже использовано другим аккаунтом. Попросите новую ссылку.",
+          );
         }
       } catch (e) {
         console.error("telegram webhook share", e);

@@ -59,5 +59,8 @@ export function profileKinshipLabelKg(profile: ProfileSummary): string {
 }
 
 export function profileKinshipLabel(profile: ProfileSummary, lang: Lang): string {
+  if (profile.isSharedGuest) {
+    return lang === "kg" ? "Бөлүшүү" : "Совместный доступ";
+  }
   return lang === "kg" ? profileKinshipLabelKg(profile) : profileKinshipLabelRu(profile);
 }
