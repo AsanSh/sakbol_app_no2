@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureFamilySubscription } from "@/lib/premium";
+import { applyPendingProfileAccessForTelegramUser } from "@/lib/profile-access-accept";
 import { verifyPassword } from "@/lib/password";
 import {
   createSessionToken,
@@ -34,6 +35,14 @@ export async function POST(req: NextRequest) {
 
   if (!profile?.passwordHash || !verifyPassword(password, profile.passwordHash)) {
     return NextResponse.json({ error: "Неверный email или пароль." }, { status: 401 });
+  }
+
+  if (profile.telegramUserId) {
+    try {
+      await applyPendingProfileAccessForTelegramUser(profile.telegramUserId, profile.id);
+    } catch (e) {
+      console.error("[login-email] applyPendingProfileAccess", e);
+    }
   }
 
   try {

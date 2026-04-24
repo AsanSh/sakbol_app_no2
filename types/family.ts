@@ -14,7 +14,10 @@ export type ProfileSummary = {
   heightCm: number | null;
   weightKg: number | null;
   bloodType: string | null;
-  /** true — профиль из чужой семьи, доступен по шарингу */
+  /**
+   * Чужой профиль, к которому выдан гостевой доступ (`ProfileAccess`).
+   * API добавляет в объекты из `sharedProfiles` и в слитый список `profiles` в `useFamilyDefault` — не опускайте при `fetch`/map.
+   */
   isSharedGuest?: boolean;
   sharedAccessId?: string;
   sharedCanWrite?: boolean;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureFamilySubscription } from "@/lib/premium";
+import { applyPendingProfileAccessForTelegramUser } from "@/lib/profile-access-accept";
 import {
   createSessionToken,
   sessionCookieName,
@@ -34,6 +35,14 @@ export async function GET(req: NextRequest) {
 
     if (!profile) {
       return NextResponse.redirect(new URL("/login?err=no_profile", req.url));
+    }
+
+    if (profile.telegramUserId) {
+      try {
+        await applyPendingProfileAccessForTelegramUser(profile.telegramUserId, profile.id);
+      } catch (e) {
+        console.error("[telegram-widget] applyPendingProfileAccess", e);
+      }
     }
 
     await ensureFamilySubscription(profile.familyId);

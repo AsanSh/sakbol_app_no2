@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureFamilySubscription } from "@/lib/premium";
+import { applyPendingProfileAccessForTelegramUser } from "@/lib/profile-access-accept";
 import {
   createSessionToken,
   sessionCookieName,
@@ -87,6 +88,14 @@ export async function POST(req: NextRequest) {
     where: { id: row.id },
     data: { consumedAt: new Date() },
   });
+
+  if (profile.telegramUserId) {
+    try {
+      await applyPendingProfileAccessForTelegramUser(profile.telegramUserId, profile.id);
+    } catch (e) {
+      console.error("[web-otp/verify] applyPendingProfileAccess", e);
+    }
+  }
 
   try {
     await ensureFamilySubscription(profile.familyId);
