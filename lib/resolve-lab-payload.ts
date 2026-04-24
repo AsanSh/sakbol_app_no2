@@ -53,5 +53,6 @@ export function resolveLabAnalysisPayload(
         : typeof fromMetrics?.labName === "string"
           ? fromMetrics.labName
           : undefined,
+    sourceBlobUrl: typeof d.sourceBlobUrl === "string" ? d.sourceBlobUrl : undefined,
   };
 }

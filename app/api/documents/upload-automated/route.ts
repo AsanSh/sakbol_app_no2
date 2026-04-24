@@ -10,24 +10,45 @@ export const runtime = "nodejs";
 
 function checkAutomationAuth(req: Request): NextResponse | null {
   const expected = process.env.DOCUMENTS_AUTOMATION_SECRET?.trim();
+  const auth = req.headers.get("authorization")?.trim();
+  const bearer = auth?.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : null;
+  const headerSecret = req.headers.get("x-documents-secret")?.trim();
+  const token = bearer || headerSecret;
+
+  if (expected && token === expected) {
+    return null;
+  }
+
   if (process.env.NODE_ENV === "production" && !expected) {
     return NextResponse.json(
       { error: "DOCUMENTS_AUTOMATION_SECRET is not configured" },
       { status: 503 },
     );
   }
-  if (!expected) {
-    console.warn("documents/upload-automated: DOCUMENTS_AUTOMATION_SECRET empty (dev only)");
+
+  const insecureLocal =
+    process.env.ALLOW_INSECURE_AUTOMATED_UPLOAD === "true" &&
+    process.env.NODE_ENV === "development" &&
+    !process.env.VERCEL;
+
+  if (insecureLocal) {
+    console.warn(
+      "[upload-automated] ALLOW_INSECURE_AUTOMATED_UPLOAD: запрос без секрета (только локальный dev).",
+    );
     return null;
   }
-  const auth = req.headers.get("authorization")?.trim();
-  const bearer = auth?.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : null;
-  const headerSecret = req.headers.get("x-documents-secret")?.trim();
-  const token = bearer || headerSecret;
-  if (token !== expected) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  if (!expected) {
+    return NextResponse.json(
+      {
+        error:
+          "Задайте DOCUMENTS_AUTOMATION_SECRET или для только локального dev: ALLOW_INSECURE_AUTOMATED_UPLOAD=true",
+      },
+      { status: 403 },
+    );
   }
-  return null;
+
+  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
 
 /**

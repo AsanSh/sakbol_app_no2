@@ -4,6 +4,9 @@ import { cookies } from "next/headers";
 const COOKIE = "sakbol_session";
 const SEP = ".";
 
+/** Совпадает с `maxAge` cookie — токен старше этого срока отклоняется. */
+const SESSION_MAX_AGE_MS = 60 * 60 * 24 * 30 * 1000;
+
 function secret(): string {
   const s = process.env.SESSION_SECRET;
   if (s && s.length >= 16) return s;
@@ -40,6 +43,9 @@ export function verifySessionToken(token: string): SessionPayload | null {
       iat?: number;
     };
     if (!data.profileId || !data.familyId) return null;
+    if (typeof data.iat === "number" && Date.now() - data.iat > SESSION_MAX_AGE_MS) {
+      return null;
+    }
     return { profileId: data.profileId, familyId: data.familyId };
   } catch {
     return null;

@@ -2,18 +2,15 @@
 
 import { createHash, randomUUID } from "crypto";
 import { mkdir, unlink, writeFile } from "fs/promises";
-import os from "os";
-import path from "path";
 import { HealthRecordKind, type Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { FREE_MAX_ANALYSES, getFamilyTier } from "@/lib/premium";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { extForLabMime, LAB_UPLOAD_ROOT, labUploadDiskPath } from "@/lib/sakbol-lab-upload-path";
 import { processMedicalDocument } from "@/lib/services/process-medical-document";
 
 const MAX_BYTES = 12 * 1024 * 1024;
-/** На Vercel доступна запись в основном только в os.tmpdir(). */
-const UPLOAD_ROOT = path.join(os.tmpdir(), "sakbol-health-records");
 
 const ALLOWED = new Set([
   "application/pdf",
@@ -23,18 +20,11 @@ const ALLOWED = new Set([
   "image/webp",
 ]);
 
-function extForMime(mime: string): string {
-  if (mime === "application/pdf") return "pdf";
-  if (mime === "image/png") return "png";
-  if (mime === "image/jpeg" || mime === "image/jpg") return "jpg";
-  if (mime === "image/webp") return "webp";
-  return "bin";
-}
-
 type LabMeta = {
   sourceFileId?: string;
   mimeType?: string;
   contentSha256?: string;
+  sourceBlobUrl?: string;
 };
 
 export async function deleteLabAnalysis(recordId: string) {
@@ -64,12 +54,15 @@ export async function deleteLabAnalysis(recordId: string) {
   const meta = record.data as LabMeta;
   const sourceFileId = typeof meta?.sourceFileId === "string" ? meta.sourceFileId.trim() : "";
   const mimeType = typeof meta?.mimeType === "string" ? meta.mimeType : "";
-  if (
+  if (meta?.sourceBlobUrl?.startsWith("https://")) {
+    const { del } = await import("@vercel/blob");
+    await del(meta.sourceBlobUrl).catch(() => {});
+  } else if (
     sourceFileId &&
     !["demo-local", "seed"].includes(sourceFileId) &&
     ALLOWED.has(mimeType)
   ) {
-    const diskPath = path.join(UPLOAD_ROOT, `${sourceFileId}.${extForMime(mimeType)}`);
+    const diskPath = labUploadDiskPath(sourceFileId, mimeType);
     await unlink(diskPath).catch(() => {});
   }
 
@@ -146,11 +139,25 @@ export async function uploadHealthRecord(formData: FormData) {
   }
 
   const fileId = randomUUID();
-  const safeName = `${fileId}.${extForMime(mime)}`;
 
-  await mkdir(UPLOAD_ROOT, { recursive: true });
-  const diskPath = path.join(UPLOAD_ROOT, safeName);
+  await mkdir(LAB_UPLOAD_ROOT, { recursive: true });
+  const diskPath = labUploadDiskPath(fileId, mime);
   await writeFile(diskPath, buf);
+
+  let sourceBlobUrl: string | undefined;
+  if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+    try {
+      const { put } = await import("@vercel/blob");
+      const ext = extForLabMime(mime);
+      const blob = await put(`lab-analysis/${fileId}.${ext}`, buf, {
+        access: "public",
+        contentType: mime,
+      });
+      sourceBlobUrl = blob.url;
+    } catch (e) {
+      console.error("[uploadHealthRecord] blob put failed, keeping disk only", e);
+    }
+  }
 
   let biomarkers: Awaited<ReturnType<typeof processMedicalDocument>>["biomarkers"];
   let parser: Awaited<ReturnType<typeof processMedicalDocument>>["parser"];
@@ -175,6 +182,7 @@ export async function uploadHealthRecord(formData: FormData) {
     anonymizedAt: now,
     parsedAt: now,
     parser,
+    ...(sourceBlobUrl ? { sourceBlobUrl } : {}),
   };
 
   const record = await prisma.healthRecord.create({
