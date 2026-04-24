@@ -79,5 +79,14 @@ export function useFamilyDefault() {
     load();
   }, [authReady, isAuthenticated, load]);
 
+  useEffect(() => {
+    const onSession = () => {
+      if (authReady && isAuthenticated) void load();
+    };
+    if (typeof window === "undefined") return;
+    window.addEventListener("sakbol:session-updated", onSession);
+    return () => window.removeEventListener("sakbol:session-updated", onSession);
+  }, [authReady, isAuthenticated, load]);
+
   return { family, loading, error, reload: load };
 }

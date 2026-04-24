@@ -121,6 +121,9 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
     }
     pendingInitDataRef.current = null;
     setState({ status: "authenticated", viewer: j.profile });
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("sakbol:session-updated"));
+    }
     return { ok: true };
   }, []);
 

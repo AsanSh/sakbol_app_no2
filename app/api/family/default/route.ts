@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { applyPendingProfileAccessForTelegramUser } from "@/lib/profile-access-accept";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -27,6 +28,22 @@ export async function GET() {
   }
 
   try {
+    // Подтянуть отложенные /start share_… если при логине applyPending не отработал (гонка, другой путь входа).
+    const grantee = await prisma.profile.findUnique({
+      where: { id: session.profileId },
+      select: { telegramUserId: true },
+    });
+    if (grantee?.telegramUserId) {
+      try {
+        await applyPendingProfileAccessForTelegramUser(
+          grantee.telegramUserId,
+          session.profileId,
+        );
+      } catch (e) {
+        console.error("[family/default] applyPendingProfileAccess", e);
+      }
+    }
+
     const [family, sharedAccesses] = await Promise.all([
       prisma.family.findUnique({
         where: { id: session.familyId },
