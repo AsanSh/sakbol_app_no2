@@ -43,9 +43,9 @@ function extractShareInviteToken(text: string): string | null {
   const t = text.trim();
   const m = /^\/start(?:\s+(\S+))?$/i.exec(t);
   const arg = m?.[1]?.trim();
-  if (!arg) return null;
-  if (!/^share_[0-9a-f-]{36}$/i.test(arg)) return null;
-  return arg.slice("share_".length);
+  if (!arg || !arg.toLowerCase().startsWith("share_")) return null;
+  const token = arg.slice("share_".length).trim();
+  return token.length > 0 ? token : null;
 }
 
 function pickMimeFromName(name: string | undefined, fallback: string): string {
@@ -94,6 +94,10 @@ export async function POST(req: NextRequest) {
     const shareToken = extractShareInviteToken(text);
     if (shareToken) {
       try {
+        console.log("[telegram webhook share] Detected share token", {
+          tokenLength: shareToken.length,
+          tokenPrefix: shareToken.slice(0, 6),
+        });
         const tg = String(fromId);
         const result = await acceptOrDeferProfileAccessInvite({
           inviteToken: shareToken,

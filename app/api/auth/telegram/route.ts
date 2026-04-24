@@ -19,8 +19,9 @@ export const dynamic = "force-dynamic";
 
 function shareTokenFromInitData(initData: string): string | null {
   const raw = new URLSearchParams(initData).get("start_param")?.trim();
-  if (!raw || !/^share_[0-9a-f-]{36}$/i.test(raw)) return null;
-  return raw.slice("share_".length);
+  if (!raw || !raw.toLowerCase().startsWith("share_")) return null;
+  const token = raw.slice("share_".length).trim();
+  return token.length > 0 ? token : null;
 }
 
 function profileJson(profile: {
@@ -81,6 +82,10 @@ export async function POST(req: NextRequest) {
     const telegramUserId = String(user.id);
     const startShareToken = shareTokenFromInitData(initData);
     if (startShareToken) {
+      console.log("[telegram auth share] Detected start_param share token", {
+        tokenLength: startShareToken.length,
+        tokenPrefix: startShareToken.slice(0, 6),
+      });
       await acceptOrDeferProfileAccessInvite({ inviteToken: startShareToken, telegramUserId });
     }
 
