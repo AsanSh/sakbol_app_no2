@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { checkProfileAccess } from "@/lib/profile-access-control";
 import { readHealthDocumentFromDisk } from "@/lib/health-documents-storage";
 import { getSession } from "@/lib/session";
 
@@ -22,11 +23,16 @@ export async function GET(
   }
 
   const doc = await prisma.healthDocument.findFirst({
-    where: { id: docId, profile: { familyId: session.familyId } },
-    select: { id: true, mimeType: true, title: true, fileUrl: true, fileData: true },
+    where: { id: docId },
+    select: { id: true, profileId: true, mimeType: true, title: true, fileUrl: true, fileData: true },
   });
   if (!doc || !doc.mimeType) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const access = await checkProfileAccess(session, doc.profileId);
+  if (!access.ok) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (doc.fileUrl.startsWith("http://") || doc.fileUrl.startsWith("https://")) {

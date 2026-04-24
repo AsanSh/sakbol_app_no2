@@ -2,6 +2,7 @@
 
 import { HealthRecordKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { checkProfileAccess } from "@/lib/profile-access-control";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 import { getSession } from "@/lib/session";
 import type { LabAnalysisRow } from "@/types/family";
@@ -21,12 +22,8 @@ export async function listLabAnalysesForProfile(
   }
 
   try {
-    const profile = await prisma.profile.findFirst({
-      where: { id, familyId: session.familyId },
-      select: { id: true },
-    });
-
-    if (!profile) {
+    const access = await checkProfileAccess(session, id);
+    if (!access.ok) {
       return { ok: false, error: "Profile not found" };
     }
 

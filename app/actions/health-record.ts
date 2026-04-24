@@ -5,6 +5,7 @@ import { mkdir, unlink, writeFile } from "fs/promises";
 import { HealthRecordKind, type Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { FREE_MAX_ANALYSES, getFamilyTier } from "@/lib/premium";
+import { checkProfileAccess } from "@/lib/profile-access-control";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { extForLabMime, LAB_UPLOAD_ROOT, labUploadDiskPath } from "@/lib/sakbol-lab-upload-path";
@@ -87,11 +88,12 @@ export async function uploadHealthRecord(formData: FormData) {
     return { ok: false as const, error: "Маалымат толук эмес." };
   }
 
-  const profile = await prisma.profile.findFirst({
-    where: { id: profileId, familyId: session.familyId },
-  });
-  if (!profile) {
+  const access = await checkProfileAccess(session, profileId);
+  if (!access.ok) {
     return { ok: false as const, error: "Профиль табылган жок." };
+  }
+  if (!access.canWrite) {
+    return { ok: false as const, error: "Нет прав добавлять анализы в этот профиль." };
   }
   const tier = await getFamilyTier(session.familyId);
   const total = await prisma.healthRecord.count({

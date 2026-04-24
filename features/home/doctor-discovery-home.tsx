@@ -313,7 +313,6 @@ export function DoctorDiscoveryHome({
     lang === "ru" ? "Применить" : "Колдонуу";
   const resetLabel =
     lang === "ru" ? "Сбросить" : "Тазалоо";
-  const compactCards = !isDesktop;
 
   return (
     <div id="doctor-catalog" className={cn("space-y-4 pb-8 scroll-mt-4", className)}>
@@ -477,218 +476,65 @@ export function DoctorDiscoveryHome({
           {listErr ? (
             <p className="text-sm text-red-700">{listErr}</p>
           ) : null}
-          <div
-            className={cn(
-              "grid gap-3",
-              isDesktop ? "sm:grid-cols-2 xl:grid-cols-3" : "grid-cols-2",
-              !isDesktop && "px-3",
-            )}
-          >
+          <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80">
             <AnimatePresence mode="popLayout">
               {(list?.doctors ?? []).map((d, idx) => {
-                const singleTelLink =
-                  d.telephones?.length === 1 && d.telephones[0]
-                    ? getTelLinkProps(d.telephones[0])
-                    : null;
+                const street = d.streetAddress
+                  ? decodeHtmlEntities(d.streetAddress).trim()
+                  : "";
+                const loc = d.locality ? decodeHtmlEntities(d.locality).trim() : "";
+                const reg = d.region ? decodeHtmlEntities(d.region).trim() : "";
+                const cityOnly =
+                  meta?.cities.find((c) => c.code === d.cityCode)?.label ??
+                  d.cityCode ??
+                  "";
+                const addressParts = [street, loc || reg].filter(Boolean);
+                const address = addressParts.length
+                  ? addressParts.join(", ")
+                  : cityOnly || (lang === "ru" ? "Адрес не указан" : "Дареги жок");
                 return (
                 <motion.article
                   key={d.slug}
-                  layout
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, delay: idx * 0.02 }}
-                  className={cn(
-                    "flex flex-col overflow-hidden bg-white shadow-md ring-1 ring-slate-200/80",
-                    compactCards ? "h-[320px] rounded-2xl shadow-sm" : "rounded-2xl",
-                  )}
+                  className="border-b border-slate-100 p-3 last:border-b-0 sm:p-4"
                 >
-                  <div
-                    className={cn(
-                      "flex flex-col",
-                      compactCards
-                        ? "min-h-0 flex-1 gap-2 overflow-y-auto p-3"
-                        : "gap-3 p-4 sm:flex-row sm:gap-4",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "relative shrink-0 overflow-hidden bg-slate-100 ring-1 ring-slate-200",
-                        compactCards
-                          ? "mx-auto h-12 w-12 rounded-xl"
-                          : "mx-auto h-20 w-20 rounded-2xl sm:mx-0 sm:h-[4.5rem] sm:w-[4.5rem]",
-                      )}
-                    >
-                      {d.image ? (
-                        <Image
-                          src={d.image}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="80px"
-                          unoptimized
-                        />
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(11rem,0.75fr)_minmax(0,1.2fr)] sm:items-start">
+                    <h3 className="font-manrope text-[15px] font-semibold leading-snug text-slate-900 sm:text-base">
+                      {d.name}
+                    </h3>
+                    <div className="space-y-1">
+                      {d.telephones?.length ? (
+                        d.telephones.map((p) => {
+                          const link = getTelLinkProps(p);
+                          return link ? (
+                            <a
+                              key={p}
+                              {...link}
+                              onClick={() => notifyTelegramCallNumber(p)}
+                              className="flex min-h-[34px] items-center gap-1.5 text-[13px] font-semibold text-health-primary"
+                            >
+                              <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              <span className="break-words">{formatPhoneDisplay(p)}</span>
+                            </a>
+                          ) : (
+                            <span key={p} className="block text-[13px] text-slate-600">
+                              {formatPhoneDisplay(p)}
+                            </span>
+                          );
+                        })
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sm font-bold text-slate-500">
-                          {d.name
-                            .split(/\s+/)
-                            .map((w) => w[0])
-                            .join("")
-                            .slice(0, 3)}
-                        </div>
+                        <span className="text-[13px] text-slate-400">
+                          {lang === "ru" ? "Телефон не указан" : "Телефон жок"}
+                        </span>
                       )}
                     </div>
-                    <div
-                      className={cn(
-                        "min-w-0 flex-1 space-y-2",
-                        compactCards && "min-h-0 overflow-hidden",
-                      )}
-                    >
-                      <h3
-                        className={cn(
-                          "font-manrope font-semibold text-slate-900 break-words",
-                          compactCards
-                            ? "min-h-[40px] text-[15px] leading-5 line-clamp-2"
-                            : "text-base leading-snug",
-                        )}
-                      >
-                        {d.name}
-                      </h3>
-                      <div className={cn("flex flex-wrap", compactCards ? "gap-1" : "gap-1.5")}>
-                        {d.categorySlugs.map((s) => (
-                          <span
-                            key={s}
-                            className={cn(
-                              "inline-flex max-w-full break-words rounded-full bg-teal-50 font-semibold leading-snug text-teal-900 ring-1 ring-teal-100/90",
-                              compactCards ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-[11px]",
-                            )}
-                          >
-                            {catLabel.get(s) ?? s}
-                          </span>
-                        ))}
-                      </div>
-                      {(() => {
-                        const street = d.streetAddress
-                          ? decodeHtmlEntities(d.streetAddress).trim()
-                          : "";
-                        const loc = d.locality ? decodeHtmlEntities(d.locality).trim() : "";
-                        const reg = d.region ? decodeHtmlEntities(d.region).trim() : "";
-                        const cityOnly =
-                          meta?.cities.find((c) => c.code === d.cityCode)?.label ??
-                          d.cityCode ??
-                          "";
-                        const line1 = [street, loc || (!d.locality && reg ? reg : "")].filter(
-                          Boolean,
-                        );
-                        const line2 =
-                          cityOnly &&
-                          !line1.join(" ").toLowerCase().includes(cityOnly.toLowerCase())
-                            ? cityOnly
-                            : !line1.length
-                              ? cityOnly
-                              : "";
-                        if (!line1.length && !line2) return null;
-                        return (
-                          <div
-                            className={cn(
-                              "flex gap-1.5 leading-snug",
-                              compactCards ? "text-[12px]" : "text-[13px]",
-                            )}
-                          >
-                            <MapPin
-                              className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
-                              aria-hidden
-                            />
-                            <div className="min-w-0 space-y-1 break-words">
-                              {line1.length ? (
-                                <p className={cn("font-medium text-slate-800", compactCards && "line-clamp-2")}>
-                                  {line1.join(", ")}
-                                </p>
-                              ) : null}
-                              {line2 ? (
-                                <p className={cn("text-slate-500", compactCards && "line-clamp-1")}>{line2}</p>
-                              ) : null}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                      {d.priceRange ? (
-                        <p
-                          className={cn(
-                            "leading-snug text-slate-800 break-words",
-                            compactCards ? "text-[12px] line-clamp-2" : "text-[13px]",
-                          )}
-                        >
-                          <span className="font-semibold text-slate-900">
-                            {lang === "ru" ? "Приём:" : "Кабыл алуу:"}
-                          </span>{" "}
-                          {decodeHtmlEntities(d.priceRange)}
-                        </p>
-                      ) : null}
-                      {!compactCards && d.description?.trim() ? (
-                        <p className="line-clamp-4 text-[13px] leading-relaxed text-slate-600 break-words">
-                          {decodeHtmlEntities(d.description.trim())}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div
-                    className={cn(
-                      "mt-auto border-t border-slate-100",
-                      compactCards ? "shrink-0 px-3 pb-3 pt-2" : "px-4 py-3",
-                    )}
-                  >
-                    <div className="grid grid-cols-2 gap-2">
-                    {d.telephones?.length ? (
-                      singleTelLink ? (
-                        <a
-                          {...singleTelLink}
-                          onClick={() => {
-                            const n = d.telephones?.[0];
-                            if (n) notifyTelegramCallNumber(n);
-                          }}
-                          className={cn(
-                            "flex w-full items-center justify-center gap-1 rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100 overflow-hidden",
-                            compactCards ? "min-h-[40px] text-[12px] leading-tight" : "min-h-[44px] text-caption",
-                          )}
-                        >
-                          <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          <span className="truncate">{t(lang, "home.card.call")}</span>
-                        </a>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => invokeDoctorCall({ telephones: d.telephones })}
-                          className={cn(
-                            "flex w-full items-center justify-center gap-1 rounded-xl bg-teal-50 font-semibold text-teal-900 ring-1 ring-teal-100 hover:bg-teal-100 overflow-hidden",
-                            compactCards ? "min-h-[40px] text-[12px] leading-tight" : "min-h-[44px] text-caption",
-                          )}
-                        >
-                          <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          <span className="truncate">{t(lang, "home.card.call")}</span>
-                        </button>
-                      )
-                    ) : (
-                      <span
-                        className={cn(
-                          "flex w-full items-center justify-center rounded-xl bg-slate-50 text-slate-400 ring-1 ring-slate-100",
-                          compactCards ? "min-h-[40px] text-[12px] leading-tight" : "min-h-[44px] text-caption",
-                        )}
-                      >
-                        <span className="truncate">{lang === "ru" ? "Нет тел." : "Тел. жок"}</span>
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => openDoctorDetail(d)}
-                      className={cn(
-                        "flex w-full items-center justify-center overflow-hidden rounded-xl bg-health-primary font-semibold text-white shadow-sm hover:bg-teal-700",
-                        compactCards ? "min-h-[40px] text-[12px] leading-tight" : "min-h-[44px] text-caption",
-                      )}
-                    >
-                      <span className="truncate">{t(lang, "home.card.more")}</span>
-                    </button>
-                    </div>
+                    <p className="flex gap-1.5 text-[13px] leading-snug text-slate-700">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+                      <span className="break-words">{address}</span>
+                    </p>
                   </div>
                 </motion.article>
                 );

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { HealthRecordKind } from "@prisma/client";
+import { checkProfileAccess } from "@/lib/profile-access-control";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
@@ -18,12 +19,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const profile = await prisma.profile.findFirst({
-      where: { id: profileId, familyId: session.familyId },
-      select: { id: true },
-    });
-
-    if (!profile) {
+    const access = await checkProfileAccess(session, profileId);
+    if (!access.ok) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 

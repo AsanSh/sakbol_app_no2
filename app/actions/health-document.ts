@@ -7,6 +7,7 @@ import { inferHealthDocumentFields } from "@/lib/health-document-infer";
 import { isHealthDocumentTextExtractable } from "@/lib/health-document-text-extract";
 import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { healthDocDiskPath, parseHealthDocumentCategory } from "@/lib/health-documents-storage";
+import { checkProfileAccess } from "@/lib/profile-access-control";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -26,12 +27,12 @@ export async function uploadHealthDocument(formData: FormData) {
     return { ok: false as const, error: "Укажите профиль и файл." };
   }
 
-  const profile = await prisma.profile.findFirst({
-    where: { id: profileId, familyId: session.familyId },
-    select: { id: true },
-  });
-  if (!profile) {
+  const access = await checkProfileAccess(session, profileId);
+  if (!access.ok) {
     return { ok: false as const, error: "Профиль не найден." };
+  }
+  if (!access.canWrite) {
+    return { ok: false as const, error: "Нет прав добавлять документы в этот профиль." };
   }
 
   let documentDate: Date | null = null;

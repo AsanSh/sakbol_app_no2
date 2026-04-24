@@ -2,8 +2,9 @@
 
 import { HealthRecordKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { checkProfileAccess } from "@/lib/profile-access-control";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
-import { getSession } from "@/lib/session";
+import { getSession, type SessionPayload } from "@/lib/session";
 import { generateGeminiLabChatAnswer } from "@/lib/gemini-lab-chat";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
@@ -30,14 +31,11 @@ function formatBiomarkersForSearch(biomarkers: ParsedBiomarker[]): string {
 }
 
 async function latestLabContextBlock(
-  familyId: string,
+  session: SessionPayload,
   profileId: string,
 ): Promise<string | null> {
-  const member = await prisma.profile.findFirst({
-    where: { id: profileId, familyId },
-    select: { id: true },
-  });
-  if (!member) return null;
+  const access = await checkProfileAccess(session, profileId);
+  if (!access.ok) return null;
 
   const row = await prisma.healthRecord.findFirst({
     where: { profileId, kind: HealthRecordKind.LAB_ANALYSIS },
@@ -91,7 +89,7 @@ export async function askLabAssistantFromBook(
 
   let block: string | null = null;
   if (session && pid) {
-    block = await latestLabContextBlock(session.familyId, pid);
+    block = await latestLabContextBlock(session, pid);
   }
   const usedLastLab = !!block;
 
