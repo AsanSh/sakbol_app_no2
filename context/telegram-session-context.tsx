@@ -147,15 +147,15 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const fromCookie = await loadSessionFromCookie();
-      if (cancelled) return;
-      if (fromCookie) {
-        setState({ status: "authenticated", viewer: fromCookie });
-        setAuthReady(true);
-        return;
-      }
-
-      if (!hasTelegramWebAppBridge()) {
+      const hasBridge = hasTelegramWebAppBridge();
+      if (!hasBridge) {
+        const fromCookie = await loadSessionFromCookie();
+        if (cancelled) return;
+        if (fromCookie) {
+          setState({ status: "authenticated", viewer: fromCookie });
+          setAuthReady(true);
+          return;
+        }
         if (!cancelled) {
           setState({ status: "unauthenticated", reason: "web_login_required" });
           setAuthReady(true);
@@ -274,6 +274,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
 
       const data = (await res.json()) as { profile: TelegramViewer };
       setState({ status: "authenticated", viewer: data.profile });
+      window.dispatchEvent(new Event("sakbol:session-updated"));
       setAuthReady(true);
     }
 

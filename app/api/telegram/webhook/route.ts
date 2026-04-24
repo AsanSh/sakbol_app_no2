@@ -5,6 +5,7 @@ import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { prisma } from "@/lib/prisma";
 import { getServerAppOrigin } from "@/lib/app-origin";
 import { acceptOrDeferProfileAccessInvite } from "@/lib/profile-access-accept";
+import { telegramMiniAppStartUrlFromEnv } from "@/lib/telegram-public-urls";
 import {
   telegramDownloadFile,
   telegramSendMessageWithUrlButton,
@@ -98,7 +99,8 @@ export async function POST(req: NextRequest) {
           inviteToken: shareToken,
           telegramUserId: tg,
         });
-        const openUrl = `${getServerAppOrigin()}/share-profile/${encodeURIComponent(shareToken)}`;
+        const webAcceptUrl = `${getServerAppOrigin()}/share-profile/${encodeURIComponent(shareToken)}`;
+        const openUrl = telegramMiniAppStartUrlFromEnv(`share_${shareToken}`) ?? webAcceptUrl;
         const nameFor = (n: string) => `«${n}»`;
 
         if (result.status === "accepted") {
@@ -106,7 +108,7 @@ export async function POST(req: NextRequest) {
             String(chatId),
             `✅ Доступ к профилю ${nameFor(result.sourceName)} получен.\n\n` +
               "Откройте мини-приложение — выберите этот профиль в переключателе сверху (анализы и динамика обновятся).",
-            "Открыть SakBol",
+            "Открыть Mini App",
             openUrl,
           );
           if (!ok.ok) {
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
             String(chatId),
             `✅ Приглашение к ${nameFor(result.sourceName)} сохранено.\n\n` +
               "Дальше: откройте мини-приложение и укажите ПИН/ИНН — после регистрации совместный профиль появится в переключателе.",
-            "Открыть SakBol",
+            "Открыть Mini App",
             openUrl,
           );
           if (!ok.ok) {
