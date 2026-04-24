@@ -9,10 +9,19 @@ import {
 } from "@/lib/session";
 import { buildDisplayName, parseTelegramUserFromInitData } from "@/lib/telegram-init-data";
 import { verifyTelegramInitData } from "@/lib/telegram";
-import { applyPendingProfileAccessForTelegramUser } from "@/lib/profile-access-accept";
+import {
+  acceptOrDeferProfileAccessInvite,
+  applyPendingProfileAccessForTelegramUser,
+} from "@/lib/profile-access-accept";
 import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
 
 export const dynamic = "force-dynamic";
+
+function shareTokenFromInitData(initData: string): string | null {
+  const raw = new URLSearchParams(initData).get("start_param")?.trim();
+  if (!raw || !/^share_[0-9a-f-]{36}$/i.test(raw)) return null;
+  return raw.slice("share_".length);
+}
 
 function profileJson(profile: {
   id: string;
@@ -70,6 +79,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const telegramUserId = String(user.id);
+    const startShareToken = shareTokenFromInitData(initData);
+    if (startShareToken) {
+      await acceptOrDeferProfileAccessInvite({ inviteToken: startShareToken, telegramUserId });
+    }
+
     let profile = await prisma.profile.findUnique({
       where: { telegramUserId },
     });
@@ -95,32 +109,47 @@ export async function POST(req: NextRequest) {
       }
       const taken = await prisma.profile.findFirst({ where: { pinAnchor } });
       if (taken) {
-        return NextResponse.json(
-          { error: "Этот ПИН уже зарегистрирован.", code: "PIN_IN_USE" },
-          { status: 409 },
-        );
+        if (taken.telegramUserId && taken.telegramUserId !== telegramUserId) {
+          return NextResponse.json(
+            { error: "Этот ПИН уже зарегистрирован.", code: "PIN_IN_USE" },
+            { status: 409 },
+          );
+        }
+
+        profile = await prisma.profile.update({
+          where: { id: taken.id },
+          data: {
+            telegramUserId,
+            telegramUsername: user.username?.trim()
+              ? user.username.replace(/^@/, "").toLowerCase()
+              : taken.telegramUsername,
+            avatarUrl: user.photo_url ?? taken.avatarUrl,
+          },
+        });
       }
 
-      const family = await prisma.family.create({
-        data: {
-          name: `${buildDisplayName(user)} — үй-бүлө`,
-        },
-      });
+      if (!profile) {
+        const family = await prisma.family.create({
+          data: {
+            name: `${buildDisplayName(user)} — үй-бүлө`,
+          },
+        });
 
-      profile = await prisma.profile.create({
-        data: {
-          familyId: family.id,
-          displayName: buildDisplayName(user),
-          telegramUserId,
-          telegramUsername: user.username?.trim()
-            ? user.username.replace(/^@/, "").toLowerCase()
-            : null,
-          avatarUrl: user.photo_url ?? null,
-          familyRole: FamilyRole.ADMIN,
-          isManaged: false,
-          pinAnchor,
-        },
-      });
+        profile = await prisma.profile.create({
+          data: {
+            familyId: family.id,
+            displayName: buildDisplayName(user),
+            telegramUserId,
+            telegramUsername: user.username?.trim()
+              ? user.username.replace(/^@/, "").toLowerCase()
+              : null,
+            avatarUrl: user.photo_url ?? null,
+            familyRole: FamilyRole.ADMIN,
+            isManaged: false,
+            pinAnchor,
+          },
+        });
+      }
     } else {
       if (user.photo_url && user.photo_url !== profile.avatarUrl) {
         profile = await prisma.profile.update({
