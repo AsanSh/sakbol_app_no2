@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  HandHeart,
   Loader2,
   MapPin,
   Phone,
@@ -130,12 +131,19 @@ export function DoctorDiscoveryHome({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [mainTab, setMainTab] = useState<"doctors" | "clinics">("doctors");
+  const [mainTab, setMainTab] = useState<"doctors" | "clinics" | "caregivers">("doctors");
   const [meta, setMeta] = useState<MetaPayload | null>(null);
   const [metaErr, setMetaErr] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 380);
+
+  const searchForRequest = useMemo(() => {
+    if (mainTab === "caregivers") {
+      return debouncedSearch.trim() || "сиделк";
+    }
+    return debouncedSearch;
+  }, [mainTab, debouncedSearch]);
   const [category, setCategory] = useState<string | null>(null);
   const [city, setCity] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -246,7 +254,7 @@ export function DoctorDiscoveryHome({
   }, [router, pathname, searchParams]);
 
   const loadDoctors = useCallback(async () => {
-    if (mainTab !== "doctors") return;
+    if (mainTab !== "doctors" && mainTab !== "caregivers") return;
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -255,7 +263,7 @@ export function DoctorDiscoveryHome({
     const q = new URLSearchParams();
     q.set("page", String(page));
     q.set("perPage", String(perPage));
-    if (debouncedSearch.trim()) q.set("search", debouncedSearch.trim());
+    if (searchForRequest.trim()) q.set("search", searchForRequest.trim());
     if (category) q.set("category", category);
     if (city) q.set("city", city);
     try {
@@ -269,7 +277,7 @@ export function DoctorDiscoveryHome({
     } finally {
       setListLoading(false);
     }
-  }, [mainTab, page, perPage, debouncedSearch, category, city]);
+  }, [mainTab, page, perPage, searchForRequest, category, city]);
 
   useEffect(() => {
     void loadDoctors();
@@ -322,34 +330,67 @@ export function DoctorDiscoveryHome({
         ) : null}
       </header>
 
-      <div className="inline-flex w-full gap-1 rounded-xl bg-white p-1 shadow-sm ring-1 ring-slate-200/90 sm:w-auto">
-        <button
-          type="button"
-          onClick={() => setMainTab("doctors")}
-          className={cn(
-            "flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition-all sm:flex-none",
-            mainTab === "doctors"
-              ? "bg-teal-50 text-health-primary shadow-sm ring-1 ring-teal-100"
-              : "text-slate-600 hover:bg-slate-50",
-          )}
-        >
-          <Stethoscope className="h-4 w-4 shrink-0" aria-hidden />
-          {lang === "ru" ? "Врачи" : "Дарыерлер"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setMainTab("clinics")}
-          className={cn(
-            "flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-semibold transition-all sm:flex-none",
-            mainTab === "clinics"
-              ? "bg-teal-50 text-health-primary shadow-sm ring-1 ring-teal-100"
-              : "text-slate-600 hover:bg-slate-50",
-          )}
-        >
-          <Building2 className="h-4 w-4 shrink-0" aria-hidden />
-          {t(lang, "home.clinics.title")}
-        </button>
+      <div
+        className="mx-auto w-full max-w-md rounded-full bg-[#e3e3e5]/90 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] sm:max-w-2xl"
+        role="tablist"
+        aria-label={lang === "ru" ? "Каталог" : "Каталог"}
+      >
+        <div className="grid grid-cols-3 gap-0.5 sm:gap-0">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mainTab === "doctors"}
+            onClick={() => setMainTab("doctors")}
+            className={cn(
+              "flex min-h-[40px] items-center justify-center gap-1 rounded-full px-1.5 text-[12px] font-semibold transition-all sm:min-h-[44px] sm:px-2 sm:text-[13px]",
+              mainTab === "doctors"
+                ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+                : "text-slate-600 hover:text-slate-800",
+            )}
+          >
+            <Stethoscope className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
+            <span className="truncate">{t(lang, "home.segment.doctors")}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mainTab === "clinics"}
+            onClick={() => setMainTab("clinics")}
+            className={cn(
+              "flex min-h-[40px] items-center justify-center gap-1 rounded-full px-1.5 text-[12px] font-semibold transition-all sm:min-h-[44px] sm:px-2 sm:text-[13px]",
+              mainTab === "clinics"
+                ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+                : "text-slate-600 hover:text-slate-800",
+            )}
+          >
+            <Building2 className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
+            <span className="truncate">{t(lang, "home.clinics.title")}</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mainTab === "caregivers"}
+            onClick={() => {
+              setMainTab("caregivers");
+              setCategory(null);
+              stripDoctorCatFromUrl();
+            }}
+            className={cn(
+              "flex min-h-[40px] items-center justify-center gap-1 rounded-full px-1.5 text-[12px] font-semibold transition-all sm:min-h-[44px] sm:px-2 sm:text-[13px]",
+              mainTab === "caregivers"
+                ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+                : "text-slate-600 hover:text-slate-800",
+            )}
+          >
+            <HandHeart className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
+            <span className="truncate">{t(lang, "home.segment.caregivers")}</span>
+          </button>
+        </div>
       </div>
+
+      {mainTab === "caregivers" ? (
+        <p className="text-center text-[11px] text-slate-500">{t(lang, "home.caregivers.hint")}</p>
+      ) : null}
 
       <div className="rounded-xl bg-white p-3.5 shadow-md ring-1 ring-slate-200/80 sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -366,7 +407,7 @@ export function DoctorDiscoveryHome({
               className="min-h-[44px] w-full rounded-xl border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
               aria-label={t(lang, "home.search.placeholder")}
             />
-            {listLoading ? (
+            {listLoading && (mainTab === "doctors" || mainTab === "caregivers") ? (
               <Loader2 className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-teal-600" />
             ) : null}
           </div>
@@ -381,7 +422,7 @@ export function DoctorDiscoveryHome({
             </button>
           </div>
         </div>
-        {(category || city) && mainTab === "doctors" ? (
+        {(category || city) && (mainTab === "doctors" || mainTab === "caregivers") ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {category ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-caption font-medium text-teal-900 ring-1 ring-teal-100">
@@ -431,7 +472,7 @@ export function DoctorDiscoveryHome({
         </p>
       ) : null}
 
-      {mainTab === "doctors" ? (
+      {mainTab === "doctors" || mainTab === "caregivers" ? (
         <>
           {listErr ? (
             <p className="text-sm text-red-700">{listErr}</p>
