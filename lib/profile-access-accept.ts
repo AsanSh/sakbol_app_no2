@@ -44,6 +44,14 @@ export async function acceptOrDeferProfileAccessInvite(input: {
       select: { telegramUserId: true },
     });
     if (g?.telegramUserId === telegramUserId) {
+      if (access.pendingTelegramUserId) {
+        await prisma.profileAccess
+          .update({
+            where: { id: access.id },
+            data: { pendingTelegramUserId: null },
+          })
+          .catch(() => {});
+      }
       return { status: "already_accepted", sourceName };
     }
     return { status: "busy_other_user" };

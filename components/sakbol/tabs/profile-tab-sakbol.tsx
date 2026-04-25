@@ -343,10 +343,17 @@ function ShareProfileSection({
   const webInvitePath = invite ? `/share-profile/${invite.inviteToken}` : "";
   const webInviteUrl = invite ? `${origin}${webInvitePath}` : null;
   const botU = typeof window !== "undefined" ? telegramBotUsernameFromEnv() : "";
-  /** В Telegram: открывается бот с start= (если в env задан @бот). */
-  const telegramStartUrl =
-    invite && botU ? `https://t.me/${botU}?start=share_${invite.inviteToken}` : null;
-  const qrValue = telegramStartUrl ?? webInviteUrl;
+  /** В Telegram: открывается Mini App сразу с start_param (надёжная доставка токена). */
+  const telegramMiniAppUrl =
+    invite && botU
+      ? `https://t.me/${botU}?startapp=share_${encodeURIComponent(invite.inviteToken)}`
+      : null;
+  /** Fallback на чат с ботом (для случаев, когда Mini App не настроен). */
+  const telegramBotChatUrl =
+    invite && botU
+      ? `https://t.me/${botU}?start=share_${encodeURIComponent(invite.inviteToken)}`
+      : null;
+  const qrValue = telegramMiniAppUrl ?? webInviteUrl;
 
   const handleCreate = async () => {
     if (!selectedProfileId) return;
@@ -426,21 +433,29 @@ function ShareProfileSection({
         </div>
       ) : (
         <div className="mt-3 space-y-3">
-          {telegramStartUrl && (
+          {telegramMiniAppUrl && (
             <p className="text-[11px] text-slate-600">
-              QR ведёт в чат с ботом (удобно, если смотрите с телефона). Ссылка сайта — ниже, если
-              открывали в браузере.
+              QR откроет Mini App SakBol в Telegram у получателя — профиль появится в переключателе
+              автоматически. Сайт-ссылка ниже — на случай, если у получателя нет Telegram.
             </p>
           )}
           <div className="flex justify-center rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
             {qrValue && <QRCodeSVG value={qrValue} size={160} level="M" includeMargin />}
           </div>
-          {telegramStartUrl && (
+          {telegramMiniAppUrl && (
             <a
-              href={telegramStartUrl}
+              href={telegramMiniAppUrl}
               className="flex w-full items-center justify-center rounded-xl bg-sky-50 py-2.5 text-sm font-semibold text-sky-900 ring-1 ring-sky-200"
             >
-              Открыть в Telegram
+              Открыть Mini App в Telegram
+            </a>
+          )}
+          {telegramBotChatUrl && (
+            <a
+              href={telegramBotChatUrl}
+              className="flex w-full items-center justify-center rounded-xl bg-slate-50 py-2 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200"
+            >
+              Открыть чат с ботом (резерв)
             </a>
           )}
           <p className="break-all rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-mono text-slate-700 ring-1 ring-slate-100">
@@ -474,8 +489,8 @@ function ShareProfileSection({
             </button>
           </div>
           <p className="text-[10px] text-slate-500">
-            Скан в камере: предпочтительно вариант в Telegram. В браузере — по ссылке на сайт. В чате с
-            ботом по QR придёт кнопка «Принять в SakBol».
+            Скан в камере: лучше всего — Mini App в Telegram (открывается сразу). В браузере —
+            ссылка на сайт. Через чат с ботом — резерв, если Mini App у получателя ещё не открывался.
           </p>
         </div>
       )}

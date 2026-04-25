@@ -58,6 +58,40 @@ function looksLikeTelegramWebApp(WebApp: {
   return /tgWebAppData|tgWebAppVersion|tgWebAppPlatform/i.test(window.location.hash);
 }
 
+function readStartParamFromInitData(initData: string): string | null {
+  try {
+    return new URLSearchParams(initData).get("start_param")?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Если в Mini App пришёл `start_param=share_*`, отправим initData на сервер,
+ * чтобы привязать ProfileAccess к текущему telegramUserId, даже если у пользователя
+ * уже есть cookie-сессия. Без этого QR-flow терял токен после повторного открытия Mini App.
+ */
+async function applyShareFromInitDataIfPresent(initData: string): Promise<boolean> {
+  const startParam = readStartParamFromInitData(initData);
+  if (!startParam || !/^share_/i.test(startParam)) return false;
+  try {
+    const res = await fetch("/api/profile/access/apply-from-init", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ initData }),
+    });
+    if (!res.ok) {
+      console.warn("[telegram session] apply-from-init failed", res.status);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn("[telegram session] apply-from-init error", e);
+    return false;
+  }
+}
+
 export function TelegramSessionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<TelegramSessionState>({ status: "idle" });
   const [authReady, setAuthReady] = useState(false);
@@ -120,6 +154,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       return { ok: false, error: "Пустой ответ сервера." };
     }
     pendingInitDataRef.current = null;
+    await applyShareFromInitDataIfPresent(initData);
     setState({ status: "authenticated", viewer: j.profile });
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("sakbol:session-updated"));
@@ -240,7 +275,9 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         }
         const fb = await loadSessionFromCookie();
         if (!cancelled && fb) {
+          await applyShareFromInitDataIfPresent(initData);
           setState({ status: "authenticated", viewer: fb });
+          window.dispatchEvent(new Event("sakbol:session-updated"));
           setAuthReady(true);
           return;
         }
@@ -257,7 +294,9 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       if (!res.ok) {
         const fb = await loadSessionFromCookie();
         if (!cancelled && fb) {
+          await applyShareFromInitDataIfPresent(initData);
           setState({ status: "authenticated", viewer: fb });
+          window.dispatchEvent(new Event("sakbol:session-updated"));
           setAuthReady(true);
           return;
         }
@@ -273,6 +312,9 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
       }
 
       const data = (await res.json()) as { profile: TelegramViewer };
+      // Дублирующий проход на случай, если share-токен в start_param не был обработан в основном auth-роуте
+      // (миграции, гонки, edge cases). Идемпотентно.
+      await applyShareFromInitDataIfPresent(initData);
       setState({ status: "authenticated", viewer: data.profile });
       window.dispatchEvent(new Event("sakbol:session-updated"));
       setAuthReady(true);
