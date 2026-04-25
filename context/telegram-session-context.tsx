@@ -1,8 +1,11 @@
 "use client";
 
 /**
- * Единая сессия SakBol (веб: cookie; Telegram Mini App: initData + тот же cookie).
- * Схема: 1) всегда GET /api/auth/session; 2) при отсутствии сессии в Telegram — initData.
+ * Единая сессия SakBol.
+ * - Веб (без Telegram WebApp): cookie-сессия (/api/auth/session).
+ * - Telegram Mini App: всегда отправляем initData → /api/auth/telegram (там же и share-токен).
+ *
+ * Состояния: idle → loading → (authenticated | needs_new_user_pin | error | unauthenticated).
  */
 import {
   createContext,
@@ -25,11 +28,13 @@ export type TelegramViewer = {
   needsPinCompletion?: boolean;
 };
 
+/** `error` — Mini App-специфичный сбой (нет initData, плохая подпись, упал сервер). */
 export type TelegramSessionState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "unauthenticated"; reason?: string }
   | { status: "needs_new_user_pin" }
+  | { status: "error"; reason: string; canRetry: boolean }
   | { status: "authenticated"; viewer: TelegramViewer };
 
 type SubmitPinResult = { ok: true } | { ok: false; error: string };
@@ -45,6 +50,9 @@ type TelegramSessionContextValue = {
 };
 
 const TelegramSessionContext = createContext<TelegramSessionContextValue | null>(null);
+
+const INIT_DATA_RETRY_TICKS = 60; // 60 × 50 мс = 3 с
+const INIT_DATA_RETRY_DELAY = 50;
 
 function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));
@@ -69,7 +77,8 @@ function readStartParamFromInitData(initData: string): string | null {
 /**
  * Если в Mini App пришёл `start_param=share_*`, отправим initData на сервер,
  * чтобы привязать ProfileAccess к текущему telegramUserId, даже если у пользователя
- * уже есть cookie-сессия. Без этого QR-flow терял токен после повторного открытия Mini App.
+ * уже есть cookie-сессия (или /api/auth/telegram по какой-то причине пропустил токен).
+ * Идемпотентно.
  */
 async function applyShareFromInitDataIfPresent(initData: string): Promise<boolean> {
   const startParam = readStartParamFromInitData(initData);
@@ -137,12 +146,17 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
     if (!initData) {
       return { ok: false, error: "Нет данных Telegram. Закройте и откройте мини-апп снова." };
     }
-    const res = await fetch("/api/auth/telegram", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ initData, pin }),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/api/auth/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ initData, pin }),
+      });
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Сеть недоступна." };
+    }
     const j = (await res.json().catch(() => ({}))) as {
       error?: string;
       profile?: TelegramViewer;
@@ -166,10 +180,42 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function loadSessionFromCookie(): Promise<TelegramViewer | null> {
-      const res = await fetch("/api/auth/session", { credentials: "same-origin" });
-      if (!res.ok) return null;
-      const data = (await res.json()) as { profile: TelegramViewer };
-      return data.profile;
+      try {
+        const res = await fetch("/api/auth/session", { credentials: "same-origin" });
+        if (!res.ok) return null;
+        const data = (await res.json()) as { profile: TelegramViewer };
+        return data.profile;
+      } catch {
+        return null;
+      }
+    }
+
+    async function readWebAppInitData(): Promise<{
+      WebApp: unknown;
+      initData: string;
+      inMiniApp: boolean;
+    }> {
+      type WebAppType = Awaited<typeof import("@twa-dev/sdk")>["default"];
+      let WebApp: WebAppType | null = null;
+      try {
+        const mod = await import("@twa-dev/sdk");
+        WebApp = mod.default;
+        WebApp.ready();
+      } catch {
+        return { WebApp: null, initData: "", inMiniApp: false };
+      }
+
+      let initData = WebApp.initData ?? "";
+      const inMiniApp = looksLikeTelegramWebApp(WebApp);
+      if (!initData && inMiniApp) {
+        for (let i = 0; i < INIT_DATA_RETRY_TICKS; i++) {
+          await sleep(INIT_DATA_RETRY_DELAY);
+          if (cancelled) break;
+          initData = WebApp.initData ?? "";
+          if (initData) break;
+        }
+      }
+      return { WebApp, initData, inMiniApp };
     }
 
     async function authenticate() {
@@ -182,8 +228,26 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const hasBridge = hasTelegramWebAppBridge();
-      if (!hasBridge) {
+      // 1) Обычный браузер: только cookie.
+      if (!hasTelegramWebAppBridge()) {
+        const fromCookie = await loadSessionFromCookie();
+        if (cancelled) return;
+        if (fromCookie) {
+          setState({ status: "authenticated", viewer: fromCookie });
+        } else {
+          setState({ status: "unauthenticated", reason: "web_login_required" });
+        }
+        setAuthReady(true);
+        return;
+      }
+
+      // 2) Telegram Mini App: ждём initData до 3 с, затем шлём на сервер.
+      const { initData, inMiniApp } = await readWebAppInitData();
+      if (cancelled) return;
+
+      if (!initData) {
+        // initData нет вообще — может, обычный браузер с расширением Telegram WebApp,
+        // но не сам Mini App. Пробуем cookie.
         const fromCookie = await loadSessionFromCookie();
         if (cancelled) return;
         if (fromCookie) {
@@ -191,129 +255,96 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
           setAuthReady(true);
           return;
         }
-        if (!cancelled) {
-          setState({ status: "unauthenticated", reason: "web_login_required" });
-          setAuthReady(true);
-        }
-        return;
-      }
-
-      type WebAppType = Awaited<typeof import("@twa-dev/sdk")>["default"];
-      let WebApp: WebAppType | null = null;
-      try {
-        const mod = await import("@twa-dev/sdk");
-        WebApp = mod.default;
-        WebApp.ready();
-      } catch {
-        /* no SDK */
-      }
-
-      let initData = "";
-      if (WebApp) {
-        initData = WebApp.initData ?? "";
-        if (!initData && looksLikeTelegramWebApp(WebApp)) {
-          for (let i = 0; i < 50; i++) {
-            await sleep(50);
-            if (cancelled) return;
-            initData = WebApp.initData ?? "";
-            if (initData) break;
-          }
-        }
-      }
-
-      const inTelegramMiniApp = WebApp ? looksLikeTelegramWebApp(WebApp) : false;
-
-      if (!initData && !inTelegramMiniApp) {
-        const again = await loadSessionFromCookie();
-        if (cancelled) return;
-        if (again) {
-          setState({ status: "authenticated", viewer: again });
-          setAuthReady(true);
-          return;
-        }
-        if (!cancelled) {
-          setState({ status: "unauthenticated", reason: "web_login_required" });
-          setAuthReady(true);
-        }
-        return;
-      }
-
-      if (!initData) {
-        const again = await loadSessionFromCookie();
-        if (cancelled) return;
-        if (again) {
-          setState({ status: "authenticated", viewer: again });
-          setAuthReady(true);
-          return;
-        }
-        if (!cancelled) {
+        if (inMiniApp) {
           setState({
-            status: "unauthenticated",
-            reason: inTelegramMiniApp ? "telegram_init_data_missing" : "no_init_data",
+            status: "error",
+            reason:
+              "Telegram не передал данные. Перезапустите мини-приложение (закройте и откройте снова через бота).",
+            canRetry: true,
           });
-          setAuthReady(true);
+        } else {
+          setState({ status: "unauthenticated", reason: "web_login_required" });
         }
+        setAuthReady(true);
         return;
       }
 
-      const res = await fetch("/api/auth/telegram", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ initData }),
-      });
-
+      // 3) initData есть — авторизуемся.
+      let res: Response;
+      try {
+        res = await fetch("/api/auth/telegram", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ initData }),
+        });
+      } catch (e) {
+        if (cancelled) return;
+        setState({
+          status: "error",
+          reason:
+            e instanceof Error ? `Сеть: ${e.message}` : "Не удалось связаться с сервером.",
+          canRetry: true,
+        });
+        setAuthReady(true);
+        return;
+      }
       if (cancelled) return;
 
+      // PIN_REQUIRED → отдельная форма ниже.
       if (res.status === 400) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
+        const j = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          code?: string;
+        };
         if (j.code === "PIN_REQUIRED") {
           pendingInitDataRef.current = initData;
           setState({ status: "needs_new_user_pin" });
           setAuthReady(true);
           return;
         }
+        // Иной 400: пытаемся cookie, потом ошибка
         const fb = await loadSessionFromCookie();
-        if (!cancelled && fb) {
+        if (cancelled) return;
+        if (fb) {
           await applyShareFromInitDataIfPresent(initData);
           setState({ status: "authenticated", viewer: fb });
           window.dispatchEvent(new Event("sakbol:session-updated"));
           setAuthReady(true);
           return;
         }
-        if (!cancelled) {
-          setState({
-            status: "unauthenticated",
-            reason: j.error ?? res.statusText,
-          });
-          setAuthReady(true);
-        }
+        setState({
+          status: "error",
+          reason: j.error ?? "Сервер отклонил данные Telegram.",
+          canRetry: true,
+        });
+        setAuthReady(true);
         return;
       }
 
       if (!res.ok) {
+        // 401 (плохая подпись), 503 (нет TELEGRAM_BOT_TOKEN), 5xx — это сбой настройки.
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
         const fb = await loadSessionFromCookie();
-        if (!cancelled && fb) {
+        if (cancelled) return;
+        if (fb) {
           await applyShareFromInitDataIfPresent(initData);
           setState({ status: "authenticated", viewer: fb });
           window.dispatchEvent(new Event("sakbol:session-updated"));
           setAuthReady(true);
           return;
         }
-        if (!cancelled) {
-          const j = (await res.json().catch(() => ({}))) as { error?: string };
-          setState({
-            status: "unauthenticated",
-            reason: j.error ?? res.statusText,
-          });
-          setAuthReady(true);
-        }
+        setState({
+          status: "error",
+          reason: j.error ?? `Сервер вернул ${res.status}.`,
+          canRetry: true,
+        });
+        setAuthReady(true);
         return;
       }
 
       const data = (await res.json()) as { profile: TelegramViewer };
-      // Дублирующий проход на случай, если share-токен в start_param не был обработан в основном auth-роуте
-      // (миграции, гонки, edge cases). Идемпотентно.
+      // Дублирующий проход на случай, если share-токен в start_param не был обработан в основном auth-роуте.
       await applyShareFromInitDataIfPresent(initData);
       setState({ status: "authenticated", viewer: data.profile });
       window.dispatchEvent(new Event("sakbol:session-updated"));

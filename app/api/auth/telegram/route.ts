@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
     console.error(
-      "[telegram] TELEGRAM_BOT_TOKEN отсутствует в runtime. Часто: переменная только в Production, а деплой Preview; или не сделали Redeploy после добавления env. Vercel: All Environments или дублируйте в Preview + Production.",
+      "[auth/telegram] TELEGRAM_BOT_TOKEN отсутствует в runtime. Проверьте Vercel env (All Environments) и сделайте Redeploy.",
     );
     return NextResponse.json(
       { error: "TELEGRAM_BOT_TOKEN is not configured on the server." },
@@ -78,15 +78,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "initData has no user" }, { status: 400 });
   }
 
+  const telegramUserId = String(user.id);
+  const startShareToken = shareTokenFromInitData(initData);
+
+  console.log("[auth/telegram] start", {
+    telegramUserId,
+    hasShareToken: Boolean(startShareToken),
+    sharePrefix: startShareToken?.slice(0, 6) ?? null,
+    hasPin: pinRaw.length > 0,
+  });
+
   try {
-    const telegramUserId = String(user.id);
-    const startShareToken = shareTokenFromInitData(initData);
     if (startShareToken) {
-      console.log("[telegram auth share] Detected start_param share token", {
-        tokenLength: startShareToken.length,
-        tokenPrefix: startShareToken.slice(0, 6),
+      const r = await acceptOrDeferProfileAccessInvite({
+        inviteToken: startShareToken,
+        telegramUserId,
       });
-      await acceptOrDeferProfileAccessInvite({ inviteToken: startShareToken, telegramUserId });
+      console.log("[auth/telegram] share status", { result: r.status });
     }
 
     let profile = await prisma.profile.findUnique({
@@ -95,6 +103,9 @@ export async function POST(req: NextRequest) {
 
     if (!profile) {
       if (!pinRaw) {
+        console.log("[auth/telegram] no profile + no pin → PIN_REQUIRED", {
+          telegramUserId,
+        });
         return NextResponse.json(
           {
             error: "Укажите ПИН/ИНН для регистрации.",
@@ -120,7 +131,7 @@ export async function POST(req: NextRequest) {
             { status: 409 },
           );
         }
-
+        // Существующий профиль (без telegram или с этим же telegram) — линкуем.
         profile = await prisma.profile.update({
           where: { id: taken.id },
           data: {
@@ -130,6 +141,10 @@ export async function POST(req: NextRequest) {
               : taken.telegramUsername,
             avatarUrl: user.photo_url ?? taken.avatarUrl,
           },
+        });
+        console.log("[auth/telegram] linked existing profile by PIN", {
+          profileId: profile.id,
+          telegramUserId,
         });
       }
 
@@ -154,28 +169,36 @@ export async function POST(req: NextRequest) {
             pinAnchor,
           },
         });
+        console.log("[auth/telegram] created new profile + family", {
+          profileId: profile.id,
+          familyId: family.id,
+        });
       }
     } else {
-      if (user.photo_url && user.photo_url !== profile.avatarUrl) {
+      // Обновляем metadata.
+      const photoChanged = user.photo_url && user.photo_url !== profile.avatarUrl;
+      const incomingUname =
+        user.username !== undefined
+          ? user.username.trim() === ""
+            ? null
+            : user.username.replace(/^@/, "").toLowerCase()
+          : undefined;
+      const unameChanged = incomingUname !== undefined && incomingUname !== profile.telegramUsername;
+      if (photoChanged || unameChanged) {
         profile = await prisma.profile.update({
           where: { id: profile.id },
-          data: { avatarUrl: user.photo_url },
+          data: {
+            ...(photoChanged ? { avatarUrl: user.photo_url ?? null } : {}),
+            ...(unameChanged ? { telegramUsername: incomingUname ?? null } : {}),
+          },
         });
       }
 
-      if (user.username !== undefined) {
-        const uname =
-          user.username.trim() === "" ? null : user.username.replace(/^@/, "").toLowerCase();
-        if (uname !== profile.telegramUsername) {
-          profile = await prisma.profile.update({
-            where: { id: profile.id },
-            data: { telegramUsername: uname },
-          });
-        }
-      }
-
+      // Юзер существует, но pinAnchor пустой — нужно завершить регистрацию.
       if (profile.pinAnchor == null) {
         if (!pinRaw) {
+          // Ранний выход: даём cookie (для применения отложенных доступов в /api/family/default),
+          // но фронтенд увидит needsPinCompletion и попросит ввод PIN ещё раз через CompletePinForViewer.
           await applyPendingProfileAccessForTelegramUser(telegramUserId, profile.id);
           const tokenEarly = createSessionToken({
             profileId: profile.id,
@@ -214,7 +237,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await applyPendingProfileAccessForTelegramUser(telegramUserId, profile.id);
+    const applied = await applyPendingProfileAccessForTelegramUser(telegramUserId, profile.id);
+    if (applied > 0) {
+      console.log("[auth/telegram] applied pending shared invites", {
+        profileId: profile.id,
+        applied,
+      });
+    }
     await ensureFamilySubscription(profile.familyId);
 
     const token = createSessionToken({
@@ -243,7 +272,7 @@ export async function POST(req: NextRequest) {
         { status: 503 },
       );
     }
-    console.error("POST /api/auth/telegram", e);
+    console.error("[auth/telegram] unhandled", e);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

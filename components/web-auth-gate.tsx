@@ -17,7 +17,7 @@ function AuthBlockingShell() {
 
 /**
  * В обычном браузере без сессии не показываем приложение — только /login.
- * Telegram Mini App и публичные маршруты (/share) не затрагиваются.
+ * Telegram Mini App и публичные маршруты (/share, /share-profile) не затрагиваются.
  */
 export function WebAuthGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -25,7 +25,10 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
   const { authReady, isAuthenticated, state } = useTelegramSession();
 
   const isPublic =
-    pathname === "/login" || pathname === "/" || pathname.startsWith("/share/");
+    pathname === "/login" ||
+    pathname === "/" ||
+    pathname.startsWith("/share/") ||
+    pathname.startsWith("/share-profile/");
 
   useEffect(() => {
     if (!authReady || !isAuthenticated) return;
@@ -36,8 +39,11 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!authReady || isPublic) return;
-    if (!isAuthenticated && state.status === "unauthenticated") {
-      if (state.reason === "telegram_init_data_missing") return;
+    if (isAuthenticated) return;
+    // Telegram Mini App ошибки/PIN-кейсы решаются на уровне HomeEntry, а не редиректами.
+    if (state.status === "needs_new_user_pin") return;
+    if (state.status === "error") return;
+    if (state.status === "unauthenticated") {
       router.replace("/login");
     }
   }, [authReady, isPublic, isAuthenticated, router, state]);
@@ -51,11 +57,11 @@ export function WebAuthGate({ children }: { children: ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    if (state.status === "unauthenticated" && state.reason === "telegram_init_data_missing") {
-      return <>{children}</>;
-    }
-    if (state.status === "needs_new_user_pin") {
-      return <>{children}</>;
+    if (state.status === "needs_new_user_pin") return <>{children}</>;
+    if (state.status === "error") {
+      // На внутренних страницах при ошибке Mini App auth — отправляем на «/», там HomeEntry покажет диагностику с retry.
+      if (typeof window !== "undefined") router.replace("/");
+      return <AuthBlockingShell />;
     }
     return <AuthBlockingShell />;
   }

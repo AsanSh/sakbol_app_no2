@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { SakbolLanding } from "@/components/sakbol/sakbol-landing";
 import { SakbolMainClient } from "@/components/sakbol/sakbol-main-client";
+import { SakbolTwaErrorScreen } from "@/components/sakbol/sakbol-twa-error";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { clientLooksLikeTelegramWebApp } from "@/lib/client-twa-detection";
 
@@ -23,14 +24,16 @@ function useHydratedLooksLikeTwa() {
 }
 
 /**
- * Главная «/»: для гостя — посадочная с описанием сервиса; после входа — полное приложение.
- * Сценарии ПИН и ожидание initData в TWA сохраняем через основной клиент.
+ * Главная «/». Логика проста:
+ *   - В обычном браузере: гость → SakbolLanding; вошёл → SakbolMainClient.
+ *   - В Telegram Mini App: пока грузится — спиннер; ПИН — main client (там модал TelegramPinGates);
+ *     ошибка — экран ошибки с retry; вошёл — main client. Landing в TWA НЕ показываем никогда.
  */
 export function HomeEntry() {
   const { authReady, isAuthenticated, state } = useTelegramSession();
   const looksLikeTwa = useHydratedLooksLikeTwa();
 
-  if (!authReady || state.status === "loading") {
+  if (!authReady || state.status === "loading" || state.status === "idle") {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-health-bg">
         <div
@@ -49,11 +52,21 @@ export function HomeEntry() {
     return <SakbolMainClient />;
   }
 
-  if (state.status === "unauthenticated" && state.reason === "telegram_init_data_missing") {
-    if (!looksLikeTwa) {
-      return <SakbolLanding />;
+  if (state.status === "error") {
+    if (looksLikeTwa) {
+      return <SakbolTwaErrorScreen reason={state.reason} />;
     }
-    return <SakbolMainClient />;
+    // В браузере «error» = ошибка серверной интеграции → ведём на /login через landing.
+    return <SakbolLanding />;
+  }
+
+  // unauthenticated в TWA: тоже даём диагностику, не landing.
+  if (looksLikeTwa) {
+    const reason =
+      state.status === "unauthenticated" && state.reason
+        ? state.reason
+        : "Не удалось войти. Откройте мини-приложение заново.";
+    return <SakbolTwaErrorScreen reason={reason} />;
   }
 
   return <SakbolLanding />;
