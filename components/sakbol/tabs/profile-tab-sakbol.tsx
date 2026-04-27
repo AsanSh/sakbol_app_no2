@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
-import { ChevronDown, Copy, Share2, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, RefreshCw, Share2, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
 import { WebLoginPhoneCard } from "@/components/profile/web-login-phone-card";
@@ -326,12 +326,119 @@ type ShareInvite = {
   profileName: string;
 };
 
+type ApplyShareResult = {
+  ok: boolean;
+  hasShareToken?: boolean;
+  acceptStatus?: string | null;
+  acceptedSourceName?: string | null;
+  appliedPendingCount?: number;
+  stillPendingCount?: number;
+  acceptedAccessCount?: number;
+  error?: string;
+};
+
+function ApplyPendingSharesButton({ onApplied }: { onApplied: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<ApplyShareResult | null>(null);
+
+  const handleClick = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      type WebAppType = Awaited<typeof import("@twa-dev/sdk")>["default"];
+      let WebApp: WebAppType | null = null;
+      try {
+        const mod = await import("@twa-dev/sdk");
+        WebApp = mod.default;
+      } catch {
+        WebApp = null;
+      }
+      const initData = WebApp?.initData ?? "";
+      if (!initData) {
+        setResult({
+          ok: false,
+          error:
+            "Эта функция работает только в Telegram Mini App. Откройте SakBol через бота.",
+        });
+        return;
+      }
+      const res = await fetch("/api/profile/access/apply-from-init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ initData }),
+      });
+      const j = (await res.json()) as ApplyShareResult;
+      setResult(j);
+      if (j.ok && (j.appliedPendingCount ?? 0) > 0) {
+        onApplied();
+      }
+    } catch (e) {
+      setResult({ ok: false, error: e instanceof Error ? e.message : "Сетевая ошибка" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3">
+      <p className="text-[11px] font-semibold text-sky-900">
+        Получили QR-приглашение, но совместный профиль не появился?
+      </p>
+      <button
+        type="button"
+        onClick={() => void handleClick()}
+        disabled={busy}
+        className="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+      >
+        <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} />
+        {busy ? "Проверяем…" : "Перепроверить совместные доступы"}
+      </button>
+      {result ? (
+        <div className="mt-2 rounded-lg bg-white px-2 py-1.5 text-[11px] text-slate-800 ring-1 ring-slate-200">
+          {result.error ? (
+            <p className="text-red-700">{result.error}</p>
+          ) : (
+            <>
+              <p>
+                Применено новых доступов: <b>{result.appliedPendingCount ?? 0}</b>
+              </p>
+              <p>
+                Всего активных совместных профилей у вас: <b>{result.acceptedAccessCount ?? 0}</b>
+              </p>
+              {result.stillPendingCount && result.stillPendingCount > 0 ? (
+                <p className="mt-1 text-amber-800">
+                  Ожидают применения: <b>{result.stillPendingCount}</b>. Если это не вы — свяжитесь
+                  с владельцем приглашения, возможно ссылка отозвана.
+                </p>
+              ) : null}
+              {result.acceptStatus ? (
+                <p className="mt-1 text-slate-500">
+                  Статус токена: <code>{result.acceptStatus}</code>
+                  {result.acceptedSourceName ? (
+                    <>
+                      {" "}
+                      (профиль: <b>{result.acceptedSourceName}</b>)
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ShareProfileSection({
   lang,
   familyProfiles,
+  onReload,
 }: {
   lang: string;
   familyProfiles: ProfileSummary[];
+  onReload: () => void;
 }) {
   const [selectedProfileId, setSelectedProfileId] = useState(familyProfiles[0]?.id ?? "");
   const [invite, setInvite] = useState<ShareInvite | null>(null);
@@ -408,6 +515,10 @@ function ShareProfileSection({
       <p className="mt-1 text-xs text-[#70787d]">
         Поделитесь профилем родственника с другим пользователем — он сможет видеть и добавлять документы только для этого профиля.
       </p>
+
+      <div className="mt-3">
+        <ApplyPendingSharesButton onApplied={onReload} />
+      </div>
 
       {!invite ? (
         <div className="mt-3 space-y-2">
@@ -798,6 +909,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             <ShareProfileSection
               lang={lang}
               familyProfiles={(family?.profiles ?? []).filter((p) => !p.isSharedGuest)}
+              onReload={reload}
             />
 
             <section className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm">

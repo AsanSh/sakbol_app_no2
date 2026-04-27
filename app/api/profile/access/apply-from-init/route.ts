@@ -17,9 +17,15 @@ function shareTokenFromInitData(initData: string): string | null {
 }
 
 /**
- * Применяет share-токен из Telegram initData к уже залогиненному (через cookie) пользователю.
- * Гарантирует, что shared-профиль появится в переключателе сразу после возврата из QR-сценария
- * без необходимости полного пересоздания сессии.
+ * «Догнать» совместные доступы для Telegram-юзера в Mini App.
+ *
+ * 1) Если в `start_param` пришёл share-токен — обработать его (accept или defer).
+ * 2) В любом случае: найти **все** отложенные приглашения для этого Telegram ID и
+ *    применить их к существующему профилю. Это решает кейс, когда `start_param` не
+ *    дошёл до Mini App, но `pendingTelegramUserId` был записан webhook-ом или
+ *    предыдущим визитом.
+ *
+ * Идемпотентно. Можно вызывать с фронтенда сколько угодно раз.
  */
 export async function POST(req: NextRequest) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -54,50 +60,71 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "initData has no user" }, { status: 400 });
   }
 
-  const shareToken = shareTokenFromInitData(initData);
-  if (!shareToken) {
-    return NextResponse.json({ ok: true, applied: false, reason: "no_share_param" });
-  }
-
   const telegramUserId = String(user.id);
+  const shareToken = shareTokenFromInitData(initData);
 
   try {
-    console.log("[profile-access apply-from-init] applying share token", {
-      tokenPrefix: shareToken.slice(0, 6),
-      tokenLength: shareToken.length,
-      telegramUserId,
-    });
-
-    const result = await acceptOrDeferProfileAccessInvite({
-      inviteToken: shareToken,
-      telegramUserId,
-    });
+    let acceptStatus: string | null = null;
+    let acceptedSourceName: string | null = null;
+    if (shareToken) {
+      console.log("[apply-from-init] processing share token", {
+        tokenPrefix: shareToken.slice(0, 6),
+        telegramUserId,
+      });
+      const r = await acceptOrDeferProfileAccessInvite({
+        inviteToken: shareToken,
+        telegramUserId,
+      });
+      acceptStatus = r.status;
+      acceptedSourceName = "sourceName" in r ? r.sourceName : null;
+    }
 
     const profile = await prisma.profile.findUnique({
       where: { telegramUserId },
       select: { id: true },
     });
-    if (profile) {
-      const applied = await applyPendingProfileAccessForTelegramUser(
-        telegramUserId,
-        profile.id,
-      );
+
+    if (!profile) {
       return NextResponse.json({
         ok: true,
-        applied: true,
-        status: result.status,
-        appliedPendingCount: applied,
+        hasShareToken: Boolean(shareToken),
+        acceptStatus,
+        acceptedSourceName,
+        appliedPendingCount: 0,
+        reason: "no_profile_for_telegram",
       });
     }
 
+    const applied = await applyPendingProfileAccessForTelegramUser(
+      telegramUserId,
+      profile.id,
+    );
+
+    if (applied > 0) {
+      console.log("[apply-from-init] applied pending invites", {
+        profileId: profile.id,
+        applied,
+      });
+    }
+
+    const pendingCount = await prisma.profileAccess.count({
+      where: { pendingTelegramUserId: telegramUserId, granteeProfileId: null },
+    });
+    const acceptedCount = await prisma.profileAccess.count({
+      where: { granteeProfileId: profile.id, acceptedAt: { not: null }, revokedAt: null },
+    });
+
     return NextResponse.json({
       ok: true,
-      applied: false,
-      status: result.status,
-      reason: "no_profile_for_telegram",
+      hasShareToken: Boolean(shareToken),
+      acceptStatus,
+      acceptedSourceName,
+      appliedPendingCount: applied,
+      stillPendingCount: pendingCount,
+      acceptedAccessCount: acceptedCount,
     });
   } catch (e) {
-    console.error("[profile-access apply-from-init]", e);
+    console.error("[apply-from-init]", e);
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Server error" },
       { status: 500 },

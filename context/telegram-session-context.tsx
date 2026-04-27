@@ -69,23 +69,15 @@ function looksLikeTelegramWebApp(WebApp: {
   return /tgWebAppData|tgWebAppVersion|tgWebAppPlatform/i.test(window.location.hash);
 }
 
-function readStartParamFromInitData(initData: string): string | null {
-  try {
-    return new URLSearchParams(initData).get("start_param")?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Если в Mini App пришёл `start_param=share_*`, отправим initData на сервер,
- * чтобы привязать ProfileAccess к текущему telegramUserId, даже если у пользователя
- * уже есть cookie-сессия (или /api/auth/telegram по какой-то причине пропустил токен).
- * Идемпотентно.
+ * Применить ВСЕ ожидающие совместные доступы для текущего Telegram-юзера.
+ *
+ * Сервер сам разберётся: если в start_param есть share-токен — обработает; в любом
+ * случае все pendingTelegramUserId, привязанные к этому Telegram ID, найдут свой профиль
+ * и станут видимыми в /api/family/default. Идемпотентно — можно дёргать сколько угодно раз.
  */
 async function applyShareFromInitDataIfPresent(initData: string): Promise<boolean> {
-  const startParam = readStartParamFromInitData(initData);
-  if (!startParam || !/^share_/i.test(startParam)) return false;
+  if (!initData) return false;
   try {
     const res = await fetch("/api/profile/access/apply-from-init", {
       method: "POST",
@@ -96,6 +88,10 @@ async function applyShareFromInitDataIfPresent(initData: string): Promise<boolea
     if (!res.ok) {
       console.warn("[telegram session] apply-from-init failed", res.status);
       return false;
+    }
+    const j = (await res.json().catch(() => ({}))) as { appliedPendingCount?: number };
+    if ((j.appliedPendingCount ?? 0) > 0) {
+      console.log("[telegram session] applied pending shared invites", j.appliedPendingCount);
     }
     return true;
   } catch (e) {
