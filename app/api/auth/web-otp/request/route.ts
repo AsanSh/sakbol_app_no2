@@ -3,7 +3,7 @@ import { APP_NAME } from "@/constants";
 import { normalizeWebLoginPhoneDigits } from "@/lib/login-phone-digits";
 import { prisma } from "@/lib/prisma";
 import { telegramGetChatId, telegramSendOtpMessage } from "@/lib/telegram-bot-api";
-import { parseTelegramChatRef, stringLooksMostlyLikePhone } from "@/lib/telegram-identifier";
+import { parseTelegramChatRef } from "@/lib/telegram-identifier";
 import { generateWebOtpCode, hashWebOtpCode } from "@/lib/web-otp";
 import type { Profile } from "@prisma/client";
 
@@ -12,16 +12,15 @@ export const dynamic = "force-dynamic";
 const OTP_TTL_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 
-function isPhoneInTelegramFieldOnly(phoneField: string, telegramField: string): boolean {
-  if (phoneField.trim().length > 0) return false;
-  if (!telegramField.trim()) return false;
-  if (/(t\.me|telegram\.me|@)/i.test(telegramField)) return false;
-  return stringLooksMostlyLikePhone(telegramField);
-}
+const NOT_LINKED_HINT =
+  "Этот Telegram не привязан к SakBol. Сначала зарегистрируйтесь в мини-приложении бота (введите ПИН/ИНН), затем возвращайтесь сюда — код придёт в чат с ботом.";
 
 /**
- * Код в Telegram. Нужен чат с ботом. Узнаём вас по t.me / @ / id, либо по телефону,
- * сохранённому в Профиле (webLoginPhoneDigits).
+ * Web-вход по коду из Telegram.
+ *
+ * Фронт шлёт два поля: `telegram` (@username, t.me/…, числовой id) и/или `phone` (тот же номер,
+ * что пользователь сохранил в Профиле как «Номер для кода с сайта»). Хотя бы одно — обязательно.
+ * Код приходит в чат с ботом, поэтому профиль обязан быть привязан к Telegram.
  */
 export async function POST(req: NextRequest) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -36,119 +35,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
 
-  const rawPhone = body.phone?.trim() ?? "";
-  const rawTg = body.telegram?.trim() ?? "";
-  const phoneTreatedAsTg = isPhoneInTelegramFieldOnly(rawPhone, rawTg);
-  const phoneNorm =
-    normalizeWebLoginPhoneDigits(rawPhone) ??
-    (phoneTreatedAsTg ? (normalizeWebLoginPhoneDigits(rawTg) ?? null) : null);
-  const chatInput = phoneTreatedAsTg ? "" : rawTg;
-  const userFilledBoth = rawPhone.length > 0 && rawTg.length > 0;
+  const phoneNorm = normalizeWebLoginPhoneDigits(body.phone?.trim() ?? "");
+  const tgInput = body.telegram?.trim() ?? "";
 
-  if (!phoneNorm && !chatInput) {
+  if (!phoneNorm && !tgInput) {
     return NextResponse.json(
       {
         error:
-          "Укажите Telegram (@username, id, ссылка t.me) и/или номер телефона, сохранённый в Профиле (приложение → тот же номер в блоке «код с сайта»).",
+          "Укажите Telegram (@username, id, ссылка t.me) и/или номер телефона, сохранённый в Профиле.",
       },
       { status: 400 },
     );
   }
 
-  let profileByPhone: Profile | null = null;
+  let profile: Profile | null = null;
+
+  // 1) Сначала пробуем по сохранённому номеру (быстрый и стабильный путь).
   if (phoneNorm) {
-    profileByPhone = await prisma.profile.findFirst({ where: { webLoginPhoneDigits: phoneNorm } });
-    if (!profileByPhone && !chatInput) {
-      return NextResponse.json(
-        {
-          error:
-            "Этот номер в базе не найден. Сохраните его в Профиле в приложении (Номер для кода с сайта) — тот же формат, что в Telegram, либо используйте @username, под которым написали /start боту.",
-        },
-        { status: 404 },
-      );
-    }
+    profile = await prisma.profile.findFirst({ where: { webLoginPhoneDigits: phoneNorm } });
   }
 
-  let profileByTg: Profile | null = null;
-  if (chatInput) {
-    const parsed = parseTelegramChatRef(chatInput);
+  // 2) Если по номеру не нашлось — пробуем Telegram-идентификатор.
+  if (!profile && tgInput) {
+    const parsed = parseTelegramChatRef(tgInput);
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    if (/^\d{12}$/.test(parsed.ref) && parsed.ref.startsWith("996")) {
-      const p0 = await prisma.profile.findFirst({ where: { webLoginPhoneDigits: parsed.ref } });
-      if (p0?.telegramUserId) {
-        profileByTg = p0;
+
+    // 2a) @username сохранён в БД — ищем напрямую без обращения к Telegram API.
+    if (parsed.ref.startsWith("@")) {
+      const uname = parsed.ref.slice(1).toLowerCase();
+      profile = await prisma.profile.findFirst({
+        where: { telegramUsername: uname, NOT: { telegramUserId: null } },
+      });
+    }
+
+    // 2b) Иначе спросим Telegram — он вернёт chat_id (если пользователь нажимал /start).
+    if (!profile) {
+      const got = await telegramGetChatId(parsed.ref);
+      if (got.ok) {
+        profile = await prisma.profile.findUnique({ where: { telegramUserId: got.id } });
       }
     }
-    if (!profileByTg) {
-      const res = await telegramGetChatId(parsed.ref);
-      if (res.ok) {
-        const p1 = await prisma.profile.findUnique({ where: { telegramUserId: res.id } });
-        if (!p1) {
-          return NextResponse.json(
-            {
-              error:
-                "Этот Telegram не привязан к SakBol. Сначала мини-приложение бота, регистрация (ПИН).",
-            },
-            { status: 404 },
-          );
-        }
-        profileByTg = p1;
-      } else {
-        const unameFromRef = parsed.ref.startsWith("@")
-          ? parsed.ref.slice(1).toLowerCase()
-          : null;
-        if (unameFromRef) {
-          const pDb = await prisma.profile.findFirst({
-            where: { telegramUsername: unameFromRef, NOT: { telegramUserId: null } },
-          });
-          if (pDb) {
-            profileByTg = pDb;
-          }
-        }
-        if (!profileByTg) {
-          if (userFilledBoth) {
-            return NextResponse.json(
-              {
-                error:
-                  "Бот не видит такой @username / id, а по сохранённому @username в SakBol вас тоже не нашли. Войдите в мини-приложение бота (чтобы @username обновился в SakBol) или введите номер из «Вход на сайт по коду» в Профиле. Либо нажмите /start в чате с ботом и повторите.",
-              },
-              { status: 400 },
-            );
-          } else if (profileByPhone) {
-            profileByTg = profileByPhone;
-          } else {
-            return NextResponse.json(
-              {
-                error:
-                  "Бот не видит такой @username / id. Сначала нажмите /start. Укажите @username, как в Telegram, или вставьте ссылку t.me/… . Если заходили в мини-приложение (без /start) — введите в поле «телефон» номер из раздела «Вход на сайт по кода» в Профиле.",
-              },
-              { status: 400 },
-            );
-          }
-        }
-      }
-    }
-  } else {
-    profileByTg = profileByPhone;
   }
 
-  if (profileByPhone && profileByTg && profileByPhone.id !== profileByTg.id) {
-    return NextResponse.json(
-      { error: "Номер и Telegram указывают на разные аккаунты. Проверьте поля." },
-      { status: 400 },
-    );
-  }
-
-  const profile = profileByTg ?? profileByPhone;
   if (!profile?.telegramUserId) {
-    return NextResponse.json(
-      {
-        error: "Профиль не найден. Нужна регистрация в мини-приложении бота (ПИН).",
-      },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: NOT_LINKED_HINT }, { status: 404 });
   }
 
   const telegramUserId = profile.telegramUserId;
@@ -159,7 +91,6 @@ export async function POST(req: NextRequest) {
     where: { telegramUserId, createdAt: { gte: cooldownSince } },
     orderBy: { createdAt: "desc" },
   });
-
   if (lastSend) {
     return NextResponse.json(
       { error: "Код уже отправлен недавно. Подождите минуту или проверьте чат с ботом." },
@@ -168,11 +99,7 @@ export async function POST(req: NextRequest) {
   }
 
   await prisma.webOtpChallenge.deleteMany({
-    where: {
-      telegramUserId,
-      consumedAt: null,
-      expiresAt: { gt: now },
-    },
+    where: { telegramUserId, consumedAt: null, expiresAt: { gt: now } },
   });
 
   const code = generateWebOtpCode();
@@ -189,11 +116,7 @@ export async function POST(req: NextRequest) {
   }
 
   const row = await prisma.webOtpChallenge.create({
-    data: {
-      telegramUserId,
-      codeHash,
-      expiresAt,
-    },
+    data: { telegramUserId, codeHash, expiresAt },
   });
 
   return NextResponse.json({

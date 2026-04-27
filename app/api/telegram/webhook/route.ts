@@ -8,7 +8,7 @@ import { acceptOrDeferProfileAccessInvite } from "@/lib/profile-access-accept";
 import { telegramMiniAppStartUrlFromEnv } from "@/lib/telegram-public-urls";
 import {
   telegramDownloadFile,
-  telegramSendMessageWithUrlButton,
+  telegramSendMessageWithUrlButtons,
   telegramSendPlainMessage,
 } from "@/lib/telegram-bot-api";
 
@@ -104,16 +104,20 @@ export async function POST(req: NextRequest) {
           telegramUserId: tg,
         });
         const webAcceptUrl = `${getServerAppOrigin()}/share-profile/${encodeURIComponent(shareToken)}`;
-        const openUrl = telegramMiniAppStartUrlFromEnv(`share_${shareToken}`) ?? webAcceptUrl;
+        const miniAppUrl = telegramMiniAppStartUrlFromEnv(`share_${shareToken}`);
+        const buttons: Array<{ text: string; url: string }> = [];
+        if (miniAppUrl) {
+          buttons.push({ text: "Открыть Mini App", url: miniAppUrl });
+        }
+        buttons.push({ text: "Открыть на сайте", url: webAcceptUrl });
         const nameFor = (n: string) => `«${n}»`;
 
         if (result.status === "accepted") {
-          const ok = await telegramSendMessageWithUrlButton(
+          const ok = await telegramSendMessageWithUrlButtons(
             String(chatId),
             `✅ Доступ к профилю ${nameFor(result.sourceName)} получен.\n\n` +
               "Откройте мини-приложение — выберите этот профиль в переключателе сверху (анализы и динамика обновятся).",
-            "Открыть Mini App",
-            openUrl,
+            buttons,
           );
           if (!ok.ok) {
             await telegramSendPlainMessage(
@@ -122,12 +126,11 @@ export async function POST(req: NextRequest) {
             );
           }
         } else if (result.status === "pending_registration") {
-          const ok = await telegramSendMessageWithUrlButton(
+          const ok = await telegramSendMessageWithUrlButtons(
             String(chatId),
             `✅ Приглашение к ${nameFor(result.sourceName)} сохранено.\n\n` +
               "Дальше: откройте мини-приложение и укажите ПИН/ИНН — после регистрации совместный профиль появится в переключателе.",
-            "Открыть Mini App",
-            openUrl,
+            buttons,
           );
           if (!ok.ok) {
             await telegramSendPlainMessage(

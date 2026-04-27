@@ -343,17 +343,20 @@ function ShareProfileSection({
   const webInvitePath = invite ? `/share-profile/${invite.inviteToken}` : "";
   const webInviteUrl = invite ? `${origin}${webInvitePath}` : null;
   const botU = typeof window !== "undefined" ? telegramBotUsernameFromEnv() : "";
-  /** В Telegram: открывается Mini App сразу с start_param (надёжная доставка токена). */
+  /** Главный путь: чат с ботом → /start share_TOKEN → webhook гарантированно сохранит инвайт.
+   *  Это работает с любым ботом (даже без настроенного Mini App). */
+  const telegramBotStartUrl =
+    invite && botU
+      ? `https://t.me/${botU}?start=share_${encodeURIComponent(invite.inviteToken)}`
+      : null;
+  /** Резерв: запуск сразу в Mini App, если у бота настроена кнопка Mini App. */
   const telegramMiniAppUrl =
     invite && botU
       ? `https://t.me/${botU}?startapp=share_${encodeURIComponent(invite.inviteToken)}`
       : null;
-  /** Fallback на чат с ботом (для случаев, когда Mini App не настроен). */
-  const telegramBotChatUrl =
-    invite && botU
-      ? `https://t.me/${botU}?start=share_${encodeURIComponent(invite.inviteToken)}`
-      : null;
-  const qrValue = telegramMiniAppUrl ?? webInviteUrl;
+  /** В QR кладём «бот-чат»: камера откроет Telegram → бот → сохранение pending → автоматическое
+   *  применение при первом входе в Mini App. Если Telegram нет — есть веб-ссылка ниже. */
+  const qrValue = telegramBotStartUrl ?? webInviteUrl;
 
   const handleCreate = async () => {
     if (!selectedProfileId) return;
@@ -433,29 +436,28 @@ function ShareProfileSection({
         </div>
       ) : (
         <div className="mt-3 space-y-3">
-          {telegramMiniAppUrl && (
-            <p className="text-[11px] text-slate-600">
-              QR откроет Mini App SakBol в Telegram у получателя — профиль появится в переключателе
-              автоматически. Сайт-ссылка ниже — на случай, если у получателя нет Telegram.
-            </p>
-          )}
+          <p className="text-[11px] text-slate-600">
+            QR откроет Telegram-бот у получателя. Бот сохранит приглашение и пришлёт кнопку «Открыть
+            Mini App» — после регистрации (ПИН) совместный профиль появится в переключателе. Если
+            Telegram нет — есть веб-ссылка ниже.
+          </p>
           <div className="flex justify-center rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
             {qrValue && <QRCodeSVG value={qrValue} size={160} level="M" includeMargin />}
           </div>
+          {telegramBotStartUrl && (
+            <a
+              href={telegramBotStartUrl}
+              className="flex w-full items-center justify-center rounded-xl bg-sky-50 py-2.5 text-sm font-semibold text-sky-900 ring-1 ring-sky-200"
+            >
+              Открыть в Telegram (рекомендуется)
+            </a>
+          )}
           {telegramMiniAppUrl && (
             <a
               href={telegramMiniAppUrl}
-              className="flex w-full items-center justify-center rounded-xl bg-sky-50 py-2.5 text-sm font-semibold text-sky-900 ring-1 ring-sky-200"
-            >
-              Открыть Mini App в Telegram
-            </a>
-          )}
-          {telegramBotChatUrl && (
-            <a
-              href={telegramBotChatUrl}
               className="flex w-full items-center justify-center rounded-xl bg-slate-50 py-2 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200"
             >
-              Открыть чат с ботом (резерв)
+              Открыть Mini App напрямую (резерв)
             </a>
           )}
           <p className="break-all rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-mono text-slate-700 ring-1 ring-slate-100">
@@ -489,8 +491,9 @@ function ShareProfileSection({
             </button>
           </div>
           <p className="text-[10px] text-slate-500">
-            Скан в камере: лучше всего — Mini App в Telegram (открывается сразу). В браузере —
-            ссылка на сайт. Через чат с ботом — резерв, если Mini App у получателя ещё не открывался.
+            Что произойдёт у получателя: камера откроет Telegram → бот сохранит приглашение → его
+            кнопка «Открыть Mini App» приведёт в SakBol → после ввода ПИН (если регистрируется
+            впервые) профиль появится в переключателе сверху.
           </p>
         </div>
       )}
@@ -792,7 +795,10 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
               )}
             </section>
 
-            <ShareProfileSection lang={lang} familyProfiles={family?.profiles ?? []} />
+            <ShareProfileSection
+              lang={lang}
+              familyProfiles={(family?.profiles ?? []).filter((p) => !p.isSharedGuest)}
+            />
 
             <section className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm">
               <h2 className="text-sm font-bold text-[#191c1d]">{t(lang, "profile.language")}</h2>

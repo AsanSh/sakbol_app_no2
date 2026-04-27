@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Plus, Share2 } from "lucide-react";
 import type { ProfileSummary } from "@/types/family";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useLanguage } from "@/context/language-context";
@@ -106,6 +106,15 @@ export function FamilySwitcher({
                       active ? "ring-health-primary shadow-md" : "ring-white/75 opacity-55",
                     )}
                   />
+                  {p.isSharedGuest ? (
+                    <span
+                      aria-hidden
+                      title="Совместный профиль"
+                      className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-white shadow ring-2 ring-health-bg"
+                    >
+                      <Share2 className="h-2.5 w-2.5" strokeWidth={2.5} />
+                    </span>
+                  ) : null}
                 </span>
               );
             })}
@@ -189,6 +198,18 @@ export function FamilySwitcher({
                       active ? "ring-health-primary shadow-md" : "ring-transparent opacity-70",
                     )}
                   />
+                  {p.isSharedGuest ? (
+                    <span
+                      aria-hidden
+                      title="Совместный профиль"
+                      className={cn(
+                        "absolute flex items-center justify-center rounded-full bg-amber-500 text-white shadow ring-2 ring-health-bg",
+                        isHeader ? "-bottom-0.5 -right-0.5 h-4 w-4" : "-bottom-1 -right-1 h-5 w-5",
+                      )}
+                    >
+                      <Share2 className={isHeader ? "h-2.5 w-2.5" : "h-3 w-3"} strokeWidth={2.5} />
+                    </span>
+                  ) : null}
                 </span>
                 <span className="flex max-w-[4.5rem] flex-col items-center gap-0 leading-tight">
                   <span

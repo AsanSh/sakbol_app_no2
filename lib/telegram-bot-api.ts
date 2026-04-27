@@ -70,6 +70,20 @@ export async function telegramSendMessageWithUrlButton(
   buttonText: string,
   buttonUrl: string,
 ): Promise<{ ok: true } | { ok: false; description: string }> {
+  return telegramSendMessageWithUrlButtons(chatId, text, [
+    { text: buttonText, url: buttonUrl },
+  ]);
+}
+
+/**
+ * Отправить сообщение с одной или несколькими URL-кнопками (по одной в строке).
+ * Удобно для развилок «Открыть Mini App» / «Открыть на сайте».
+ */
+export async function telegramSendMessageWithUrlButtons(
+  chatId: string,
+  text: string,
+  buttons: Array<{ text: string; url: string }>,
+): Promise<{ ok: true } | { ok: false; description: string }> {
   const j = await tgCall<unknown>("sendMessage", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -77,7 +91,7 @@ export async function telegramSendMessageWithUrlButton(
       chat_id: chatId,
       text,
       reply_markup: {
-        inline_keyboard: [[{ text: buttonText, url: buttonUrl }]],
+        inline_keyboard: buttons.map((b) => [{ text: b.text, url: b.url }]),
       },
     }),
   });
@@ -85,6 +99,59 @@ export async function telegramSendMessageWithUrlButton(
     return { ok: false, description: j.description ?? "sendMessage failed" };
   }
   return { ok: true };
+}
+
+/**
+ * Получить информацию о боте (для диагностики: совпадает ли TELEGRAM_BOT_TOKEN с ожидаемым ботом).
+ */
+export async function telegramGetMe(): Promise<
+  | { ok: true; id: number; username: string | null; firstName: string }
+  | { ok: false; description: string }
+> {
+  const j = await tgCall<{ id: number; first_name: string; username?: string }>("getMe");
+  if (!j.ok) {
+    return { ok: false, description: j.description ?? "getMe failed" };
+  }
+  return {
+    ok: true,
+    id: j.result.id,
+    username: j.result.username ?? null,
+    firstName: j.result.first_name,
+  };
+}
+
+/**
+ * Узнать, установлен ли Telegram-webhook (полезно для диагностики share-сценария).
+ */
+export async function telegramGetWebhookInfo(): Promise<
+  | {
+      ok: true;
+      url: string;
+      hasCustomCertificate: boolean;
+      pendingUpdateCount: number;
+      lastErrorDate: number | null;
+      lastErrorMessage: string | null;
+    }
+  | { ok: false; description: string }
+> {
+  const j = await tgCall<{
+    url: string;
+    has_custom_certificate: boolean;
+    pending_update_count: number;
+    last_error_date?: number;
+    last_error_message?: string;
+  }>("getWebhookInfo");
+  if (!j.ok) {
+    return { ok: false, description: j.description ?? "getWebhookInfo failed" };
+  }
+  return {
+    ok: true,
+    url: j.result.url,
+    hasCustomCertificate: j.result.has_custom_certificate,
+    pendingUpdateCount: j.result.pending_update_count,
+    lastErrorDate: j.result.last_error_date ?? null,
+    lastErrorMessage: j.result.last_error_message ?? null,
+  };
 }
 
 type GetFileResult = { file_id: string; file_path: string };
