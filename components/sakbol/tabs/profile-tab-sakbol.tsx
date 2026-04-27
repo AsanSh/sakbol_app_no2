@@ -326,6 +326,129 @@ type ShareInvite = {
   profileName: string;
 };
 
+type IssuedAccess = {
+  id: string;
+  inviteToken: string;
+  canWrite: boolean;
+  acceptedAt: string | null;
+  inviteExpiresAt: string | null;
+  createdAt: string;
+  sourceProfile: { id: string; displayName: string; avatarUrl: string | null };
+  grantee: { id: string; displayName: string; avatarUrl: string | null } | null;
+};
+
+function IssuedSharesList({ refreshTick }: { refreshTick: number }) {
+  const [items, setItems] = useState<IssuedAccess[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setErr(null);
+    fetch("/api/profile/share", { credentials: "include" })
+      .then(async (r) => {
+        const j = (await r.json().catch(() => ({}))) as {
+          accesses?: IssuedAccess[];
+          error?: string;
+        };
+        if (cancelled) return;
+        if (!r.ok) {
+          setErr(j.error ?? "Не удалось загрузить");
+          setItems([]);
+        } else {
+          setItems(j.accesses ?? []);
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setErr(e instanceof Error ? e.message : "Сеть");
+          setItems([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshTick]);
+
+  if (loading) {
+    return (
+      <p className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] text-slate-500">Загрузка…</p>
+    );
+  }
+  if (err) {
+    return (
+      <p className="rounded-xl bg-red-50 px-3 py-2 text-[11px] text-red-700">{err}</p>
+    );
+  }
+  if (!items || items.length === 0) {
+    return (
+      <p className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
+        Вы ещё не создавали приглашений.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="space-y-1.5">
+      {items.map((a) => {
+        const accepted = Boolean(a.acceptedAt);
+        const expired = !!a.inviteExpiresAt && new Date(a.inviteExpiresAt) < new Date();
+        const status = accepted
+          ? "accepted"
+          : expired
+            ? "expired"
+            : "pending";
+        const statusLabel =
+          status === "accepted" ? "принят" : status === "expired" ? "истёк" : "ожидает";
+        const statusClass =
+          status === "accepted"
+            ? "bg-emerald-100 text-emerald-800 ring-emerald-200"
+            : status === "expired"
+              ? "bg-slate-200 text-slate-700 ring-slate-300"
+              : "bg-amber-100 text-amber-900 ring-amber-200";
+        return (
+          <li
+            key={a.id}
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px]"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-slate-900">
+                {a.sourceProfile.displayName}
+              </p>
+              {accepted && a.grantee ? (
+                <p className="truncate text-slate-600">
+                  Принял: <b>{a.grantee.displayName}</b>
+                </p>
+              ) : (
+                <p className="truncate text-slate-500">
+                  {expired
+                    ? "Срок ссылки истёк"
+                    : "Ждёт получателя — он ещё не отсканировал QR / не вошёл в Mini App"}
+                </p>
+              )}
+              <p className="mt-0.5 text-[10px] text-slate-400">
+                Создано {new Date(a.createdAt).toLocaleDateString("ru-RU")}
+              </p>
+            </div>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1",
+                statusClass,
+              )}
+            >
+              {statusLabel}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 type ApplyShareResult = {
   ok: boolean;
   hasShareToken?: boolean;
@@ -445,6 +568,7 @@ function ShareProfileSection({
   const [creating, setCreating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [issuedRefreshTick, setIssuedRefreshTick] = useState(0);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const webInvitePath = invite ? `/share-profile/${invite.inviteToken}` : "";
@@ -482,6 +606,7 @@ function ShareProfileSection({
         return;
       }
       setInvite(j);
+      setIssuedRefreshTick((t) => t + 1);
     } finally {
       setCreating(false);
     }
@@ -495,6 +620,7 @@ function ShareProfileSection({
     });
     setInvite(null);
     setCopied(false);
+    setIssuedRefreshTick((t) => t + 1);
   };
 
   const handleCopy = () => {
@@ -518,6 +644,22 @@ function ShareProfileSection({
 
       <div className="mt-3">
         <ApplyPendingSharesButton onApplied={onReload} />
+      </div>
+
+      <div className="mt-3 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            Мои выданные приглашения
+          </h3>
+          <button
+            type="button"
+            onClick={() => setIssuedRefreshTick((t) => t + 1)}
+            className="text-[10px] font-semibold text-teal-700 underline-offset-2 hover:underline"
+          >
+            Обновить
+          </button>
+        </div>
+        <IssuedSharesList refreshTick={issuedRefreshTick} />
       </div>
 
       {!invite ? (
