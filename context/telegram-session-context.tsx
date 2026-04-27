@@ -17,7 +17,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { hasTelegramWebAppBridge } from "@/lib/client-twa-detection";
+import {
+  clientLooksLikeTelegramWebApp,
+  hasTelegramWebAppBridge,
+} from "@/lib/client-twa-detection";
 
 export type TelegramViewer = {
   id: string;
@@ -228,8 +231,15 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Детект TWA на двух уровнях:
+      //   - hash в URL (`tgWebAppData=...`) Telegram ставит ДО загрузки SDK — самый ранний сигнал;
+      //   - window.Telegram.WebApp может появиться позже (через telegram-web-app.js или @twa-dev/sdk).
+      // Если хоть один сигнал положительный — идём по TWA-ветке и ждём initData.
+      const looksLikeTwaSync =
+        clientLooksLikeTelegramWebApp() || hasTelegramWebAppBridge();
+
       // 1) Обычный браузер: только cookie.
-      if (!hasTelegramWebAppBridge()) {
+      if (!looksLikeTwaSync) {
         const fromCookie = await loadSessionFromCookie();
         if (cancelled) return;
         if (fromCookie) {
