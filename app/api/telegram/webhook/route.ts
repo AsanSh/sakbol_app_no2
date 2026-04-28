@@ -4,7 +4,10 @@ import { inferHealthDocumentFields } from "@/lib/health-document-infer";
 import { normalizeUploadedFilename } from "@/lib/filename-encoding";
 import { prisma } from "@/lib/prisma";
 import { getServerAppOrigin } from "@/lib/app-origin";
-import { acceptOrDeferProfileAccessInvite } from "@/lib/profile-access-accept";
+import {
+  acceptOrDeferProfileAccessInvite,
+  acceptOrDeferProfileAccessInviteByCode9,
+} from "@/lib/profile-access-accept";
 import { telegramMiniAppStartUrlFromEnv } from "@/lib/telegram-public-urls";
 import {
   telegramDownloadFile,
@@ -34,6 +37,7 @@ function extractStartCode(text: string): string | null {
   const arg = m?.[1]?.trim();
   if (!arg) return null;
   if (/^share_/i.test(arg)) return null;
+  if (/^join_/i.test(arg)) return null;
   const digits = arg.replace(/\D/g, "");
   if (digits.length >= 5 && digits.length <= 8) return digits.slice(0, 8);
   return null;
@@ -46,6 +50,16 @@ function extractShareInviteToken(text: string): string | null {
   if (!arg || !arg.toLowerCase().startsWith("share_")) return null;
   const token = arg.slice("share_".length).trim();
   return token.length > 0 ? token : null;
+}
+
+/** /start join_123456789 — приглашение по 9-значному коду */
+function extractJoinInviteCode9(text: string): string | null {
+  const t = text.trim();
+  const m = /^\/start(?:\s+(\S+))?$/i.exec(t);
+  const arg = m?.[1]?.trim();
+  if (!arg || !arg.toLowerCase().startsWith("join_")) return null;
+  const digits = arg.slice("join_".length).replace(/\D/g, "").slice(0, 9);
+  return digits.length === 9 ? digits : null;
 }
 
 function pickMimeFromName(name: string | undefined, fallback: string): string {
@@ -166,6 +180,76 @@ export async function POST(req: NextRequest) {
         }
       } catch (e) {
         console.error("telegram webhook share", e);
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    const joinCode9 = extractJoinInviteCode9(text);
+    if (joinCode9) {
+      try {
+        const tg = String(fromId);
+        const result = await acceptOrDeferProfileAccessInviteByCode9({
+          inviteCode9: joinCode9,
+          telegramUserId: tg,
+        });
+        const webAcceptUrl = `${getServerAppOrigin()}/join-family?code=${encodeURIComponent(joinCode9)}`;
+        const miniAppUrl = telegramMiniAppStartUrlFromEnv(`join_${joinCode9}`);
+        const buttons: Array<{ text: string; url: string }> = [];
+        if (miniAppUrl) buttons.push({ text: "Открыть Mini App", url: miniAppUrl });
+        buttons.push({ text: "Открыть на сайте", url: webAcceptUrl });
+        const nameFor = (n: string) => `«${n}»`;
+
+        if (result.status === "accepted") {
+          const ok = await telegramSendMessageWithUrlButtons(
+            String(chatId),
+            `✅ Доступ к профилю ${nameFor(result.sourceName)} получен.\n\n` +
+              "Откройте мини-приложение — выберите этот профиль в переключателе сверху.",
+            buttons,
+          );
+          if (!ok.ok) {
+            await telegramSendPlainMessage(
+              String(chatId),
+              `✅ Доступ к ${nameFor(result.sourceName)} подключён. Откройте SakBol и переключите профиль вверху.`,
+            );
+          }
+        } else if (result.status === "pending_registration") {
+          const ok = await telegramSendMessageWithUrlButtons(
+            String(chatId),
+            `✅ Код принят — приглашение к ${nameFor(result.sourceName)}.\n\n` +
+              "Откройте мини-приложение и завершите регистрацию (ПИН/ИНН).",
+            buttons,
+          );
+          if (!ok.ok) {
+            await telegramSendPlainMessage(
+              String(chatId),
+              `Код сохранён. Зарегистрируйтесь в SakBol — доступ к ${nameFor(result.sourceName)} применится.`,
+            );
+          }
+        } else if (result.status === "already_accepted" || result.status === "already_has_access") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            `У вас уже есть доступ к ${nameFor(result.sourceName)}.`,
+          );
+        } else if (result.status === "invalid") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Код не найден или приглашение отозвано. Попросите новый код у владельца.",
+          );
+        } else if (result.status === "expired") {
+          await telegramSendPlainMessage(String(chatId), "Срок приглашения истёк. Попросите новый код.");
+        } else if (result.status === "same_family") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Этот профиль уже в вашей семье — отдельное приглашение не нужно.",
+          );
+        } else if (result.status === "busy_other_user") {
+          await telegramSendPlainMessage(
+            String(chatId),
+            "Этот код уже использован другим аккаунтом.",
+          );
+        }
+      } catch (e) {
+        console.error("telegram webhook join code", e);
       }
       return NextResponse.json({ ok: true });
     }

@@ -28,6 +28,7 @@ export function AnalysesTab({ family, onAnalysesChanged }: Props) {
         variant="header"
         profiles={family.profiles}
         canAddMember={false}
+        joinFamilyHref="/join-family"
       />
     ) : null;
 

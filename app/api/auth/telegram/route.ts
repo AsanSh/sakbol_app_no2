@@ -11,6 +11,7 @@ import { buildDisplayName, parseTelegramUserFromInitData } from "@/lib/telegram-
 import { verifyTelegramInitData } from "@/lib/telegram";
 import {
   acceptOrDeferProfileAccessInvite,
+  acceptOrDeferProfileAccessInviteByCode9,
   applyPendingProfileAccessForTelegramUser,
 } from "@/lib/profile-access-accept";
 import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
@@ -22,6 +23,13 @@ function shareTokenFromInitData(initData: string): string | null {
   if (!raw || !raw.toLowerCase().startsWith("share_")) return null;
   const token = raw.slice("share_".length).trim();
   return token.length > 0 ? token : null;
+}
+
+function joinCode9FromInitData(initData: string): string | null {
+  const raw = new URLSearchParams(initData).get("start_param")?.trim();
+  if (!raw || !raw.toLowerCase().startsWith("join_")) return null;
+  const digits = raw.slice("join_".length).replace(/\D/g, "").slice(0, 9);
+  return digits.length === 9 ? digits : null;
 }
 
 function profileJson(profile: {
@@ -80,11 +88,13 @@ export async function POST(req: NextRequest) {
 
   const telegramUserId = String(user.id);
   const startShareToken = shareTokenFromInitData(initData);
+  const startJoinCode9 = joinCode9FromInitData(initData);
 
   console.log("[auth/telegram] start", {
     telegramUserId,
     hasShareToken: Boolean(startShareToken),
     sharePrefix: startShareToken?.slice(0, 6) ?? null,
+    hasJoinCode9: Boolean(startJoinCode9),
     hasPin: pinRaw.length > 0,
   });
 
@@ -95,6 +105,12 @@ export async function POST(req: NextRequest) {
         telegramUserId,
       });
       console.log("[auth/telegram] share status", { result: r.status });
+    } else if (startJoinCode9) {
+      const r = await acceptOrDeferProfileAccessInviteByCode9({
+        inviteCode9: startJoinCode9,
+        telegramUserId,
+      });
+      console.log("[auth/telegram] join code status", { result: r.status });
     }
 
     let profile = await prisma.profile.findUnique({

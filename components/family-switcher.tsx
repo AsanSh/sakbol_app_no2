@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronDown, Plus, Share2 } from "lucide-react";
+import { ChevronDown, KeyRound, Plus, Share2 } from "lucide-react";
 import type { ProfileSummary } from "@/types/family";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useLanguage } from "@/context/language-context";
@@ -19,6 +20,8 @@ type FamilySwitcherProps = {
   className?: string;
   canAddMember?: boolean;
   onAddMember?: () => void;
+  /** Страница ввода 9-значного кода приглашения (например /join-family). */
+  joinFamilyHref?: string;
   /** Компактная строка для шапки: без заголовка секции и без псевдо-ID под списком. */
   variant?: "default" | "header";
 };
@@ -30,6 +33,7 @@ export function FamilySwitcher({
   className,
   canAddMember,
   onAddMember,
+  joinFamilyHref,
   variant = "default",
 }: FamilySwitcherProps) {
   const { lang } = useLanguage();
@@ -121,20 +125,33 @@ export function FamilySwitcher({
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 text-health-text-secondary" aria-hidden />
         </button>
-        {canAddMember && onAddMember ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              hapticImpact("medium");
-              onAddMember();
-            }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-health-border bg-health-surface text-health-primary shadow-sm outline-none ring-health-primary focus-visible:ring-2"
-            aria-label={t(lang, "profile.addMember")}
-          >
-            <Plus className="h-5 w-5" strokeWidth={2} />
-          </button>
-        ) : null}
+        <span className="flex shrink-0 items-center gap-0.5">
+          {joinFamilyHref ? (
+            <Link
+              href={joinFamilyHref}
+              onClick={(e) => e.stopPropagation()}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-health-border/80 bg-health-surface text-health-primary shadow-sm outline-none ring-health-primary focus-visible:ring-2"
+              title={lang === "ru" ? "Ввести код приглашения" : "Чакыруу кодун киргизүү"}
+              aria-label={lang === "ru" ? "Ввести код приглашения" : "Чакыруу кодун киргизүү"}
+            >
+              <KeyRound className="h-4 w-4" strokeWidth={2} />
+            </Link>
+          ) : null}
+          {canAddMember && onAddMember ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                hapticImpact("medium");
+                onAddMember();
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-health-border bg-health-surface text-health-primary shadow-sm outline-none ring-health-primary focus-visible:ring-2"
+              aria-label={t(lang, "profile.addMember")}
+            >
+              <Plus className="h-5 w-5" strokeWidth={2} />
+            </button>
+          ) : null}
+        </span>
       </div>
     );
   }
@@ -235,6 +252,33 @@ export function FamilySwitcher({
             </li>
           );
         })}
+        {joinFamilyHref ? (
+          <li className="shrink-0">
+            <Link
+              href={joinFamilyHref}
+              className="flex flex-col items-center gap-0.5 rounded-xl px-0.5 pt-0.5 outline-none ring-health-primary focus-visible:ring-2"
+              title={lang === "ru" ? "Ввести код приглашения" : "Чакыруу кодун киргизүү"}
+              aria-label={lang === "ru" ? "Ввести код приглашения" : "Чакыруу кодун киргизүү"}
+            >
+              <span
+                className={cn(
+                  "flex items-center justify-center rounded-full border border-health-border bg-health-surface text-health-primary",
+                  addBtnClass,
+                )}
+              >
+                <KeyRound className={isHeader ? "h-5 w-5" : "h-6 w-6"} strokeWidth={2} />
+              </span>
+              <span
+                className={cn(
+                  "max-w-[4rem] text-center font-medium text-health-text-secondary",
+                  isHeader ? "text-[10px]" : "text-[11px]",
+                )}
+              >
+                {lang === "ru" ? "Код" : "Код"}
+              </span>
+            </Link>
+          </li>
+        ) : null}
         {canAddMember && onAddMember ? (
           <li className="shrink-0">
             <motion.button

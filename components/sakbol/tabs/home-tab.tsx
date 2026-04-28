@@ -46,6 +46,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
         profiles={family.profiles}
         canAddMember={!!admin}
         onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+        joinFamilyHref="/join-family"
       />
     ) : null;
 
@@ -117,6 +118,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
             reloadFamily();
             setAddMemberOpen(false);
           }}
+          familyProfilesForInvite={(family?.profiles ?? []).filter((p) => !p.isSharedGuest)}
         />
       </div>
     );
@@ -147,6 +149,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
             reloadFamily();
             setAddMemberOpen(false);
           }}
+          familyProfilesForInvite={(family?.profiles ?? []).filter((p) => !p.isSharedGuest)}
         />
       </motion.div>
     </div>

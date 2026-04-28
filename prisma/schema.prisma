@@ -94,6 +94,8 @@ model ProfileAccess {
 
   /// Одноразовый токен для QR / ссылки-приглашения.
   inviteToken      String    @unique @default(cuid())
+  /// 9 цифр: ввод вручную и deep link join_… у бота / Mini App.
+  inviteCode9      String?   @unique
   inviteExpiresAt  DateTime?
   acceptedAt       DateTime?
   revokedAt        DateTime?
@@ -102,6 +104,7 @@ model ProfileAccess {
   @@index([sourceProfileId])
   @@index([granteeProfileId])
   @@index([inviteToken])
+  @@index([inviteCode9])
   @@index([pendingTelegramUserId])
 }
 

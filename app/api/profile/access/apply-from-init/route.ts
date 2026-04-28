@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   acceptOrDeferProfileAccessInvite,
+  acceptOrDeferProfileAccessInviteByCode9,
   applyPendingProfileAccessForTelegramUser,
 } from "@/lib/profile-access-accept";
 import { prisma } from "@/lib/prisma";
@@ -14,6 +15,13 @@ function shareTokenFromInitData(initData: string): string | null {
   if (!raw || !raw.toLowerCase().startsWith("share_")) return null;
   const token = raw.slice("share_".length).trim();
   return token.length > 0 ? token : null;
+}
+
+function joinCode9FromInitData(initData: string): string | null {
+  const raw = new URLSearchParams(initData).get("start_param")?.trim();
+  if (!raw || !raw.toLowerCase().startsWith("join_")) return null;
+  const digits = raw.slice("join_".length).replace(/\D/g, "").slice(0, 9);
+  return digits.length === 9 ? digits : null;
 }
 
 /**
@@ -62,6 +70,7 @@ export async function POST(req: NextRequest) {
 
   const telegramUserId = String(user.id);
   const shareToken = shareTokenFromInitData(initData);
+  const joinCode9 = joinCode9FromInitData(initData);
 
   try {
     let acceptStatus: string | null = null;
@@ -77,6 +86,14 @@ export async function POST(req: NextRequest) {
       });
       acceptStatus = r.status;
       acceptedSourceName = "sourceName" in r ? r.sourceName : null;
+    } else if (joinCode9) {
+      console.log("[apply-from-init] processing join code", { telegramUserId });
+      const r = await acceptOrDeferProfileAccessInviteByCode9({
+        inviteCode9: joinCode9,
+        telegramUserId,
+      });
+      acceptStatus = r.status;
+      acceptedSourceName = "sourceName" in r ? r.sourceName : null;
     }
 
     const profile = await prisma.profile.findUnique({
@@ -87,7 +104,7 @@ export async function POST(req: NextRequest) {
     if (!profile) {
       return NextResponse.json({
         ok: true,
-        hasShareToken: Boolean(shareToken),
+        hasShareToken: Boolean(shareToken || joinCode9),
         acceptStatus,
         acceptedSourceName,
         appliedPendingCount: 0,
@@ -116,7 +133,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      hasShareToken: Boolean(shareToken),
+      hasShareToken: Boolean(shareToken || joinCode9),
       acceptStatus,
       acceptedSourceName,
       appliedPendingCount: applied,

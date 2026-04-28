@@ -322,6 +322,7 @@ type Props = {
 type ShareInvite = {
   id: string;
   inviteToken: string;
+  inviteCode9?: string;
   inviteExpiresAt: string | null;
   profileName: string;
 };
@@ -329,6 +330,7 @@ type ShareInvite = {
 type IssuedAccess = {
   id: string;
   inviteToken: string;
+  inviteCode9: string | null;
   canWrite: boolean;
   acceptedAt: string | null;
   inviteExpiresAt: string | null;
@@ -427,7 +429,9 @@ function IssuedSharesList({ refreshTick }: { refreshTick: number }) {
                 <p className="truncate text-slate-500">
                   {expired
                     ? "Срок ссылки истёк"
-                    : "Ждёт получателя — он ещё не отсканировал QR / не вошёл в Mini App"}
+                    : a.inviteCode9
+                      ? `Код: ${a.inviteCode9} — ждёт получателя`
+                      : "Ждёт получателя — он ещё не отсканировал QR / не вошёл в Mini App"}
                 </p>
               )}
               <p className="mt-0.5 text-[10px] text-slate-400">
@@ -593,20 +597,27 @@ function ShareProfileSection({
     (typeof window !== "undefined" ? telegramBotUsernameFromEnv() : "") ||
     resolvedBotUsername ||
     "";
-  /** Главный путь: чат с ботом → /start share_TOKEN → webhook гарантированно сохранит инвайт.
-   *  Это работает с любым ботом (даже без настроенного Mini App). */
+  const joinCode = invite?.inviteCode9 ?? "";
+  const webJoinUrl =
+    joinCode && origin ? `${origin}/join-family?code=${joinCode}` : null;
+  const telegramJoinStartUrl =
+    joinCode && botU ? `https://t.me/${botU}?start=join_${joinCode}` : null;
+  const telegramJoinMiniUrl =
+    joinCode && botU ? `https://t.me/${botU}?startapp=join_${joinCode}` : null;
+  /** Классическая ссылка по UUID-токену */
   const telegramBotStartUrl =
     invite && botU
       ? `https://t.me/${botU}?start=share_${encodeURIComponent(invite.inviteToken)}`
       : null;
-  /** Резерв: запуск сразу в Mini App, если у бота настроена кнопка Mini App. */
   const telegramMiniAppUrl =
     invite && botU
       ? `https://t.me/${botU}?startapp=share_${encodeURIComponent(invite.inviteToken)}`
       : null;
-  /** В QR кладём «бот-чат»: камера откроет Telegram → бот → сохранение pending → автоматическое
-   *  применение при первом входе в Mini App. Если Telegram нет — есть веб-ссылка ниже. */
-  const qrValue = telegramBotStartUrl ?? webInviteUrl;
+  /** QR: при наличии 9-значного кода — join_ (код или сайт); иначе share_ / share-profile. */
+  const qrValue =
+    joinCode && (telegramJoinStartUrl || webJoinUrl)
+      ? telegramJoinStartUrl ?? webJoinUrl
+      : telegramBotStartUrl ?? webInviteUrl;
 
   const handleCreate = async () => {
     if (!selectedProfileId) return;
@@ -643,8 +654,9 @@ function ShareProfileSection({
   };
 
   const handleCopy = () => {
-    if (!webInviteUrl) return;
-    void navigator.clipboard?.writeText(webInviteUrl).catch(() => {});
+    const primary = webJoinUrl ?? webInviteUrl;
+    if (!primary) return;
+    void navigator.clipboard?.writeText(primary).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -708,33 +720,71 @@ function ShareProfileSection({
         </div>
       ) : (
         <div className="mt-3 space-y-3">
+          {joinCode ? (
+            <p className="text-center font-mono text-xl font-bold tracking-[0.2em] text-slate-900">
+              {joinCode}
+            </p>
+          ) : null}
           <p className="text-[11px] text-slate-600">
-            QR откроет Telegram-бот у получателя. Бот сохранит приглашение и пришлёт кнопку «Открыть
-            Mini App» — после регистрации (ПИН) совместный профиль появится в переключателе. Если
-            Telegram нет — есть веб-ссылка ниже.
+            {joinCode
+              ? "Получатель вводит 9 цифр на сайте или сканирует QR — откроется Telegram-бот с кодом join_. После входа в Mini App (и ПИН при регистрации) профиль появится в переключателе."
+              : "QR откроет Telegram-бот у получателя. Бот сохранит приглашение и пришлёт кнопку «Открыть Mini App» — после регистрации (ПИН) совместный профиль появится в переключателе. Если Telegram нет — есть веб-ссылка ниже."}
           </p>
           <div className="flex justify-center rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
             {qrValue && <QRCodeSVG value={qrValue} size={160} level="M" includeMargin />}
           </div>
-          {telegramBotStartUrl && (
+          {telegramJoinStartUrl ? (
+            <a
+              href={telegramJoinStartUrl}
+              className="flex w-full items-center justify-center rounded-xl bg-sky-50 py-2.5 text-sm font-semibold text-sky-900 ring-1 ring-sky-200"
+            >
+              Telegram: ссылка с кодом (рекомендуется)
+            </a>
+          ) : telegramBotStartUrl ? (
             <a
               href={telegramBotStartUrl}
               className="flex w-full items-center justify-center rounded-xl bg-sky-50 py-2.5 text-sm font-semibold text-sky-900 ring-1 ring-sky-200"
             >
               Открыть в Telegram (рекомендуется)
             </a>
-          )}
-          {telegramMiniAppUrl && (
+          ) : null}
+          {telegramJoinMiniUrl ? (
+            <a
+              href={telegramJoinMiniUrl}
+              className="flex w-full items-center justify-center rounded-xl bg-slate-50 py-2 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200"
+            >
+              Mini App: join-код (резерв)
+            </a>
+          ) : telegramMiniAppUrl ? (
             <a
               href={telegramMiniAppUrl}
               className="flex w-full items-center justify-center rounded-xl bg-slate-50 py-2 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200"
             >
               Открыть Mini App напрямую (резерв)
             </a>
+          ) : null}
+          {webJoinUrl ? (
+            <p className="break-all rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-mono text-slate-700 ring-1 ring-slate-100">
+              {webJoinUrl}
+            </p>
+          ) : null}
+          {joinCode && webInviteUrl ? (
+            <details className="rounded-xl bg-slate-50/80 px-3 py-2 text-[10px] text-slate-600 ring-1 ring-slate-100">
+              <summary className="cursor-pointer font-semibold text-slate-700">
+                Дополнительно: ссылка по UUID
+              </summary>
+              <p className="mt-2 break-all font-mono">{webInviteUrl}</p>
+              {telegramBotStartUrl && joinCode ? (
+                <a href={telegramBotStartUrl} className="mt-2 inline-block text-teal-800 underline">
+                  t.me (share_…)
+                </a>
+              ) : null}
+            </details>
+          ) : (
+            <p className="break-all rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-mono text-slate-700 ring-1 ring-slate-100">
+              {webInviteUrl}
+            </p>
           )}
-          <p className="break-all rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-mono text-slate-700 ring-1 ring-slate-100">
-            {webInviteUrl}
-          </p>
           {invite.inviteExpiresAt && (
             <p className="text-[11px] text-slate-500">
               Действует до:{" "}
@@ -751,7 +801,7 @@ function ShareProfileSection({
               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-teal-50 py-2 text-xs font-semibold text-teal-900 ring-1 ring-teal-100"
             >
               <Copy className="h-3.5 w-3.5" />
-              {copied ? "Скопировано!" : "Копировать"}
+              {copied ? "Скопировано!" : webJoinUrl ? "Копировать ссылку (сайт)" : "Копировать"}
             </button>
             <button
               type="button"
@@ -1144,7 +1194,12 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
         ) : null}
       </div>
 
-      <AddMemberModal open={addOpen} onClose={() => setAddOpen(false)} onCreated={reload} />
+      <AddMemberModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onCreated={reload}
+        familyProfilesForInvite={(family?.profiles ?? []).filter((p) => !p.isSharedGuest)}
+      />
 
       <BottomSheet open={premiumOpen} title="Premium" onClose={() => setPremiumOpen(false)}>
         <p className="text-sm text-[#40484c]">

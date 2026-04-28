@@ -103,6 +103,30 @@ export async function acceptOrDeferProfileAccessInvite(input: {
 }
 
 /**
+ * То же, что acceptOrDeferProfileAccessInvite, но по 9-значному коду (join_… в боте / Mini App).
+ */
+export async function acceptOrDeferProfileAccessInviteByCode9(input: {
+  inviteCode9: string;
+  telegramUserId: string;
+}): Promise<AcceptResult> {
+  const raw = input.inviteCode9.replace(/\D/g, "").slice(0, 9);
+  if (raw.length !== 9) {
+    return { status: "invalid" };
+  }
+  const access = await prisma.profileAccess.findFirst({
+    where: { inviteCode9: raw, revokedAt: null },
+    include: { sourceProfile: { select: { id: true, familyId: true, displayName: true } } },
+  });
+  if (!access) {
+    return { status: "invalid" };
+  }
+  return acceptOrDeferProfileAccessInvite({
+    inviteToken: access.inviteToken,
+    telegramUserId: input.telegramUserId,
+  });
+}
+
+/**
  * После первого входа / регистрации в Mini App — применить отложенные приглашения.
  * @returns количество подключённых доступов
  */

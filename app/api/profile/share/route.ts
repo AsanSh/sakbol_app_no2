@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { ensureInviteCode9ForAccess } from "@/lib/assign-invite-code9";
 
 export const dynamic = "force-dynamic";
 
@@ -47,13 +48,16 @@ export async function POST(req: Request) {
       revokedAt: null,
       inviteExpiresAt: { gt: new Date() },
     },
-    select: { id: true, inviteToken: true, inviteExpiresAt: true },
+    select: { id: true, inviteToken: true, inviteExpiresAt: true, inviteCode9: true },
   });
 
   if (existing) {
+    const inviteCode9 =
+      existing.inviteCode9 ?? (await ensureInviteCode9ForAccess(existing.id));
     return NextResponse.json({
       id: existing.id,
       inviteToken: existing.inviteToken,
+      inviteCode9,
       inviteExpiresAt: existing.inviteExpiresAt,
       profileName: profile.displayName,
     });
@@ -70,9 +74,12 @@ export async function POST(req: Request) {
     select: { id: true, inviteToken: true, inviteExpiresAt: true },
   });
 
+  const inviteCode9 = await ensureInviteCode9ForAccess(access.id);
+
   return NextResponse.json({
     id: access.id,
     inviteToken: access.inviteToken,
+    inviteCode9,
     inviteExpiresAt: access.inviteExpiresAt,
     profileName: profile.displayName,
   });
@@ -94,6 +101,7 @@ export async function GET() {
     select: {
       id: true,
       inviteToken: true,
+      inviteCode9: true,
       canWrite: true,
       acceptedAt: true,
       inviteExpiresAt: true,

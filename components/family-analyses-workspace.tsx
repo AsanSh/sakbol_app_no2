@@ -157,6 +157,7 @@ export function FamilyAnalysesWorkspace({
           profiles={family.profiles}
           canAddMember={!!admin}
           onAddMember={admin ? () => setAddOpen(true) : undefined}
+          joinFamilyHref="/join-family"
         />
       )}
 
@@ -250,6 +251,7 @@ export function FamilyAnalysesWorkspace({
           load();
           onAnalysesChanged?.();
         }}
+        familyProfilesForInvite={family.profiles.filter((p) => !p.isSharedGuest)}
       />
 
       {activeProfileId ? (
