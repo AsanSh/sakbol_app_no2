@@ -41,6 +41,7 @@ export function AiTab({ family, reloadFamily }: Props) {
   const [input, setInput] = useState("");
   const [pending, startTransition] = useTransition();
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const admin = useMemo(
     () => family?.profiles.find((p) => p.familyRole === FamilyRole.ADMIN),
@@ -74,6 +75,10 @@ export function AiTab({ family, reloadFamily }: Props) {
           ...m,
           { id: crypto.randomUUID(), role: "assistant", text: reply, time: nowTime() },
         ]);
+        requestAnimationFrame(() => {
+          const el = scrollRef.current;
+          if (el) el.scrollTop = el.scrollHeight;
+        });
       });
     },
     [pending, activeProfileId],
@@ -96,7 +101,10 @@ export function AiTab({ family, reloadFamily }: Props) {
       />
 
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col px-4">
-        <div className="mt-3 flex min-h-[12rem] flex-1 flex-col gap-2 overflow-y-auto pb-2 md:min-h-[18rem]">
+        <div
+          ref={scrollRef}
+          className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2"
+        >
           {messages.map((m) => (
             <div
               key={m.id}
@@ -136,7 +144,7 @@ export function AiTab({ family, reloadFamily }: Props) {
           ) : null}
         </div>
 
-        <div className="sticky -bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] border-t border-[#e7e8e9] bg-[#f8f9fa]/90 py-2 backdrop-blur-md md:bottom-0">
+        <div className="shrink-0 border-t border-[#e7e8e9] bg-[#f8f9fa]/95 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur-md">
           <div className="flex items-end gap-2 rounded-2xl border border-[#e7e8e9] bg-white p-2 shadow-sm">
             <textarea
               ref={taRef}

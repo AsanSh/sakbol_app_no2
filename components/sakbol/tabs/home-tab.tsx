@@ -13,7 +13,6 @@ import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useDeviceType } from "@/hooks/use-device-type";
 import type { FamilyWithProfiles } from "@/types/family";
-import { DoctorCategoryRail } from "@/features/home/doctor-category-rail";
 import { DoctorDiscoveryHome } from "@/features/home/doctor-discovery-home";
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
@@ -108,7 +107,6 @@ export function HomeTab({ family, reloadFamily }: Props) {
       <div className={cn("flex min-h-0 w-full flex-1 flex-col overflow-y-auto")}>
         <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-8 pt-2 md:px-6">
           {authBanner}
-          <DoctorCategoryRail />
           <DoctorDiscoveryHome isDesktop initialCategorySlug={doctorCat} />
         </div>
         <AddMemberModal
@@ -139,7 +137,6 @@ export function HomeTab({ family, reloadFamily }: Props) {
         transition={{ duration: 0.3 }}
       >
         {authBanner}
-        <DoctorCategoryRail />
         <DoctorDiscoveryHome initialCategorySlug={doctorCat} />
         {sharedSheets}
         <AddMemberModal

@@ -26,7 +26,7 @@ import {
   updateProfileBiologicalSex,
   updateProfileVitals,
 } from "@/app/actions/profile";
-import { updateManagedProfileKinship } from "@/app/actions/family";
+import { deleteManagedProfile, updateManagedProfileKinship } from "@/app/actions/family";
 import { profileKinshipLabel } from "@/lib/profile-kinship";
 import { telegramBotUsernameFromEnv } from "@/lib/telegram-public-urls";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
@@ -80,6 +80,7 @@ function FamilyMemberEditableCard({
   );
   const [blood, setBlood] = useState(profile.bloodType?.trim() ?? "");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -292,6 +293,34 @@ function FamilyMemberEditableCard({
           >
             {saving ? "Сохранение…" : "Сохранить данные"}
           </button>
+          {profile.isManaged && viewerIsAdmin ? (
+            <button
+              type="button"
+              disabled={deleting || saving}
+              onClick={() => {
+                if (
+                  !window.confirm(
+                    `Удалить карточку «${profile.displayName}» из семьи? Анализы и документы этого профиля будут удалены без восстановления.`,
+                  )
+                ) {
+                  return;
+                }
+                setDeleting(true);
+                setErr(null);
+                void deleteManagedProfile(profile.id).then((res) => {
+                  setDeleting(false);
+                  if (!res.ok) {
+                    setErr(res.error);
+                    return;
+                  }
+                  onReload();
+                });
+              }}
+              className="w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-800 transition-colors hover:bg-red-100 disabled:opacity-60"
+            >
+              {deleting ? "Удаление…" : "Удалить из семьи"}
+            </button>
+          ) : null}
         </div>
       ) : (
         <div className="border-t border-[#191c1d]/10 px-3 pb-3 pt-2">

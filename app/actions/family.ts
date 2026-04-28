@@ -102,6 +102,52 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
   return { ok: true as const, profile };
 }
 
+/** Удаление добавленного члена семьи (карточка без своего Telegram). Только ADMIN. */
+export async function deleteManagedProfile(profileId: string) {
+  const session = getSession();
+  if (!session) {
+    return { ok: false as const, error: "Требуется вход." };
+  }
+
+  const actor = await prisma.profile.findFirst({
+    where: {
+      id: session.profileId,
+      familyId: session.familyId,
+      familyRole: FamilyRole.ADMIN,
+    },
+  });
+  if (!actor) {
+    return {
+      ok: false as const,
+      error: "Только администратор семьи может удалить карточку члена семьи.",
+    };
+  }
+
+  const target = await prisma.profile.findFirst({
+    where: { id: profileId, familyId: session.familyId },
+    select: { id: true, isManaged: true, familyRole: true },
+  });
+  if (!target) {
+    return { ok: false as const, error: "Профиль не найден." };
+  }
+  if (!target.isManaged) {
+    return {
+      ok: false as const,
+      error:
+        "Можно удалить только добавленного родственника (без собственного входа в приложение).",
+    };
+  }
+  if (target.familyRole === FamilyRole.ADMIN) {
+    return { ok: false as const, error: "Нельзя удалить администратора семьи." };
+  }
+
+  await prisma.profile.delete({ where: { id: profileId } });
+
+  revalidatePath("/");
+  revalidatePath("/profile");
+  return { ok: true as const };
+}
+
 export async function getFamilyMembers() {
   const session = getSession();
   if (!session) return [];

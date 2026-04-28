@@ -29,6 +29,7 @@ function TabPanels({
   bumpAnalyses: () => void;
 }) {
   const { tab } = useTabApp();
+  const isAiTab = tab === "ai";
 
   return (
     <AnimatePresence mode="wait">
@@ -38,7 +39,10 @@ function TabPanels({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
         transition={{ duration: 0.2 }}
-        className={cn("flex min-h-0 min-w-0 flex-1 flex-col", "overflow-y-auto")}
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          isAiTab ? "min-h-0 overflow-hidden" : "overflow-y-auto",
+        )}
       >
         {tab === "home" ? (
           <Suspense fallback={<div className="min-h-[40vh]" />}>
@@ -77,6 +81,7 @@ function TabPanels({
 export function SakbolMainClient() {
   const device = useDeviceType();
   const { lang } = useLanguage();
+  const { tab } = useTabApp();
   const { family, loading, reload } = useFamilyDefault();
   const { bumpAnalyses } = useAnalysesRefresh();
 
@@ -96,7 +101,7 @@ export function SakbolMainClient() {
               className={cn(
                 "sakbol-dashboard-main mx-auto flex min-h-0 w-full max-w-[90rem] flex-1 flex-col",
                 "px-4 py-3 md:px-8 md:py-4",
-                "overflow-y-auto",
+                tab === "ai" ? "overflow-hidden" : "overflow-y-auto",
               )}
             >
               {tabPanels}
@@ -116,8 +121,10 @@ export function SakbolMainClient() {
       <div className="flex min-h-0 flex-1 flex-col">
         <div
           className={cn(
-            "flex min-h-0 flex-1 flex-col overflow-y-auto",
-            "pb-[calc(7rem+env(safe-area-inset-bottom,0px))]",
+            "flex min-h-0 flex-1 flex-col",
+            tab === "ai"
+              ? "overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]"
+              : "overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom,0px))]",
           )}
         >
           {tabPanels}

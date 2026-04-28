@@ -115,6 +115,35 @@ function useDebounced<T>(value: T, ms: number): T {
   return v;
 }
 
+function groupCategoriesByLetter(
+  categories: MetaCategory[],
+): { letter: string; items: MetaCategory[] }[] {
+  const list = [...categories].sort((a, b) =>
+    a.label.localeCompare(b.label, "ru", { sensitivity: "base" }),
+  );
+  const map = new Map<string, MetaCategory[]>();
+  for (const c of list) {
+    const raw = c.label.trim()[0] ?? "#";
+    const upper = raw.toUpperCase();
+    const code = raw.codePointAt(0) ?? 0;
+    const isLetter =
+      (code >= 0x41 && code <= 0x5a) ||
+      (code >= 0x61 && code <= 0x7a) ||
+      (code >= 0x410 && code <= 0x42f) ||
+      code === 0x401;
+    const letter = isLetter ? upper : "#";
+    if (!map.has(letter)) map.set(letter, []);
+    map.get(letter)!.push(c);
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => {
+      if (a === "#") return 1;
+      if (b === "#") return -1;
+      return a.localeCompare(b, "ru", { sensitivity: "base" });
+    })
+    .map(([letter, items]) => ({ letter, items }));
+}
+
 type Props = {
   isDesktop?: boolean;
   className?: string;
@@ -244,6 +273,20 @@ export function DoctorDiscoveryHome({
     return m;
   }, [meta]);
 
+  const showSpecialtyBrowser = mainTab === "doctors" && !category;
+
+  const specialtyGroups = useMemo(() => {
+    if (!meta?.categories?.length) return [];
+    const q = debouncedSearch.trim().toLowerCase();
+    let cats = meta.categories;
+    if (q) {
+      cats = cats.filter(
+        (c) => c.label.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q),
+      );
+    }
+    return groupCategoriesByLetter(cats);
+  }, [meta, debouncedSearch]);
+
   const stripDoctorCatFromUrl = useCallback(() => {
     const q = new URLSearchParams(searchParams.toString());
     if (!q.has("doctorCat")) return;
@@ -255,6 +298,7 @@ export function DoctorDiscoveryHome({
 
   const loadDoctors = useCallback(async () => {
     if (mainTab !== "doctors" && mainTab !== "caregivers") return;
+    if (mainTab === "doctors" && !category) return;
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -280,8 +324,15 @@ export function DoctorDiscoveryHome({
   }, [mainTab, page, perPage, searchForRequest, category, city]);
 
   useEffect(() => {
+    if (mainTab === "doctors" && !category) {
+      abortRef.current?.abort();
+      setList(null);
+      setListLoading(false);
+      setListErr(null);
+      return;
+    }
     void loadDoctors();
-  }, [loadDoctors]);
+  }, [loadDoctors, mainTab, category]);
 
   useEffect(() => {
     setPage(1);
@@ -316,19 +367,6 @@ export function DoctorDiscoveryHome({
 
   return (
     <div id="doctor-catalog" className={cn("space-y-4 pb-8 scroll-mt-4", className)}>
-      <header className="space-y-1">
-        <h1 className="font-manrope text-[1.65rem] font-bold leading-tight tracking-tight text-slate-900">
-          {t(lang, "home.discovery.title")}
-        </h1>
-        {meta?.generatedAt ? (
-          <p className="text-[11px] text-slate-500">
-            {lang === "ru" ? "Данные каталога обновлены:" : "Каталог жаңыланган:"}{" "}
-            {new Date(meta.generatedAt).toLocaleString(lang === "ru" ? "ru-RU" : "ky-KG")} ·{" "}
-            {meta.doctorCount} {lang === "ru" ? "врачей" : "дарыер"}
-          </p>
-        ) : null}
-      </header>
-
       <div
         className="mx-auto w-full max-w-md rounded-full bg-[#e3e3e5]/90 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] sm:max-w-2xl"
         role="tablist"
@@ -391,77 +429,155 @@ export function DoctorDiscoveryHome({
         <p className="text-center text-[11px] text-slate-500">{t(lang, "home.caregivers.hint")}</p>
       ) : null}
 
-      <div className="rounded-xl bg-white p-3.5 shadow-md ring-1 ring-slate-200/80 sm:p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Search
-              className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t(lang, "home.search.placeholder")}
-              className="min-h-[44px] w-full rounded-xl border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
-              aria-label={t(lang, "home.search.placeholder")}
-            />
-            {listLoading && (mainTab === "doctors" || mainTab === "caregivers") ? (
-              <Loader2 className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-teal-600" />
-            ) : null}
+      {showSpecialtyBrowser ? (
+        <>
+          <div className="rounded-xl bg-white p-3.5 shadow-md ring-1 ring-slate-200/80 sm:p-4">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={lang === "ru" ? "Найти направление…" : "Багыт табуу…"}
+                className="min-h-[44px] w-full rounded-xl border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
+                aria-label={lang === "ru" ? "Поиск направления" : "Багыт издөө"}
+              />
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80">
+            {!meta?.categories?.length ? (
+              <p className="p-6 text-center text-sm text-slate-500">
+                {lang === "ru" ? "Загрузка направлений…" : "Жүктөлүүдө…"}
+              </p>
+            ) : specialtyGroups.length === 0 ? (
+              <p className="p-6 text-center text-sm text-slate-600">
+                {lang === "ru" ? "Ничего не найдено." : "Табылган жок."}
+              </p>
+            ) : (
+              specialtyGroups.map(({ letter, items }) => (
+                <div
+                  key={letter}
+                  className="border-b border-slate-100 px-3 py-3 last:border-b-0 sm:px-4"
+                >
+                  <div className="flex gap-3 sm:gap-4">
+                    <span className="w-7 shrink-0 pt-0.5 text-center text-lg font-bold text-slate-900 sm:w-8">
+                      {letter}
+                    </span>
+                    <div className="grid min-w-0 flex-1 grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+                      {items.map((c) => (
+                        <button
+                          key={c.slug}
+                          type="button"
+                          onClick={() => {
+                            setMainTab("doctors");
+                            setCategory(c.slug);
+                            setPage(1);
+                          }}
+                          className="text-left text-[13px] font-medium text-teal-800 hover:text-teal-950 hover:underline"
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          {mainTab === "doctors" && category ? (
             <button
               type="button"
-              onClick={() => setFiltersOpen(true)}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3.5 text-[13px] font-semibold text-teal-900 shadow-sm ring-1 ring-teal-100/80 hover:bg-teal-100/90 lg:flex-none"
+              onClick={() => {
+                setCategory(null);
+                stripDoctorCatFromUrl();
+                setPage(1);
+              }}
+              className="flex items-center gap-1 text-left text-sm font-semibold text-teal-800 hover:text-teal-950"
             >
-              <SlidersHorizontal className="h-4 w-4 text-teal-800" aria-hidden />
-              {t(lang, "home.search.filters")}
+              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+              {lang === "ru" ? "Все направления" : "Бардык багыттар"}
             </button>
-          </div>
-        </div>
-        {(category || city) && (mainTab === "doctors" || mainTab === "caregivers") ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {category ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-caption font-medium text-teal-900 ring-1 ring-teal-100">
-                {catLabel.get(category) ?? category}
+          ) : null}
+
+          <div className="rounded-xl bg-white p-3.5 shadow-md ring-1 ring-slate-200/80 sm:p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                  aria-hidden
+                />
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t(lang, "home.search.placeholder")}
+                  className="min-h-[44px] w-full rounded-xl border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
+                  aria-label={t(lang, "home.search.placeholder")}
+                />
+                {listLoading && (mainTab === "doctors" || mainTab === "caregivers") ? (
+                  <Loader2 className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-teal-600" />
+                ) : null}
+              </div>
+              <div className="flex gap-2">
                 <button
                   type="button"
-                  className="rounded-full p-0.5 hover:bg-teal-100"
-                  aria-label="clear"
-                  onClick={() => {
-                    setCategory(null);
-                    stripDoctorCatFromUrl();
-                  }}
+                  onClick={() => setFiltersOpen(true)}
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3.5 text-[13px] font-semibold text-teal-900 shadow-sm ring-1 ring-teal-100/80 hover:bg-teal-100/90 lg:flex-none"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <SlidersHorizontal className="h-4 w-4 text-teal-800" aria-hidden />
+                  {t(lang, "home.search.filters")}
                 </button>
-              </span>
-            ) : null}
-            {city ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-caption font-medium text-slate-800 ring-1 ring-slate-200">
-                {meta?.cities.find((c) => c.filterSlug === city)?.label ?? city}
+              </div>
+            </div>
+            {(category || city) && (mainTab === "doctors" || mainTab === "caregivers") ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {category ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-caption font-medium text-teal-900 ring-1 ring-teal-100">
+                    {catLabel.get(category) ?? category}
+                    <button
+                      type="button"
+                      className="rounded-full p-0.5 hover:bg-teal-100"
+                      aria-label="clear"
+                      onClick={() => {
+                        setCategory(null);
+                        stripDoctorCatFromUrl();
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ) : null}
+                {city ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-caption font-medium text-slate-800 ring-1 ring-slate-200">
+                    {meta?.cities.find((c) => c.filterSlug === city)?.label ?? city}
+                    <button
+                      type="button"
+                      className="rounded-full p-0.5 hover:bg-slate-200"
+                      aria-label="clear"
+                      onClick={() => setCity(null)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ) : null}
                 <button
                   type="button"
-                  className="rounded-full p-0.5 hover:bg-slate-200"
-                  aria-label="clear"
-                  onClick={() => setCity(null)}
+                  onClick={resetFilters}
+                  className="text-caption font-semibold text-health-primary underline underline-offset-2"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  {resetLabel}
                 </button>
-              </span>
+              </div>
             ) : null}
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="text-caption font-semibold text-health-primary underline underline-offset-2"
-            >
-              {resetLabel}
-            </button>
           </div>
-        ) : null}
-      </div>
+        </>
+      )}
 
       {metaErr ? (
         <p className="rounded-xl bg-amber-50 px-4 py-3 text-caption text-amber-950 ring-1 ring-amber-200">
@@ -471,7 +587,7 @@ export function DoctorDiscoveryHome({
         </p>
       ) : null}
 
-      {mainTab === "doctors" || mainTab === "caregivers" ? (
+      {(mainTab === "doctors" && category) || mainTab === "caregivers" ? (
         <>
           {listErr ? (
             <p className="text-sm text-red-700">{listErr}</p>
