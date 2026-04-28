@@ -174,12 +174,7 @@ export function DoctorDiscoveryHome({
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 380);
 
-  const searchForRequest = useMemo(() => {
-    if (mainTab === "caregivers") {
-      return debouncedSearch.trim() || "сиделк";
-    }
-    return debouncedSearch;
-  }, [mainTab, debouncedSearch]);
+  const searchForRequest = debouncedSearch;
   const [category, setCategory] = useState<string | null>(null);
   const [city, setCity] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -305,8 +300,8 @@ export function DoctorDiscoveryHome({
   }, [router, pathname, searchParams]);
 
   const loadDoctors = useCallback(async () => {
-    if (mainTab !== "doctors" && mainTab !== "caregivers") return;
-    if (mainTab === "doctors" && !category) return;
+    if (mainTab !== "doctors") return;
+    if (!category) return;
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -332,6 +327,13 @@ export function DoctorDiscoveryHome({
   }, [mainTab, page, perPage, searchForRequest, category, city]);
 
   useEffect(() => {
+    if (mainTab === "caregivers") {
+      abortRef.current?.abort();
+      setList(null);
+      setListLoading(false);
+      setListErr(null);
+      return;
+    }
     if (mainTab === "doctors" && !category) {
       abortRef.current?.abort();
       setList(null);
@@ -564,7 +566,7 @@ export function DoctorDiscoveryHome({
                   className="min-h-[44px] w-full rounded-xl border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
                   aria-label={t(lang, "home.search.placeholder")}
                 />
-                {listLoading && (mainTab === "doctors" || mainTab === "caregivers") ? (
+                {listLoading && mainTab === "doctors" ? (
                   <Loader2 className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-teal-600" />
                 ) : null}
               </div>
@@ -579,7 +581,7 @@ export function DoctorDiscoveryHome({
                 </button>
               </div>
             </div>
-            {(category || city) && (mainTab === "doctors" || mainTab === "caregivers") ? (
+            {(category || city) && mainTab === "doctors" ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 {category ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-caption font-medium text-teal-900 ring-1 ring-teal-100">
@@ -759,6 +761,7 @@ export function DoctorDiscoveryHome({
             </div>
           ) : null}
 
+          {mainTab === "doctors" ? (
           <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80">
             <AnimatePresence mode="popLayout">
               {(list?.doctors ?? []).map((d, idx) => {
@@ -824,14 +827,15 @@ export function DoctorDiscoveryHome({
               })}
             </AnimatePresence>
           </div>
+          ) : null}
 
-          {list && list.total === 0 ? (
+          {list && list.total === 0 && mainTab === "doctors" ? (
             <p className="py-8 text-center text-body text-slate-600">
               {lang === "ru" ? "Ничего не найдено — смените запрос или фильтры." : "Табылган жок."}
             </p>
           ) : null}
 
-          {list && list.totalPages > 1 ? (
+          {list && list.totalPages > 1 && mainTab === "doctors" ? (
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <button
                 type="button"

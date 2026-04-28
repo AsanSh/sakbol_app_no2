@@ -144,10 +144,9 @@ export async function uploadHealthRecord(formData: FormData) {
 
   await mkdir(LAB_UPLOAD_ROOT, { recursive: true });
   const diskPath = labUploadDiskPath(fileId, mime);
-  await writeFile(diskPath, buf);
 
-  let sourceBlobUrl: string | undefined;
-  if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
+  async function tryBlobPut(): Promise<string | undefined> {
+    if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) return undefined;
     try {
       const { put } = await import("@vercel/blob");
       const ext = extForLabMime(mime);
@@ -155,18 +154,25 @@ export async function uploadHealthRecord(formData: FormData) {
         access: "public",
         contentType: mime,
       });
-      sourceBlobUrl = blob.url;
+      return blob.url;
     } catch (e) {
       console.error("[uploadHealthRecord] blob put failed, keeping disk only", e);
+      return undefined;
     }
   }
 
   let biomarkers: Awaited<ReturnType<typeof processMedicalDocument>>["biomarkers"];
   let parser: Awaited<ReturnType<typeof processMedicalDocument>>["parser"];
+  let sourceBlobUrl: string | undefined;
   try {
-    const parsed = await processMedicalDocument(buf, mime);
+    const [parsed, , blobUrl] = await Promise.all([
+      processMedicalDocument(buf, mime),
+      writeFile(diskPath, buf),
+      tryBlobPut(),
+    ]);
     biomarkers = parsed.biomarkers;
     parser = parsed.parser;
+    sourceBlobUrl = blobUrl;
   } catch (e) {
     await unlink(diskPath).catch(() => {});
     return {

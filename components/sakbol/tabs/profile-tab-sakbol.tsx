@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
-import { ChevronDown, Copy, Share2, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileDown, Loader2, Share2, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
 import {
@@ -901,7 +901,7 @@ function ShareProfileSection({
               )}
             </p>
           )}
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
               onClick={handleCopy}
@@ -912,13 +912,45 @@ function ShareProfileSection({
             </button>
             <button
               type="button"
+              onClick={() => {
+                const url = telegramJoinStartUrl ?? webJoinUrl ?? webInviteUrl ?? "";
+                if (!url) return;
+                if (typeof navigator !== "undefined" && navigator.share) {
+                  void navigator
+                    .share({
+                      title: "SakBol — приглашение",
+                      text: "Совместный доступ к медицинскому профилю в SakBol",
+                      url,
+                    })
+                    .catch(() => {});
+                } else {
+                  handleCopy();
+                }
+              }}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-sky-50 py-2 text-xs font-semibold text-sky-950 ring-1 ring-sky-200"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Поделиться…
+            </button>
+            <button
+              type="button"
               onClick={() => void handleRevoke()}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-900 ring-1 ring-red-100"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-900 ring-1 ring-red-100 sm:shrink-0"
             >
               <Trash2 className="h-3.5 w-3.5" />
               Отозвать
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setInvite(null);
+              setCopied(false);
+            }}
+            className="w-full rounded-xl border border-dashed border-slate-300 bg-white py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            Создать ещё одно приглашение
+          </button>
           <p className="text-[10px] text-slate-500">
             Что произойдёт у получателя: камера откроет Telegram → бот сохранит приглашение → его
             кнопка «Открыть Mini App» приведёт в SakBol → после ввода ПИН (если регистрируется
@@ -940,6 +972,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const [notifyOpen, setNotifyOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [doctorReportBusy, setDoctorReportBusy] = useState(false);
   /** Аккордеон семьи: открыта только одна карточка. */
   const [openFamilyCardId, setOpenFamilyCardId] = useState<string | null>(null);
   const localVitalsMigratedRef = useRef(false);
@@ -1189,6 +1222,48 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 </div>
               ))}
             </div>
+
+            {editTarget ? (
+              <button
+                type="button"
+                disabled={doctorReportBusy}
+                onClick={() => {
+                  if (doctorReportBusy || !editTarget) return;
+                  setDoctorReportBusy(true);
+                  void fetch(`/api/profile/${editTarget.id}/doctor-report/pdf`, {
+                    credentials: "include",
+                  })
+                    .then(async (res) => {
+                      if (!res.ok) {
+                        const j = (await res.json().catch(() => ({}))) as { error?: string };
+                        window.alert(j.error ?? "Не удалось сформировать PDF");
+                        return;
+                      }
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `sakbol-vrachu-${formatClinicalAnonymId(editTarget.id)}.pdf`;
+                      document.body.appendChild(a);
+                      a.click();
+                      a.remove();
+                      URL.revokeObjectURL(url);
+                    })
+                    .catch(() => {
+                      window.alert("Сеть или сервер недоступны.");
+                    })
+                    .finally(() => setDoctorReportBusy(false));
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#004253]/25 bg-[#f0f7f9] py-3 text-sm font-semibold text-[#004253] shadow-sm disabled:opacity-50"
+              >
+                {doctorReportBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <FileDown className="h-4 w-4" aria-hidden />
+                )}
+                Медицинский отчёт для врача (PDF)
+              </button>
+            ) : null}
 
             <section
               id="profile-family-section"
