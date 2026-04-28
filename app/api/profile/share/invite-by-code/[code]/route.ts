@@ -10,8 +10,9 @@ function normalizeCode(raw: string): string | null {
 }
 
 /** GET — информация о приглашении по 9-значному коду */
-export async function GET(_req: Request, ctx: { params: { code: string } }) {
-  const code = normalizeCode(ctx.params.code ?? "");
+export async function GET(_req: Request, ctx: { params: Promise<{ code: string }> }) {
+  const { code: raw } = await ctx.params;
+  const code = normalizeCode(raw ?? "");
   if (!code) {
     return NextResponse.json({ error: "Invalid code" }, { status: 400 });
   }
@@ -48,13 +49,14 @@ export async function GET(_req: Request, ctx: { params: { code: string } }) {
 }
 
 /** POST — принять приглашение по коду (нужна сессия) */
-export async function POST(_req: Request, ctx: { params: { code: string } }) {
-  const session = getSession();
+export async function POST(_req: Request, ctx: { params: Promise<{ code: string }> }) {
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const code = normalizeCode(ctx.params.code ?? "");
+  const { code: raw } = await ctx.params;
+  const code = normalizeCode(raw ?? "");
   if (!code) {
     return NextResponse.json({ error: "Invalid code" }, { status: 400 });
   }

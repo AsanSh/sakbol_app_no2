@@ -11,7 +11,7 @@ import { sortLabAnalysesNewestFirst } from "@/lib/lab-analysis-dates";
 export async function listLabAnalysesForProfile(
   profileId: string,
 ): Promise<{ ok: true; analyses: LabAnalysisRow[] } | { ok: false; error: string }> {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false, error: "Unauthorized" };
   }

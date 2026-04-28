@@ -17,7 +17,7 @@ const CATEGORIES = new Set<string>([
 
 /** Список документов семьи (все профили familyId). */
 export async function GET(req: Request) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

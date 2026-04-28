@@ -52,8 +52,9 @@ export function verifySessionToken(token: string): SessionPayload | null {
   }
 }
 
-export function getSession(): SessionPayload | null {
-  const raw = cookies().get(COOKIE)?.value;
+export async function getSession(): Promise<SessionPayload | null> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get(COOKIE)?.value;
   if (!raw) return null;
   return verifySessionToken(raw);
 }

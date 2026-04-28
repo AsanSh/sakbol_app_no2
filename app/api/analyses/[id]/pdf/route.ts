@@ -12,15 +12,15 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: NextRequest,
-  ctx: { params: { id: string } },
+  ctx: { params: Promise<{ id: string }> },
 ) {
   try {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const recordId = ctx.params.id;
+  const { id: recordId } = await ctx.params;
   const record = await prisma.healthRecord.findFirst({
     where: {
       id: recordId,

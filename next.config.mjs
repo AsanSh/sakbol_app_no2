@@ -6,11 +6,11 @@ const nextConfig = {
       { protocol: "http", hostname: "doctors.kg", pathname: "/**" },
     ],
   },
+  serverExternalPackages: ["pdf-parse", "tesseract.js"],
   experimental: {
     serverActions: {
       bodySizeLimit: "12mb",
     },
-    serverComponentsExternalPackages: ["pdf-parse", "tesseract.js"],
   },
 };
 

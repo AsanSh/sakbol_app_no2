@@ -5,8 +5,9 @@ import { getSession } from "@/lib/session";
 export const dynamic = "force-dynamic";
 
 /** GET /api/profile/share/invite/[token] — информация об инвайте (без авторизации) */
-export async function GET(_req: Request, ctx: { params: { token: string } }) {
-  const token = ctx.params.token?.trim();
+export async function GET(_req: Request, ctx: { params: Promise<{ token: string }> }) {
+  const { token: raw } = await ctx.params;
+  const token = raw?.trim();
   if (!token) {
     return NextResponse.json({ error: "Invalid token" }, { status: 400 });
   }
@@ -42,13 +43,14 @@ export async function GET(_req: Request, ctx: { params: { token: string } }) {
 }
 
 /** POST /api/profile/share/invite/[token] — принять приглашение */
-export async function POST(_req: Request, ctx: { params: { token: string } }) {
-  const session = getSession();
+export async function POST(_req: Request, ctx: { params: Promise<{ token: string }> }) {
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const token = ctx.params.token?.trim();
+  const { token: raw } = await ctx.params;
+  const token = raw?.trim();
   if (!token) {
     return NextResponse.json({ error: "Invalid token" }, { status: 400 });
   }

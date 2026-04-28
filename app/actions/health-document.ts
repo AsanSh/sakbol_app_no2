@@ -12,7 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
 export async function uploadHealthDocument(formData: FormData) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Требуется вход." };
   }
@@ -94,7 +94,7 @@ export async function uploadHealthDocument(formData: FormData) {
 }
 
 export async function deleteHealthDocument(id: string) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Требуется вход." };
   }
@@ -131,7 +131,7 @@ export async function updateHealthDocumentMeta(input: {
   category: string;
   documentDate: string | null;
 }) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Требуется вход." };
   }

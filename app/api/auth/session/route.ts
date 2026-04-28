@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 /** Текущая сессия (cookie) — для веба без Telegram initData. */
 export async function GET() {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

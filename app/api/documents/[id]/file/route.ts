@@ -9,14 +9,14 @@ export const runtime = "nodejs";
 
 export async function GET(
   _req: Request,
-  ctx: { params: { id: string } },
+  ctx: { params: Promise<{ id: string }> },
 ) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = ctx.params;
+  const { id } = await ctx.params;
   const docId = id?.trim();
   if (!docId) {
     return NextResponse.json({ error: "Bad id" }, { status: 400 });

@@ -8,7 +8,7 @@ import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

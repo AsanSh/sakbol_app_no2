@@ -12,7 +12,7 @@ const TTL_MS = 5 * 60 * 1000;
  * Создать одноразовый код привязки Telegram (веб, сессия). Пользователь: /start КОД у бота.
  */
 export async function POST() {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

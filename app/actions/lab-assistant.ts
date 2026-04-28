@@ -92,7 +92,7 @@ export async function askLabAssistantFromBook(
     return { ok: false, error: "Слишком длинный текст." };
   }
 
-  const session = getSession();
+  const session = await getSession();
   const pid = activeProfileId?.trim() || null;
 
   let block: string | null = null;

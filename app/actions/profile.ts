@@ -9,7 +9,7 @@ export async function updateProfileBiologicalSex(
   profileId: string,
   sex: BiologicalSex,
 ) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Unauthorized." };
   }
@@ -52,7 +52,7 @@ export async function updateProfileVitals(
     bloodType: string | null;
   },
 ) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Unauthorized." };
   }
@@ -115,7 +115,7 @@ export async function updateMemberProfileBasics(
     ageYears: number | null;
   },
 ) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Требуется вход." };
   }
@@ -180,7 +180,7 @@ export async function updateOwnProfileBasics(input: {
   displayName: string;
   ageYears: number | null;
 }) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Unauthorized." };
   }
@@ -236,7 +236,7 @@ export async function updateOwnProfilePractitionerFlags(input: {
   doctorNote: string | null;
   caregiverNote: string | null;
 }) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Unauthorized." };
   }

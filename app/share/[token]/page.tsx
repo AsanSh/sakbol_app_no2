@@ -6,9 +6,10 @@ import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 export const dynamic = "force-dynamic";
 
 /** Упрощённый экран для врача: без лишнего chrome, крупная типографика. */
-export default async function SharePage({ params }: { params: { token: string } }) {
+export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   const row = await prisma.shareToken.findUnique({
-    where: { token: params.token },
+    where: { token },
     include: {
       healthRecord: { include: { profile: true, metrics: { select: { payload: true } } } },
     },
@@ -35,7 +36,7 @@ export default async function SharePage({ params }: { params: { token: string } 
 
         <a
           className="mt-6 flex w-full items-center justify-center rounded-xl bg-emerald-800 px-4 py-3 text-center text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-95"
-          href={`/api/share/${params.token}/file`}
+          href={`/api/share/${token}/file`}
           target="_blank"
           rel="noreferrer"
         >

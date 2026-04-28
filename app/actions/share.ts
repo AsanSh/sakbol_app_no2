@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
 export async function createShareToken(healthRecordId: string){
-  const s=getSession();
+  const s=await getSession();
   if(!s) return {ok:false as const,error:"Unauthorized"};
   const rec=await prisma.healthRecord.findFirst({where:{id:healthRecordId, profile:{familyId:s.familyId}}});
   if(!rec) return {ok:false as const,error:"Record not found"};

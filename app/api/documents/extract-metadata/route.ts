@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  * Превью метаданных без сохранения: PDF (pdf-parse) и изображения (Tesseract rus+eng).
  */
 export async function POST(req: Request) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

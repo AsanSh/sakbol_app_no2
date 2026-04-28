@@ -29,7 +29,7 @@ type LabMeta = {
 };
 
 export async function deleteLabAnalysis(recordId: string) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Unauthorized." };
   }
@@ -76,7 +76,7 @@ export async function deleteLabAnalysis(recordId: string) {
 }
 
 export async function uploadHealthRecord(formData: FormData) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Unauthorized." };
   }

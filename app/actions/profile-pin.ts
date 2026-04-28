@@ -12,7 +12,7 @@ import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
 export async function setOwnProfilePin(rawPin: string): Promise<
   { ok: true } | { ok: false; error: string }
 > {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false, error: "Не авторизованы." };
   }

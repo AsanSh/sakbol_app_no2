@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * Создаёт (или возвращает существующий) инвайт-токен для профиля.
  */
 export async function POST(req: Request) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
 
 /** GET /api/profile/share  — список выданных доступов для текущей семьи */
 export async function GET() {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -116,7 +116,7 @@ export async function GET() {
 
 /** DELETE /api/profile/share?id=... — отозвать доступ */
 export async function DELETE(req: Request) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -6,9 +6,10 @@ import { labUploadDiskPath } from "@/lib/sakbol-lab-upload-path";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_: Request, { params }: { params: { token: string } }) {
+export async function GET(_: Request, { params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   const row = await prisma.shareToken.findUnique({
-    where: { token: params.token },
+    where: { token },
     include: { healthRecord: { include: { metrics: { select: { payload: true } } } } },
   });
   if (!row || row.expiresAt.getTime() < Date.now()) {

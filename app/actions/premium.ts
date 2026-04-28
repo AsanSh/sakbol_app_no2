@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
 export async function activatePremiumStub(method: "MBANK" | "MegaPay") {
-  const s = getSession();
+  const s = await getSession();
   if (!s) return { ok: false as const, error: "Unauthorized" };
   await new Promise((r) => setTimeout(r, 80));
   await prisma.subscription.upsert({

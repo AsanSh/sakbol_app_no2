@@ -25,7 +25,7 @@ export type CreateManagedProfileInput = {
 };
 
 export async function createManagedProfile(input: CreateManagedProfileInput) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Unauthorized." };
   }
@@ -104,7 +104,7 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
 
 /** Удаление добавленного члена семьи (карточка без своего Telegram). Только ADMIN. */
 export async function deleteManagedProfile(profileId: string) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Требуется вход." };
   }
@@ -149,7 +149,7 @@ export async function deleteManagedProfile(profileId: string) {
 }
 
 export async function getFamilyMembers() {
-  const session = getSession();
+  const session = await getSession();
   if (!session) return [];
 
   return prisma.profile.findMany({
@@ -181,7 +181,7 @@ export async function updateManagedProfileKinship(
   profileId: string,
   managedRole: ManagedRelationRole,
 ) {
-  const session = getSession();
+  const session = await getSession();
   if (!session) {
     return { ok: false as const, error: "Требуется вход." };
   }
