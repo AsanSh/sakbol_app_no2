@@ -569,11 +569,30 @@ function ShareProfileSection({
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [issuedRefreshTick, setIssuedRefreshTick] = useState(0);
+  /** Имя бота с сервера (getMe), если в бандле нет NEXT_PUBLIC_TELEGRAM_BOT_USERNAME */
+  const [resolvedBotUsername, setResolvedBotUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (telegramBotUsernameFromEnv()) return;
+    let cancelled = false;
+    void fetch("/api/public/telegram-bot-username")
+      .then((r) => r.json() as Promise<{ username?: string | null }>)
+      .then((j) => {
+        if (!cancelled && j.username) setResolvedBotUsername(j.username);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   const webInvitePath = invite ? `/share-profile/${invite.inviteToken}` : "";
   const webInviteUrl = invite ? `${origin}${webInvitePath}` : null;
-  const botU = typeof window !== "undefined" ? telegramBotUsernameFromEnv() : "";
+  const botU =
+    (typeof window !== "undefined" ? telegramBotUsernameFromEnv() : "") ||
+    resolvedBotUsername ||
+    "";
   /** Главный путь: чат с ботом → /start share_TOKEN → webhook гарантированно сохранит инвайт.
    *  Это работает с любым ботом (даже без настроенного Mini App). */
   const telegramBotStartUrl =

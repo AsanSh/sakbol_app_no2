@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "node scripts/build.mjs",
+    "telegram:set-webhook": "tsx scripts/set-telegram-webhook.ts",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",

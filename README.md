@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SakBol (`sakbol_app_no2`)
 
-## Getting Started
+Next.js 14 + Prisma + Telegram Mini App. Обработчик бота находится **в этом репозитории**: `app/api/telegram/webhook/route.ts` (отдельного проекта «бот» нет).
 
-First, run the development server:
+## Локально
+
+Скопируйте `.env.example` → `.env`, поднимите Postgres (`docker compose up -d`), затем:
 
 ```bash
+npm install
+npm run db:local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Переменные окружения (шаринг профиля)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `TELEGRAM_BOT_TOKEN` — токен бота.
+- `TELEGRAM_WEBHOOK_SECRET` — секрет для заголовка `X-Telegram-Bot-Api-Secret-Token` у webhook.
+- `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` — опционально (без `@`). Если не задан, QR «совместного доступа» запрашивает username через `GET /api/public/telegram-bot-username`.
+- `DATABASE_URL`, `SESSION_SECRET` — см. `.env.example`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Webhook после деплоя
 
-## Learn More
+URL: `https://<ваш-домен>/api/telegram/webhook`.
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+export WEBHOOK_BASE_URL="https://your-domain.vercel.app"
+export TELEGRAM_BOT_TOKEN="..."
+export TELEGRAM_WEBHOOK_SECRET="..."
+npm run telegram:set-webhook
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Сборка
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`npm run build` запускает `prisma generate`, затем `prisma migrate deploy`, затем `next build`. Если на сборке нет БД, задайте `SKIP_PRISMA_MIGRATE_ON_BUILD=1` и выполняйте миграции отдельно.
 
-## Deploy on Vercel
+## Совместный доступ (QR)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Получатель должен открыть `t.me/<бот>?start=share_<token>` или Mini App с `startapp=share_<token>`. После входа чужой профиль появляется в переключателе (данные с `/api/family/default`).
