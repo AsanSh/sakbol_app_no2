@@ -100,11 +100,12 @@ export function AiTab({ family, reloadFamily }: Props) {
         }
       />
 
-      <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col px-4">
+      <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col px-3 pb-0">
         <div
           ref={scrollRef}
-          className="mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2"
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto"
         >
+          <div className="flex min-h-full flex-col justify-end gap-2 py-1">
           {messages.map((m) => (
             <div
               key={m.id}
@@ -142,9 +143,10 @@ export function AiTab({ family, reloadFamily }: Props) {
               <span className="animate-bounce [animation-delay:0.3s]">●</span>
             </div>
           ) : null}
+          </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#e7e8e9] bg-[#f8f9fa]/95 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur-md">
+        <div className="shrink-0 border-t border-[#e7e8e9] bg-[#f8f9fa]/95 py-1.5 pb-[max(0.35rem,env(safe-area-inset-bottom,0px))] backdrop-blur-md">
           <div className="flex items-end gap-2 rounded-2xl border border-[#e7e8e9] bg-white p-2 shadow-sm">
             <textarea
               ref={taRef}

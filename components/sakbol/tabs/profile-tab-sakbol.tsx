@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
-import { ChevronDown, Copy, RefreshCw, Share2, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, Share2, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
 import { WebLoginPhoneCard } from "@/components/profile/web-login-phone-card";
@@ -368,15 +368,24 @@ type IssuedAccess = {
   grantee: { id: string; displayName: string; avatarUrl: string | null } | null;
 };
 
-function IssuedSharesList({ refreshTick }: { refreshTick: number }) {
+function IssuedSharesList({
+  refreshTick,
+  onRevoked,
+}: {
+  refreshTick: number;
+  onRevoked: () => void;
+}) {
   const [items, setItems] = useState<IssuedAccess[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [revokeErr, setRevokeErr] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setErr(null);
+    setRevokeErr(null);
     fetch("/api/profile/share", { credentials: "include" })
       .then(async (r) => {
         const j = (await r.json().catch(() => ({}))) as {
@@ -425,6 +434,11 @@ function IssuedSharesList({ refreshTick }: { refreshTick: number }) {
 
   return (
     <ul className="space-y-1.5">
+      {revokeErr ? (
+        <p className="rounded-xl bg-red-50 px-3 py-2 text-[11px] text-red-700" role="alert">
+          {revokeErr}
+        </p>
+      ) : null}
       {items.map((a) => {
         const accepted = Boolean(a.acceptedAt);
         const expired = !!a.inviteExpiresAt && new Date(a.inviteExpiresAt) < new Date();
@@ -475,115 +489,42 @@ function IssuedSharesList({ refreshTick }: { refreshTick: number }) {
             >
               {statusLabel}
             </span>
+            <button
+              type="button"
+              disabled={revokingId === a.id}
+              title="Удалить / отозвать приглашение"
+              aria-label="Удалить приглашение"
+              onClick={() => {
+                const msg = accepted
+                  ? "Отозвать доступ для этого пользователя? Он потеряет совместный профиль."
+                  : "Удалить это приглашение? Ссылка и код перестанут действовать.";
+                if (!window.confirm(msg)) return;
+                setRevokeErr(null);
+                setRevokingId(a.id);
+                void fetch(`/api/profile/share?id=${encodeURIComponent(a.id)}`, {
+                  method: "DELETE",
+                  credentials: "include",
+                })
+                  .then(async (r) => {
+                    if (!r.ok) {
+                      const j = (await r.json().catch(() => ({}))) as { error?: string };
+                      throw new Error(j.error ?? "Ошибка");
+                    }
+                    onRevoked();
+                  })
+                  .catch((e: unknown) => {
+                    setRevokeErr(e instanceof Error ? e.message : "Не удалось удалить");
+                  })
+                  .finally(() => setRevokingId(null));
+              }}
+              className="shrink-0 rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={2} />
+            </button>
           </li>
         );
       })}
     </ul>
-  );
-}
-
-type ApplyShareResult = {
-  ok: boolean;
-  hasShareToken?: boolean;
-  acceptStatus?: string | null;
-  acceptedSourceName?: string | null;
-  appliedPendingCount?: number;
-  stillPendingCount?: number;
-  acceptedAccessCount?: number;
-  error?: string;
-};
-
-function ApplyPendingSharesButton({ onApplied }: { onApplied: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<ApplyShareResult | null>(null);
-
-  const handleClick = async () => {
-    setBusy(true);
-    setResult(null);
-    try {
-      type WebAppType = Awaited<typeof import("@twa-dev/sdk")>["default"];
-      let WebApp: WebAppType | null = null;
-      try {
-        const mod = await import("@twa-dev/sdk");
-        WebApp = mod.default;
-      } catch {
-        WebApp = null;
-      }
-      const initData = WebApp?.initData ?? "";
-      if (!initData) {
-        setResult({
-          ok: false,
-          error:
-            "Эта функция работает только в Telegram Mini App. Откройте SakBol через бота.",
-        });
-        return;
-      }
-      const res = await fetch("/api/profile/access/apply-from-init", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ initData }),
-      });
-      const j = (await res.json()) as ApplyShareResult;
-      setResult(j);
-      if (j.ok && (j.appliedPendingCount ?? 0) > 0) {
-        onApplied();
-      }
-    } catch (e) {
-      setResult({ ok: false, error: e instanceof Error ? e.message : "Сетевая ошибка" });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3">
-      <p className="text-[11px] font-semibold text-sky-900">
-        Получили QR-приглашение, но совместный профиль не появился?
-      </p>
-      <button
-        type="button"
-        onClick={() => void handleClick()}
-        disabled={busy}
-        className="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-      >
-        <RefreshCw className={`h-3.5 w-3.5 ${busy ? "animate-spin" : ""}`} />
-        {busy ? "Проверяем…" : "Перепроверить совместные доступы"}
-      </button>
-      {result ? (
-        <div className="mt-2 rounded-lg bg-white px-2 py-1.5 text-[11px] text-slate-800 ring-1 ring-slate-200">
-          {result.error ? (
-            <p className="text-red-700">{result.error}</p>
-          ) : (
-            <>
-              <p>
-                Применено новых доступов: <b>{result.appliedPendingCount ?? 0}</b>
-              </p>
-              <p>
-                Всего активных совместных профилей у вас: <b>{result.acceptedAccessCount ?? 0}</b>
-              </p>
-              {result.stillPendingCount && result.stillPendingCount > 0 ? (
-                <p className="mt-1 text-amber-800">
-                  Ожидают применения: <b>{result.stillPendingCount}</b>. Если это не вы — свяжитесь
-                  с владельцем приглашения, возможно ссылка отозвана.
-                </p>
-              ) : null}
-              {result.acceptStatus ? (
-                <p className="mt-1 text-slate-500">
-                  Статус токена: <code>{result.acceptStatus}</code>
-                  {result.acceptedSourceName ? (
-                    <>
-                      {" "}
-                      (профиль: <b>{result.acceptedSourceName}</b>)
-                    </>
-                  ) : null}
-                </p>
-              ) : null}
-            </>
-          )}
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -702,10 +643,6 @@ function ShareProfileSection({
         Поделитесь профилем родственника с другим пользователем — он сможет видеть и добавлять документы только для этого профиля.
       </p>
 
-      <div className="mt-3">
-        <ApplyPendingSharesButton onApplied={onReload} />
-      </div>
-
       <div className="mt-3 space-y-1.5">
         <div className="flex items-center justify-between">
           <h3 className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
@@ -719,7 +656,13 @@ function ShareProfileSection({
             Обновить
           </button>
         </div>
-        <IssuedSharesList refreshTick={issuedRefreshTick} />
+        <IssuedSharesList
+          refreshTick={issuedRefreshTick}
+          onRevoked={() => {
+            setIssuedRefreshTick((t) => t + 1);
+            onReload();
+          }}
+        />
       </div>
 
       {!invite ? (

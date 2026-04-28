@@ -25,7 +25,13 @@ export async function GET(req: NextRequest) {
     }
 
     const analyses = await prisma.healthRecord.findMany({
-      where: { profileId, kind: HealthRecordKind.LAB_ANALYSIS },
+      where: {
+        profileId,
+        OR: [
+          { kind: HealthRecordKind.LAB_ANALYSIS },
+          { metrics: { isNot: null } },
+        ],
+      },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -37,15 +43,19 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      profileId,
-      analyses: analyses.map((a) => ({
+    const mapped = analyses
+      .map((a) => ({
         id: a.id,
         title: a.title,
         data: resolveLabAnalysisPayload(a.data, a.metrics?.payload ?? null),
         isPrivate: a.isPrivate,
         createdAt: a.createdAt.toISOString(),
-      })),
+      }))
+      .filter((a) => (a.data.biomarkers?.length ?? 0) > 0);
+
+    return NextResponse.json({
+      profileId,
+      analyses: mapped,
     });
   } catch {
     return NextResponse.json({ error: "Database unavailable" }, { status: 503 });

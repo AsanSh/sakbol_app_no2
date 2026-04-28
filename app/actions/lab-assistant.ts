@@ -37,23 +37,31 @@ async function latestLabContextBlock(
   const access = await checkProfileAccess(session, profileId);
   if (!access.ok) return null;
 
-  const row = await prisma.healthRecord.findFirst({
-    where: { profileId, kind: HealthRecordKind.LAB_ANALYSIS },
+  const rows = await prisma.healthRecord.findMany({
+    where: {
+      profileId,
+      OR: [
+        { kind: HealthRecordKind.LAB_ANALYSIS },
+        { metrics: { isNot: null } },
+      ],
+    },
     orderBy: { createdAt: "desc" },
+    take: 24,
     select: {
       createdAt: true,
       data: true,
       metrics: { select: { payload: true } },
     },
   });
-  if (!row) return null;
 
-  const payload = resolveLabAnalysisPayload(row.data, row.metrics?.payload ?? null);
-  const lines = formatBiomarkersForSearch(payload.biomarkers);
-  if (!lines) return null;
-
-  const date = row.createdAt.toISOString().slice(0, 10);
-  return `Дата анализа: ${date}\n${lines}`;
+  for (const row of rows) {
+    const payload = resolveLabAnalysisPayload(row.data, row.metrics?.payload ?? null);
+    const lines = formatBiomarkersForSearch(payload.biomarkers);
+    if (!lines) continue;
+    const date = row.createdAt.toISOString().slice(0, 10);
+    return `Дата анализа: ${date}\n${lines}`;
+  }
+  return null;
 }
 
 function fallbackWithoutGemini(question: string, block: string | null, reason: string): string {

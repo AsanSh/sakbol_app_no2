@@ -123,7 +123,7 @@ export function SakbolMainClient() {
           className={cn(
             "flex min-h-0 flex-1 flex-col",
             tab === "ai"
-              ? "overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))]"
+              ? "overflow-hidden pb-[calc(3.35rem+env(safe-area-inset-bottom,0px))]"
               : "overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom,0px))]",
           )}
         >

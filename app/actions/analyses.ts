@@ -28,7 +28,13 @@ export async function listLabAnalysesForProfile(
     }
 
     const analyses = await prisma.healthRecord.findMany({
-      where: { profileId: id, kind: HealthRecordKind.LAB_ANALYSIS },
+      where: {
+        profileId: id,
+        OR: [
+          { kind: HealthRecordKind.LAB_ANALYSIS },
+          { metrics: { isNot: null } },
+        ],
+      },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -40,13 +46,15 @@ export async function listLabAnalysesForProfile(
       },
     });
 
-    const mapped: LabAnalysisRow[] = analyses.map((a) => ({
-      id: a.id,
-      title: a.title,
-      data: resolveLabAnalysisPayload(a.data, a.metrics?.payload ?? null),
-      isPrivate: a.isPrivate,
-      createdAt: a.createdAt.toISOString(),
-    }));
+    const mapped: LabAnalysisRow[] = analyses
+      .map((a) => ({
+        id: a.id,
+        title: a.title,
+        data: resolveLabAnalysisPayload(a.data, a.metrics?.payload ?? null),
+        isPrivate: a.isPrivate,
+        createdAt: a.createdAt.toISOString(),
+      }))
+      .filter((a) => (a.data.biomarkers?.length ?? 0) > 0);
 
     return {
       ok: true,
