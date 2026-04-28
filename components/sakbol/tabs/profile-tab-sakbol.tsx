@@ -1318,15 +1318,51 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
         familyProfilesForInvite={(family?.profiles ?? []).filter((p) => !p.isSharedGuest)}
       />
 
-      <BottomSheet open={premiumOpen} title="Premium" onClose={() => setPremiumOpen(false)}>
+      <BottomSheet open={premiumOpen} title="SakBol Premium" onClose={() => setPremiumOpen(false)}>
         <p className="text-sm text-[#40484c]">
-          Месяц 299 сом / год 2 990 сом — безлимит загрузок и семейные профили (мок).
+          Получите расширенный доступ: безлимит расшифровок анализов, семейные профили и приоритет
+          поддержки. Пробный период и отмена — по условиям в разделе «Конфиденциальность».
+        </p>
+        <div className="mt-3 overflow-hidden rounded-xl border border-[#e7e8e9]">
+          <table className="w-full text-left text-[11px]">
+            <thead className="bg-[#f8f9fa] text-[#191c1d]">
+              <tr>
+                <th className="px-2 py-1.5 font-semibold">Тариф</th>
+                <th className="px-2 py-1.5 font-semibold">Цена</th>
+                <th className="px-2 py-1.5 font-semibold">Проба</th>
+              </tr>
+            </thead>
+            <tbody className="text-[#40484c]">
+              <tr className="border-t border-[#e7e8e9]">
+                <td className="px-2 py-1.5">Месяц</td>
+                <td className="px-2 py-1.5">699 ₽/мес</td>
+                <td className="px-2 py-1.5">7 дн.</td>
+              </tr>
+              <tr className="border-t border-[#e7e8e9]">
+                <td className="px-2 py-1.5">Год</td>
+                <td className="px-2 py-1.5">4 490 ₽/год</td>
+                <td className="px-2 py-1.5">7 дн.</td>
+              </tr>
+              <tr className="border-t border-[#e7e8e9]">
+                <td className="px-2 py-1.5">Навсегда</td>
+                <td className="px-2 py-1.5">14 990 ₽</td>
+                <td className="px-2 py-1.5">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-[11px] text-[#70787d]">
+          Оплата подключается в одном из следующих релизов. Вопросы:{" "}
+          <a className="font-medium text-[#004253] underline" href="mailto:support@sakbol.app">
+            support@sakbol.app
+          </a>
+          .
         </p>
         <button
           type="button"
           className="mt-4 w-full rounded-xl bg-sakbol-cta py-3 font-semibold text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.04]"
         >
-          Активировать
+          Сообщить о готовности оплатить
         </button>
       </BottomSheet>
 

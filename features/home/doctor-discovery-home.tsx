@@ -449,6 +449,8 @@ export function DoctorDiscoveryHome({
             onClick={() => {
               setMainTab("caregivers");
               setCategory(null);
+              setSearch("");
+              setPage(1);
               stripDoctorCatFromUrl();
             }}
             className={cn(

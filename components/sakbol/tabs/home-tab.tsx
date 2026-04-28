@@ -7,12 +7,12 @@ import { motion } from "framer-motion";
 import { FamilyRole } from "@prisma/client";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { FamilySwitcher } from "@/components/family-switcher";
-import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useDeviceType } from "@/hooks/use-device-type";
 import type { FamilyWithProfiles } from "@/types/family";
+import { ProfileNotificationsContent } from "@/components/profile/profile-settings-sheets";
 import { DoctorDiscoveryHome } from "@/features/home/doctor-discovery-home";
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
@@ -49,29 +49,10 @@ export function HomeTab({ family, reloadFamily }: Props) {
       />
     ) : null;
 
-  const notifications = [
-    { icon: "lab_research", title: "Готов расшифровка анализа", time: "09:12" },
-    { icon: "event", title: "Напоминание: витамин D", time: "Вчера" },
-  ];
-
   const sharedSheets = (
-    <>
-      <BottomSheet open={notificationsOpen} title="Уведомления" onClose={() => setNotificationsOpen(false)}>
-        <ul className="space-y-3">
-          {notifications.map((n) => (
-            <li key={n.title} className="flex gap-3 rounded-xl bg-[#f8f9fa] p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#004253] shadow-sm">
-                <MaterialIcon name={n.icon} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[#191c1d]">{n.title}</p>
-                <p className="text-xs text-[#70787d]">{n.time}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </BottomSheet>
-    </>
+    <BottomSheet open={notificationsOpen} title="Уведомления" onClose={() => setNotificationsOpen(false)}>
+      <ProfileNotificationsContent />
+    </BottomSheet>
   );
 
   const authBanner = (
