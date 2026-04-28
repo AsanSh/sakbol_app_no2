@@ -1,0 +1,36 @@
+# Ручной запуск: Actions → Set Telegram webhook → Run workflow
+# В репозитории: Settings → Secrets → TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET (опционально)
+name: Set Telegram webhook
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Публичный URL приложения (https://..., без слэша в конце)"
+        required: true
+        type: string
+
+jobs:
+  set-webhook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setWebhook
+        env:
+          TOK: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SEC: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          BASE: ${{ inputs.base_url }}
+        run: |
+          set -e
+          if [ -z "$TOK" ]; then echo "Add repo secret TELEGRAM_BOT_TOKEN"; exit 1; fi
+          URL="${BASE%/}/api/telegram/webhook"
+          if [ -n "$SEC" ]; then
+            BODY=$(jq -n --arg u "$URL" --arg s "$SEC" '{url:$u, secret_token:$s}')
+          else
+            BODY=$(jq -n --arg u "$URL" '{url:$u}')
+            echo "Warning: TELEGRAM_WEBHOOK_SECRET empty"
+          fi
+          RES=$(curl -sS "https://api.telegram.org/bot${TOK}/setWebhook" \
+            -H "Content-Type: application/json" \
+            -d "$BODY")
+          echo "$RES"
+          echo "$RES" | jq -e '.ok == true' >/dev/null

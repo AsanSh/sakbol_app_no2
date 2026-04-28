@@ -19,9 +19,22 @@ npm run dev
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` — опционально (без `@`). Если не задан, QR «совместного доступа» запрашивает username через `GET /api/public/telegram-bot-username`.
 - `DATABASE_URL`, `SESSION_SECRET` — см. `.env.example`.
 
-## Webhook после деплоя
+## Webhook после деплоя (пункт 2)
 
-URL: `https://<ваш-домен>/api/telegram/webhook`.
+Целевой URL: `https://<ваш-домен>/api/telegram/webhook`.
+
+**Вариант A — уже задеплоено на Vercel** (токены в Project Settings → Environment Variables): один POST с сервера не нужен локально. Вызовите защищённый эндпоинт (в Vercel должны быть `BOT_INTERNAL_SECRET`, `TELEGRAM_BOT_TOKEN`, при необходимости `TELEGRAM_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL` или `VERCEL_URL`):
+
+```bash
+curl -sS -X POST "https://<ваш-домен>/api/internal/telegram-set-webhook" \
+  -H "Authorization: Bearer <BOT_INTERNAL_SECRET>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+При неверном origin укажите явно: `-d '{"baseUrl":"https://your-domain.vercel.app"}'`.
+
+**Вариант B — локально из репозитория:**
 
 ```bash
 export WEBHOOK_BASE_URL="https://your-domain.vercel.app"
@@ -29,6 +42,8 @@ export TELEGRAM_BOT_TOKEN="..."
 export TELEGRAM_WEBHOOK_SECRET="..."
 npm run telegram:set-webhook
 ```
+
+**Вариант C — GitHub Actions:** в репозитории → *Settings → Secrets* добавьте `TELEGRAM_BOT_TOKEN` (и по желанию `TELEGRAM_WEBHOOK_SECRET`). Запустите workflow **Set Telegram webhook**, введите публичный `base_url`.
 
 ## Сборка
 
