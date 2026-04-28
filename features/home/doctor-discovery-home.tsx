@@ -10,6 +10,7 @@ import {
   HandHeart,
   Loader2,
   MapPin,
+  MessageCircle,
   Phone,
   Search,
   SlidersHorizontal,
@@ -27,6 +28,13 @@ import {
   handleDoctorCall,
   notifyTelegramCallNumber,
 } from "@/lib/callDoctor";
+import {
+  CAREGIVER_LISTINGS,
+  CAREGIVER_TAG_IDS,
+  caregiverWhatsappHref,
+  filterCaregiverListings,
+  type CaregiverTagId,
+} from "@/lib/caregivers-directory";
 import type { DoctorSummary } from "@/lib/doctors-kg/types";
 import { decodeHtmlEntities } from "@/lib/html-entities";
 import { cn } from "@/lib/utils";
@@ -186,6 +194,7 @@ export function DoctorDiscoveryHome({
   const [clinicLoadErr, setClinicLoadErr] = useState<string | null>(null);
   const [phoneSelectEntries, setPhoneSelectEntries] = useState<PhoneSelectEntry[] | null>(null);
   const [callUnavailableToast, setCallUnavailableToast] = useState(false);
+  const [caregiverFilterTags, setCaregiverFilterTags] = useState<CaregiverTagId[]>([]);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -338,6 +347,35 @@ export function DoctorDiscoveryHome({
     setPage(1);
   }, [debouncedSearch, category, city, mainTab]);
 
+  useEffect(() => {
+    if (mainTab !== "caregivers") setCaregiverFilterTags([]);
+  }, [mainTab]);
+
+  const caregiverTagFilterSet = useMemo(
+    () => new Set(caregiverFilterTags),
+    [caregiverFilterTags],
+  );
+
+  const filteredCaregiverListings = useMemo(
+    () =>
+      filterCaregiverListings(CAREGIVER_LISTINGS, {
+        search: debouncedSearch,
+        tagFilters: caregiverTagFilterSet,
+      }),
+    [debouncedSearch, caregiverTagFilterSet],
+  );
+
+  const toggleCaregiverTag = useCallback((tag: CaregiverTagId) => {
+    setCaregiverFilterTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }, []);
+
+  const caregiverTagLabel = useCallback(
+    (tag: CaregiverTagId) => t(lang, `home.caregivers.tag.${tag}`),
+    [lang],
+  );
+
   const clinicsFiltered = useMemo(() => {
     if (!meta?.clinics?.length) return [];
     const q = debouncedSearch.trim().toLowerCase();
@@ -357,6 +395,7 @@ export function DoctorDiscoveryHome({
     setCity(null);
     setSearch("");
     setFiltersOpen(false);
+    setCaregiverFilterTags([]);
     stripDoctorCatFromUrl();
   };
 
@@ -592,6 +631,124 @@ export function DoctorDiscoveryHome({
           {listErr ? (
             <p className="text-sm text-red-700">{listErr}</p>
           ) : null}
+
+          {mainTab === "caregivers" ? (
+            <div className="space-y-3">
+              <p className="rounded-xl bg-amber-50/90 px-3.5 py-2.5 text-[12px] leading-snug text-amber-950 ring-1 ring-amber-200/80">
+                {t(lang, "home.caregivers.disclaimer")}
+              </p>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  {t(lang, "home.caregivers.localTitle")}
+                </p>
+                <p className="mt-1.5 text-[11px] text-slate-600">{t(lang, "home.caregivers.filterHint")}</p>
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {CAREGIVER_TAG_IDS.map((tag) => {
+                    const on = caregiverFilterTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleCaregiverTag(tag)}
+                        className={cn(
+                          "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold ring-1 transition-colors",
+                          on
+                            ? "bg-teal-600 text-white ring-teal-700"
+                            : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-50",
+                        )}
+                      >
+                        {caregiverTagLabel(tag)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80">
+                {filteredCaregiverListings.length === 0 ? (
+                  <p className="p-4 text-center text-caption text-slate-600">
+                    {lang === "ru"
+                      ? "Нет объявлений по фильтру или запросу — см. каталог ниже."
+                      : "Чыпка же издөө боюнча жарыя жок — төмөнкү каталогду караңыз."}
+                  </p>
+                ) : (
+                  filteredCaregiverListings.map((L, idx) => {
+                    const primaryPhone = L.phones[0];
+                    const tel = primaryPhone ? getTelLinkProps(primaryPhone) : null;
+                    const wa = primaryPhone ? caregiverWhatsappHref(primaryPhone) : null;
+                    return (
+                      <motion.article
+                        key={L.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.18, delay: idx * 0.02 }}
+                        className="border-b border-slate-100 p-3 last:border-b-0 sm:p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-manrope text-[15px] font-semibold leading-snug text-slate-900 sm:text-base">
+                              {L.title}
+                              {L.subtitle ? (
+                                <span className="block text-[13px] font-normal text-slate-600">
+                                  {L.subtitle}
+                                </span>
+                              ) : null}
+                            </h3>
+                            <p className="mt-1 flex items-center gap-1 text-[12px] text-slate-600">
+                              <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                              {L.city}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {L.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700 ring-1 ring-slate-200/80"
+                                >
+                                  {caregiverTagLabel(tag)}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="mt-2 text-[13px] leading-snug text-slate-700">{L.summary}</p>
+                            {L.note ? (
+                              <p className="mt-2 rounded-lg bg-slate-50 px-2.5 py-2 text-[12px] leading-snug text-slate-600 ring-1 ring-slate-100">
+                                {L.note}
+                              </p>
+                            ) : null}
+                          </div>
+                          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:min-w-[10.5rem]">
+                            {tel ? (
+                              <a
+                                {...tel}
+                                onClick={() => notifyTelegramCallNumber(primaryPhone!)}
+                                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-health-primary px-4 text-[13px] font-semibold text-white shadow-sm hover:bg-teal-700"
+                              >
+                                <Phone className="h-4 w-4 shrink-0" aria-hidden />
+                                {formatPhoneDisplay(primaryPhone!)}
+                              </a>
+                            ) : null}
+                            {wa ? (
+                              <a
+                                href={wa}
+                                target="_top"
+                                rel="noopener noreferrer"
+                                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-[13px] font-semibold text-white shadow-sm hover:bg-emerald-700"
+                              >
+                                <MessageCircle className="h-4 w-4 shrink-0" aria-hidden />
+                                {t(lang, "home.caregivers.whatsapp")}
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                      </motion.article>
+                    );
+                  })
+                )}
+              </div>
+              <p className="text-center text-[12px] font-semibold text-slate-700">
+                {t(lang, "home.caregivers.catalogBelow")}
+              </p>
+            </div>
+          ) : null}
+
           <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80">
             <AnimatePresence mode="popLayout">
               {(list?.doctors ?? []).map((d, idx) => {

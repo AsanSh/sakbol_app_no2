@@ -53,6 +53,13 @@ model Profile {
   weightKg   Float?
   bloodType  String?
 
+  /// Самоатрибуция в медкарточке: пользователь отмечает, что работает врачом (справочно для семьи, не лицензия).
+  medCardIsDoctor     Boolean @default(false)
+  medCardDoctorNote   String?
+  /// Самоатрибуция: сиделка / уход.
+  medCardIsCaregiver  Boolean @default(false)
+  medCardCaregiverNote String?
+
   /// Внешний идентификатор (например ADesk / CRM) для автозагрузки договоров и документов.
   adeskId    String?    @unique
 

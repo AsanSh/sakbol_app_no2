@@ -21,6 +21,10 @@ function normalizeProfile(p: FamilyWithProfiles["profiles"][number]) {
     heightCm: p.heightCm ?? null,
     weightKg: p.weightKg ?? null,
     bloodType: p.bloodType ?? null,
+    medCardIsDoctor: Boolean(p.medCardIsDoctor),
+    medCardDoctorNote: p.medCardDoctorNote ?? null,
+    medCardIsCaregiver: Boolean(p.medCardIsCaregiver),
+    medCardCaregiverNote: p.medCardCaregiverNote ?? null,
   };
 }
 

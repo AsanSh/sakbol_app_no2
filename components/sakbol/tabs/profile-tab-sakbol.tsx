@@ -6,6 +6,11 @@ import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
 import { ChevronDown, Copy, Share2, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
+import {
+  ProfileNotificationsContent,
+  ProfilePrivacyContent,
+  ProfileSupportForm,
+} from "@/components/profile/profile-settings-sheets";
 import { WebLoginPhoneCard } from "@/components/profile/web-login-phone-card";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
@@ -23,6 +28,7 @@ import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import {
   updateMemberProfileBasics,
   updateOwnProfileBasics,
+  updateOwnProfilePractitionerFlags,
   updateProfileBiologicalSex,
   updateProfileVitals,
 } from "@/app/actions/profile";
@@ -79,6 +85,18 @@ function FamilyMemberEditableCard({
     typeof profile.weightKg === "number" ? String(profile.weightKg) : "",
   );
   const [blood, setBlood] = useState(profile.bloodType?.trim() ?? "");
+  const [isPractitionerDoctor, setIsPractitionerDoctor] = useState(
+    Boolean(profile.medCardIsDoctor),
+  );
+  const [isPractitionerCaregiver, setIsPractitionerCaregiver] = useState(
+    Boolean(profile.medCardIsCaregiver),
+  );
+  const [practitionerDoctorNote, setPractitionerDoctorNote] = useState(
+    profile.medCardDoctorNote?.trim() ?? "",
+  );
+  const [practitionerCaregiverNote, setPractitionerCaregiverNote] = useState(
+    profile.medCardCaregiverNote?.trim() ?? "",
+  );
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -90,6 +108,10 @@ function FamilyMemberEditableCard({
     setHeightStr(typeof profile.heightCm === "number" ? String(profile.heightCm) : "");
     setWeightStr(typeof profile.weightKg === "number" ? String(profile.weightKg) : "");
     setBlood(profile.bloodType?.trim() ?? "");
+    setIsPractitionerDoctor(Boolean(profile.medCardIsDoctor));
+    setIsPractitionerCaregiver(Boolean(profile.medCardIsCaregiver));
+    setPractitionerDoctorNote(profile.medCardDoctorNote?.trim() ?? "");
+    setPractitionerCaregiverNote(profile.medCardCaregiverNote?.trim() ?? "");
     setErr(null);
   }, [
     profile.id,
@@ -98,6 +120,10 @@ function FamilyMemberEditableCard({
     profile.heightCm,
     profile.weightKg,
     profile.bloodType,
+    profile.medCardIsDoctor,
+    profile.medCardIsCaregiver,
+    profile.medCardDoctorNote,
+    profile.medCardCaregiverNote,
   ]);
 
   const hNum = Number.parseFloat(heightStr);
@@ -137,6 +163,16 @@ function FamilyMemberEditableCard({
       }
 
       if (profile.id === viewerId) {
+        const prRes = await updateOwnProfilePractitionerFlags({
+          isDoctor: isPractitionerDoctor,
+          isCaregiver: isPractitionerCaregiver,
+          doctorNote: practitionerDoctorNote.trim() || null,
+          caregiverNote: practitionerCaregiverNote.trim() || null,
+        });
+        if (!prRes.ok) {
+          setErr(prRes.error);
+          return;
+        }
         await syncViewerFromServer();
       }
       onReload();
@@ -242,6 +278,81 @@ function FamilyMemberEditableCard({
               placeholder="Например O(I)+"
             />
           </label>
+          {profile.id === viewerId ? (
+            <div className="space-y-2 rounded-xl border border-[#cfe8ef] bg-[#f4fafb] px-2.5 py-2.5">
+              <p className="text-[11px] font-semibold text-[#004253]">
+                {t(lang, "profile.practitionerTitle")}
+              </p>
+              <p className="text-[10px] leading-snug text-[#40484c]">
+                {t(lang, "profile.practitionerLead")}
+              </p>
+              <label className="flex cursor-pointer items-start gap-2 text-[11px] text-[#191c1d]">
+                <input
+                  type="checkbox"
+                  checked={isPractitionerDoctor}
+                  onChange={(e) => setIsPractitionerDoctor(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#004253]"
+                />
+                <span>{t(lang, "profile.practitionerDoctor")}</span>
+              </label>
+              {isPractitionerDoctor ? (
+                <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+                  <span>{t(lang, "profile.practitionerDoctorHint")}</span>
+                  <textarea
+                    value={practitionerDoctorNote}
+                    onChange={(e) => setPractitionerDoctorNote(e.target.value.slice(0, 2000))}
+                    rows={3}
+                    className="resize-y rounded-lg border border-[#e7e8e9] bg-white px-2 py-1.5 text-xs text-[#191c1d]"
+                  />
+                </label>
+              ) : null}
+              <label className="flex cursor-pointer items-start gap-2 text-[11px] text-[#191c1d]">
+                <input
+                  type="checkbox"
+                  checked={isPractitionerCaregiver}
+                  onChange={(e) => setIsPractitionerCaregiver(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#004253]"
+                />
+                <span>{t(lang, "profile.practitionerCaregiver")}</span>
+              </label>
+              {isPractitionerCaregiver ? (
+                <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+                  <span>{t(lang, "profile.practitionerCaregiverHint")}</span>
+                  <textarea
+                    value={practitionerCaregiverNote}
+                    onChange={(e) => setPractitionerCaregiverNote(e.target.value.slice(0, 2000))}
+                    rows={3}
+                    className="resize-y rounded-lg border border-[#e7e8e9] bg-white px-2 py-1.5 text-xs text-[#191c1d]"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+          {profile.id !== viewerId &&
+          (profile.medCardIsDoctor || profile.medCardIsCaregiver) ? (
+            <div className="space-y-1.5 rounded-xl border border-[#cfe8ef] bg-[#f4fafb] px-2.5 py-2.5 text-[11px] text-[#191c1d]">
+              {profile.medCardIsDoctor ? (
+                <p className="font-semibold text-[#004253]">
+                  {t(lang, "profile.practitionerReadonlyDoctor")}
+                </p>
+              ) : null}
+              {profile.medCardDoctorNote?.trim() ? (
+                <p className="whitespace-pre-wrap text-[10px] leading-snug text-[#40484c]">
+                  {profile.medCardDoctorNote.trim()}
+                </p>
+              ) : null}
+              {profile.medCardIsCaregiver ? (
+                <p className="font-semibold text-[#004253]">
+                  {t(lang, "profile.practitionerReadonlyCaregiver")}
+                </p>
+              ) : null}
+              {profile.medCardCaregiverNote?.trim() ? (
+                <p className="whitespace-pre-wrap text-[10px] leading-snug text-[#40484c]">
+                  {profile.medCardCaregiverNote.trim()}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <p className="text-[10px] text-[#70787d]">BMI (по полям выше): {bmiPreview ?? "—"}</p>
           <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
             <span>{t(lang, "profile.biologicalSex")}</span>
@@ -332,6 +443,30 @@ function FamilyMemberEditableCard({
                 ? t(lang, "profile.sexFemale")
                 : t(lang, "profile.sexUnknown")}
           </p>
+          {profile.medCardIsDoctor || profile.medCardIsCaregiver ? (
+            <div className="mt-2 space-y-1.5 rounded-lg bg-[#f4fafb] px-2.5 py-2 text-[11px] text-[#191c1d] ring-1 ring-[#cfe8ef]">
+              {profile.medCardIsDoctor ? (
+                <p className="font-semibold text-[#004253]">
+                  {t(lang, "profile.practitionerReadonlyDoctor")}
+                </p>
+              ) : null}
+              {profile.medCardDoctorNote?.trim() ? (
+                <p className="whitespace-pre-wrap text-[10px] leading-snug text-[#40484c]">
+                  {profile.medCardDoctorNote.trim()}
+                </p>
+              ) : null}
+              {profile.medCardIsCaregiver ? (
+                <p className="font-semibold text-[#004253]">
+                  {t(lang, "profile.practitionerReadonlyCaregiver")}
+                </p>
+              ) : null}
+              {profile.medCardCaregiverNote?.trim() ? (
+                <p className="whitespace-pre-wrap text-[10px] leading-snug text-[#40484c]">
+                  {profile.medCardCaregiverNote.trim()}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
         </>
@@ -977,6 +1112,16 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                     <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">
                       Score 78
                     </span>
+                    {editTarget?.medCardIsDoctor ? (
+                      <span className="rounded-full bg-emerald-400/30 px-2 py-0.5 text-[10px] font-semibold text-[#e8fff4] ring-1 ring-white/25">
+                        {t(lang, "profile.badgeDoctor")}
+                      </span>
+                    ) : null}
+                    {editTarget?.medCardIsCaregiver ? (
+                      <span className="rounded-full bg-amber-400/35 px-2 py-0.5 text-[10px] font-semibold text-[#fff8e8] ring-1 ring-white/25">
+                        {t(lang, "profile.badgeCaregiver")}
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -1186,21 +1331,18 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
       </BottomSheet>
 
       <BottomSheet open={notifyOpen} title="Уведомления" onClose={() => setNotifyOpen(false)}>
-        <p className="text-sm text-[#40484c]">
-          Этот раздел в разработке. В следующем релизе тут будут push- и Telegram-настройки.
-        </p>
+        <ProfileNotificationsContent />
       </BottomSheet>
 
       <BottomSheet open={privacyOpen} title="Конфиденциальность" onClose={() => setPrivacyOpen(false)}>
-        <p className="text-sm text-[#40484c]">
-          Уже сейчас в PDF-выгрузках и предпросмотре анализов не используются ФИО, только псевдо-ID.
-        </p>
+        <ProfilePrivacyContent />
       </BottomSheet>
 
       <BottomSheet open={supportOpen} title="Поддержка" onClose={() => setSupportOpen(false)}>
-        <p className="text-sm text-[#40484c]">
-          Если что-то не работает, напишите в поддержку и приложите скриншот + время события.
-        </p>
+        <ProfileSupportForm
+          userId={viewer?.id ?? null}
+          clinicalLabel={viewer?.id ? formatClinicalAnonymId(viewer.id) : null}
+        />
       </BottomSheet>
     </div>
   );

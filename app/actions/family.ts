@@ -168,6 +168,10 @@ export async function getFamilyMembers() {
       heightCm: true,
       weightKg: true,
       bloodType: true,
+      medCardIsDoctor: true,
+      medCardDoctorNote: true,
+      medCardIsCaregiver: true,
+      medCardCaregiverNote: true,
     },
   });
 }

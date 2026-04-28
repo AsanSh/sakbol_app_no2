@@ -14,6 +14,11 @@ export type ProfileSummary = {
   heightCm: number | null;
   weightKg: number | null;
   bloodType: string | null;
+  /** Самоатрибуция в медкарточке (только свой профиль редактирует). */
+  medCardIsDoctor?: boolean;
+  medCardDoctorNote?: string | null;
+  medCardIsCaregiver?: boolean;
+  medCardCaregiverNote?: string | null;
   /**
    * Чужой профиль, к которому выдан гостевой доступ (`ProfileAccess`).
    * API добавляет в объекты из `sharedProfiles` и в слитый список `profiles` в `useFamilyDefault` — не опускайте при `fetch`/map.

@@ -19,6 +19,10 @@ const PROFILE_SELECT = {
   heightCm: true,
   weightKg: true,
   bloodType: true,
+  medCardIsDoctor: true,
+  medCardDoctorNote: true,
+  medCardIsCaregiver: true,
+  medCardCaregiverNote: true,
 } as const;
 
 export async function GET() {

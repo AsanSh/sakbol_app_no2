@@ -224,3 +224,52 @@ export async function updateOwnProfileBasics(input: {
   revalidatePath("/profile");
   return { ok: true as const };
 }
+
+const PRACTITIONER_NOTE_MAX = 2000;
+
+/**
+ * Только владелец сессии: отметить в медкарточке работу врачом и/или сиделкой (справочно).
+ */
+export async function updateOwnProfilePractitionerFlags(input: {
+  isDoctor: boolean;
+  isCaregiver: boolean;
+  doctorNote: string | null;
+  caregiverNote: string | null;
+}) {
+  const session = getSession();
+  if (!session) {
+    return { ok: false as const, error: "Unauthorized." };
+  }
+
+  const actor = await prisma.profile.findFirst({
+    where: { id: session.profileId, familyId: session.familyId },
+    select: { id: true },
+  });
+  if (!actor) {
+    return { ok: false as const, error: "Actor not found." };
+  }
+
+  const clean = (raw: string | null, active: boolean) => {
+    if (!active) return null;
+    const trimmed = (raw ?? "").trim();
+    if (!trimmed) return null;
+    return trimmed.slice(0, PRACTITIONER_NOTE_MAX);
+  };
+
+  const doctorNote = clean(input.doctorNote, input.isDoctor);
+  const caregiverNote = clean(input.caregiverNote, input.isCaregiver);
+
+  await prisma.profile.update({
+    where: { id: actor.id },
+    data: {
+      medCardIsDoctor: input.isDoctor,
+      medCardDoctorNote: doctorNote,
+      medCardIsCaregiver: input.isCaregiver,
+      medCardCaregiverNote: caregiverNote,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/profile");
+  return { ok: true as const };
+}
