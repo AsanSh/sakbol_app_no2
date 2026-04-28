@@ -17,7 +17,6 @@ import {
   Stethoscope,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
 import { PhoneSelectModal } from "@/components/PhoneSelectModal";
@@ -356,14 +355,17 @@ export function DoctorDiscoveryHome({
     [caregiverFilterTags],
   );
 
-  const filteredCaregiverListings = useMemo(
-    () =>
-      filterCaregiverListings(CAREGIVER_LISTINGS, {
-        search: debouncedSearch,
-        tagFilters: caregiverTagFilterSet,
-      }),
-    [debouncedSearch, caregiverTagFilterSet],
-  );
+  /**
+   * Локальные объявления: без debounce — иначе после переключения с «Врачи» 300–400 мс
+   * остаётся старый поиск и список пустой.
+   */
+  const filteredCaregiverListings = useMemo(() => {
+    if (mainTab !== "caregivers") return CAREGIVER_LISTINGS;
+    return filterCaregiverListings(CAREGIVER_LISTINGS, {
+      search,
+      tagFilters: caregiverTagFilterSet,
+    });
+  }, [mainTab, search, caregiverTagFilterSet]);
 
   const toggleCaregiverTag = useCallback((tag: CaregiverTagId) => {
     setCaregiverFilterTags((prev) =>
@@ -450,6 +452,7 @@ export function DoctorDiscoveryHome({
               setMainTab("caregivers");
               setCategory(null);
               setSearch("");
+              setCaregiverFilterTags([]);
               setPage(1);
               stripDoctorCatFromUrl();
             }}
@@ -642,6 +645,11 @@ export function DoctorDiscoveryHome({
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   {t(lang, "home.caregivers.localTitle")}
+                </p>
+                <p className="mt-1 text-[12px] font-medium text-slate-800">
+                  {lang === "ru"
+                    ? `Показано: ${filteredCaregiverListings.length} из ${CAREGIVER_LISTINGS.length}`
+                    : `Көрсөтүлгөн: ${filteredCaregiverListings.length} / ${CAREGIVER_LISTINGS.length}`}
                 </p>
                 <p className="mt-1.5 text-[11px] text-slate-600">{t(lang, "home.caregivers.filterHint")}</p>
                 <div className="mt-2 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

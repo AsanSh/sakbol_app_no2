@@ -79,12 +79,13 @@ export const CAREGIVER_LISTINGS: CaregiverListing[] = [
   {
     id: "cg-5",
     title: "Катя",
-    subtitle: "15 лет опыта",
+    subtitle: "15 лет опыта · сиделка, иш издейм",
     city: "Бишкек",
     phones: ["996550260264"],
     experienceYears: 15,
     tags: ["home", "experience_15"],
-    summary: "Сиделка в Бишкеке, многолетний опыт сопровождения.",
+    summary:
+      "Сиделка в Бишкеке, иш издейм. Многолетний опыт ухода и сопровождения.",
   },
   {
     id: "cg-6",
@@ -134,7 +135,11 @@ export function filterCaregiverListings(
       if (!any) return false;
     }
     if (!q) return true;
-    const hay = `${L.title} ${L.subtitle ?? ""} ${L.summary} ${L.city} ${L.note ?? ""}`.toLowerCase();
+    const phonesHay = L.phones.join(" ");
+    const hay =
+      `${L.title} ${L.subtitle ?? ""} ${L.summary} ${L.city} ${L.note ?? ""} ${phonesHay}`.toLowerCase();
+    const qDigits = q.replace(/\D/g, "");
+    if (qDigits.length >= 6 && phonesHay.replace(/\D/g, "").includes(qDigits)) return true;
     return hay.includes(q);
   });
 }
