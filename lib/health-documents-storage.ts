@@ -5,6 +5,13 @@ import os from "os";
 import path from "path";
 import type { HealthDocumentCategory } from "@prisma/client";
 
+/** Персистентный каталог на VPS/Docker (volume). Без него — временный каталог ОС. */
+function sakbolDataRoot(): string {
+  const raw = process.env.SAKBOL_DATA_DIR?.trim();
+  if (raw) return path.resolve(raw);
+  return path.join(os.tmpdir(), "sakbol");
+}
+
 export const HEALTH_DOCS_MAX_BYTES = 25 * 1024 * 1024;
 
 export const HEALTH_DOC_ALLOWED_MIME = new Set([
@@ -17,7 +24,7 @@ export const HEALTH_DOC_ALLOWED_MIME = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
-const ROOT = path.join(os.tmpdir(), "sakbol-health-documents");
+const ROOT = path.join(sakbolDataRoot(), "health-documents");
 
 export function healthDocDiskPath(docId: string, mime: string): string {
   const ext = extForMime(mime);

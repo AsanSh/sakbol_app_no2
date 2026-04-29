@@ -1,0 +1,42 @@
+# Продакшен на VPS: Next.js + PostgreSQL (см. docs/SELF_HOSTED.md)
+#
+# Локальная разработка по-прежнему: docker compose up -d (только Postgres, порт 5432).
+#
+# Запуск на сервере:
+#   docker compose -f docker-compose.selfhosted.yml --env-file .env.production up -d --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sakbol}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-sakbol}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sakbol} -d ${POSTGRES_DB:-sakbol}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sakbol}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-sakbol}?schema=public
+      SAKBOL_DATA_DIR: /data/sakbol
+    volumes:
+      - sakbol_data:/data/sakbol
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  postgres_data:
+  sakbol_data:

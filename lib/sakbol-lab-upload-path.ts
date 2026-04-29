@@ -3,8 +3,14 @@ import "server-only";
 import path from "path";
 import os from "os";
 
-/** Должен совпадать с `app/actions/health-record.ts` — единый каталог для файла анализа до запасного Blob. */
-export const LAB_UPLOAD_ROOT = path.join(os.tmpdir(), "sakbol-health-records");
+function sakbolDataRoot(): string {
+  const raw = process.env.SAKBOL_DATA_DIR?.trim();
+  if (raw) return path.resolve(raw);
+  return path.join(os.tmpdir(), "sakbol");
+}
+
+/** Единый каталог для файла анализа на диске (персистентный при SAKBOL_DATA_DIR + volume). */
+export const LAB_UPLOAD_ROOT = path.join(sakbolDataRoot(), "lab-uploads");
 
 export function extForLabMime(mime: string): string {
   if (mime === "application/pdf") return "pdf";
