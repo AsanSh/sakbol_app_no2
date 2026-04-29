@@ -12,21 +12,53 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export type MainTab = "home" | "analyses" | "trends" | "ai" | "profile";
+export type MainTab = "home" | "analyses" | "insights" | "pharmacy" | "profile";
 
-const VALID_TABS = new Set<string>(["home", "analyses", "trends", "ai", "profile"]);
+export type InsightsView = "trends" | "ai";
+
+/** Только для URL-роутинга; legacy tab=trends|ai маппится на insights. */
+const VALID_TABS = new Set<string>([
+  "home",
+  "analyses",
+  "insights",
+  "pharmacy",
+  "profile",
+  "trends",
+  "ai",
+]);
 
 type TabAppContextValue = {
   tab: MainTab;
   setTab: (t: MainTab) => void;
+  insightsView: InsightsView;
+  setInsightsView: (v: InsightsView) => void;
 };
 
 const TabAppContext = createContext<TabAppContextValue | null>(null);
 
-function parseTab(raw: string | null): MainTab {
-  if (raw === "risks") return "home";
-  if (raw && VALID_TABS.has(raw)) return raw as MainTab;
-  return "home";
+function parseUrlTabState(searchParams: URLSearchParams, pathname: string): {
+  tab: MainTab;
+  insightsView: InsightsView;
+} {
+  if (pathname !== "/") {
+    return { tab: "home", insightsView: "trends" };
+  }
+  const raw = searchParams.get("tab");
+  if (raw === "risks") return { tab: "home", insightsView: "trends" };
+  if (raw === "trends") return { tab: "insights", insightsView: "trends" };
+  if (raw === "ai") return { tab: "insights", insightsView: "ai" };
+  const insightsParam = searchParams.get("insights");
+  const insightsView: InsightsView = insightsParam === "ai" ? "ai" : "trends";
+  if (raw === "insights") {
+    return { tab: "insights", insightsView };
+  }
+  if (raw && ["home", "analyses", "pharmacy", "profile"].includes(raw)) {
+    return { tab: raw as MainTab, insightsView: "trends" };
+  }
+  if (raw && VALID_TABS.has(raw)) {
+    return { tab: raw as MainTab, insightsView: "trends" };
+  }
+  return { tab: "home", insightsView: "trends" };
 }
 
 function TabAppProviderInner({ children }: { children: ReactNode }) {
@@ -34,19 +66,19 @@ function TabAppProviderInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const tabFromUrl = useMemo(() => {
-    if (pathname !== "/") return "home";
-    return parseTab(searchParams.get("tab"));
-  }, [pathname, searchParams]);
+  const fromUrl = useMemo(
+    () => parseUrlTabState(searchParams, pathname),
+    [pathname, searchParams],
+  );
 
-  /** Пока URL догоняет router.push — держим выбранную вкладку в состоянии. */
   const [tabOverride, setTabOverride] = useState<MainTab | null>(null);
 
   useEffect(() => {
     setTabOverride(null);
-  }, [tabFromUrl, searchParams]);
+  }, [fromUrl.tab, fromUrl.insightsView, pathname, searchParams]);
 
-  const tab = tabOverride ?? tabFromUrl;
+  const tab = tabOverride ?? fromUrl.tab;
+  const insightsView = fromUrl.insightsView;
 
   const replaceQuery = useCallback(
     (mutate: (q: URLSearchParams) => void) => {
@@ -68,13 +100,32 @@ function TabAppProviderInner({ children }: { children: ReactNode }) {
       setTabOverride(t);
       replaceQuery((q) => {
         q.set("tab", t);
+        if (t === "insights") {
+          if (!q.get("insights")) q.set("insights", "trends");
+        } else {
+          q.delete("insights");
+        }
         q.delete("diary");
       });
     },
     [replaceQuery],
   );
 
-  const value = useMemo(() => ({ tab, setTab }), [tab, setTab]);
+  const setInsightsView = useCallback(
+    (v: InsightsView) => {
+      replaceQuery((q) => {
+        q.set("tab", "insights");
+        q.set("insights", v);
+        q.delete("diary");
+      });
+    },
+    [replaceQuery],
+  );
+
+  const value = useMemo(
+    () => ({ tab, setTab, insightsView, setInsightsView }),
+    [tab, setTab, insightsView, setInsightsView],
+  );
 
   return <TabAppContext.Provider value={value}>{children}</TabAppContext.Provider>;
 }

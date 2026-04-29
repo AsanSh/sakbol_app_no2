@@ -403,5 +403,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  if (msg?.chat?.type === "private") {
+    void prisma.profile
+      .findFirst({
+        where: { telegramUserId: String(fromId) },
+        select: {
+          ownedPharmacy: { select: { id: true, telegramNotifyChatId: true } },
+        },
+      })
+      .then(async (prof) => {
+        const ph = prof?.ownedPharmacy;
+        if (!ph || ph.telegramNotifyChatId) return;
+        await prisma.pharmacy.update({
+          where: { id: ph.id },
+          data: { telegramNotifyChatId: String(chatId) },
+        });
+        await telegramSendPlainMessage(
+          String(chatId),
+          "✅ Уведомления о заявках фармпоиска включены. Новые запросы будут приходить в этот чат.",
+        );
+      })
+      .catch(() => {});
+  }
+
   return NextResponse.json({ ok: true });
 }

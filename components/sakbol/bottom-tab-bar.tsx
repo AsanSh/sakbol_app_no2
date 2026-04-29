@@ -3,8 +3,8 @@
 import {
   LayoutDashboard,
   Stethoscope,
-  TrendingUp,
-  BotMessageSquare,
+  Sparkles,
+  Pill,
   UserCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -12,17 +12,19 @@ import { cn } from "@/lib/utils";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import type { MainTab } from "@/context/tab-app-context";
 import { useTabApp } from "@/context/tab-app-context";
+import { useLanguage } from "@/context/language-context";
+import { t } from "@/lib/i18n";
 
 type Dock = "fixed" | "embedded";
 
-type NavItem = { id: MainTab; label: string; Icon: LucideIcon };
+type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 
 const ITEMS: NavItem[] = [
-  { id: "home", label: "Главная", Icon: LayoutDashboard },
-  { id: "analyses", label: "Анализы", Icon: Stethoscope },
-  { id: "trends", label: "Динамика", Icon: TrendingUp },
-  { id: "ai", label: "ИИ", Icon: BotMessageSquare },
-  { id: "profile", label: "Профиль", Icon: UserCircle },
+  { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
+  { id: "analyses", labelKey: "nav.analysesTab", Icon: Stethoscope },
+  { id: "insights", labelKey: "nav.insights", Icon: Sparkles },
+  { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
+  { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },
 ];
 
 type TabBarProps = {
@@ -32,6 +34,7 @@ type TabBarProps = {
 
 export function BottomTabBar({ dock = "fixed" }: TabBarProps) {
   const { tab, setTab } = useTabApp();
+  const { lang } = useLanguage();
 
   return (
     <nav
@@ -47,7 +50,7 @@ export function BottomTabBar({ dock = "fixed" }: TabBarProps) {
       aria-label="Основная навигация"
     >
       <ul className="mx-auto flex max-w-2xl list-none items-stretch justify-between gap-0 px-2 pt-2">
-        {ITEMS.map(({ id, label, Icon }) => {
+        {ITEMS.map(({ id, labelKey, Icon }) => {
           const active = tab === id;
           return (
             <li key={id} className="min-w-0 flex-1">
@@ -69,7 +72,7 @@ export function BottomTabBar({ dock = "fixed" }: TabBarProps) {
                   strokeWidth={active ? 2 : 1.5}
                   aria-hidden
                 />
-                <span className="truncate">{label}</span>
+                <span className="truncate">{t(lang, labelKey)}</span>
               </button>
             </li>
           );

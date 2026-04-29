@@ -5,11 +5,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { BottomTabBar } from "@/components/sakbol/bottom-tab-bar";
 import { SakbolDesktopSidebar } from "@/components/sakbol/sakbol-desktop-sidebar";
-import { AiTab } from "@/components/sakbol/tabs/ai-tab";
 import { AnalysesTab } from "@/components/sakbol/tabs/analyses-tab";
-import { TrendsTab } from "@/components/sakbol/tabs/trends-tab";
 import { HomeTab } from "@/components/sakbol/tabs/home-tab";
+import { InsightsTab } from "@/components/sakbol/tabs/insights-tab";
 import { ProfileTabSakbol } from "@/components/sakbol/tabs/profile-tab-sakbol";
+import { PharmacyTab } from "@/features/pharmacy/pharmacy-tab";
 import { useTabApp } from "@/context/tab-app-context";
 import { useLanguage } from "@/context/language-context";
 import { useFamilyDefault } from "@/hooks/use-family-default";
@@ -28,8 +28,8 @@ function TabPanels({
   reload: () => void;
   bumpAnalyses: () => void;
 }) {
-  const { tab } = useTabApp();
-  const isAiTab = tab === "ai";
+  const { tab, insightsView } = useTabApp();
+  const isAiInsights = tab === "insights" && insightsView === "ai";
 
   return (
     <AnimatePresence mode="wait">
@@ -41,7 +41,7 @@ function TabPanels({
         transition={{ duration: 0.2 }}
         className={cn(
           "flex min-h-0 min-w-0 flex-1 flex-col",
-          isAiTab ? "min-h-0 overflow-hidden" : "overflow-y-auto",
+          isAiInsights ? "min-h-0 overflow-hidden" : "overflow-y-auto",
         )}
       >
         {tab === "home" ? (
@@ -57,15 +57,16 @@ function TabPanels({
             }}
           />
         ) : null}
-        {tab === "trends" ? (
-          <TrendsTab
+        {tab === "insights" ? (
+          <InsightsTab
             family={family}
+            reloadFamily={reload}
             onAnalysesChanged={() => {
               bumpAnalyses();
             }}
           />
         ) : null}
-        {tab === "ai" ? <AiTab family={family} reloadFamily={reload} /> : null}
+        {tab === "pharmacy" ? <PharmacyTab /> : null}
         {tab === "profile" ? (
           <ProfileTabSakbol family={family} loading={loading} reload={reload} />
         ) : null}
@@ -81,7 +82,7 @@ function TabPanels({
 export function SakbolMainClient() {
   const device = useDeviceType();
   const { lang } = useLanguage();
-  const { tab } = useTabApp();
+  const { tab, insightsView } = useTabApp();
   const { family, loading, reload } = useFamilyDefault();
   const { bumpAnalyses } = useAnalysesRefresh();
 
@@ -101,7 +102,9 @@ export function SakbolMainClient() {
               className={cn(
                 "sakbol-dashboard-main mx-auto flex min-h-0 w-full max-w-[90rem] flex-1 flex-col",
                 "px-4 py-3 md:px-8 md:py-4",
-                tab === "ai" ? "overflow-hidden" : "overflow-y-auto",
+                tab === "insights" && insightsView === "ai"
+                  ? "overflow-hidden"
+                  : "overflow-y-auto",
               )}
             >
               {tabPanels}
@@ -122,7 +125,7 @@ export function SakbolMainClient() {
         <div
           className={cn(
             "flex min-h-0 flex-1 flex-col",
-            tab === "ai"
+            tab === "insights" && insightsView === "ai"
               ? "overflow-hidden pb-[calc(3.35rem+env(safe-area-inset-bottom,0px))]"
               : "overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom,0px))]",
           )}

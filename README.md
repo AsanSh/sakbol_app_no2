@@ -2,6 +2,8 @@
 
 Next.js 14 + Prisma + Telegram Mini App. Обработчик бота находится **в этом репозитории**: `app/api/telegram/webhook/route.ts` (отдельного проекта «бот» нет).
 
+**Руководство пользователя** (пациент, семья, врач по шарингу, аптека): [docs/USER_GUIDE.md](./docs/USER_GUIDE.md).
+
 ## Локально
 
 Скопируйте `.env.example` → `.env`, поднимите Postgres (`docker compose up -d`), затем:

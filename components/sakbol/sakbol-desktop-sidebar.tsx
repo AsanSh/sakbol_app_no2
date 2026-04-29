@@ -4,8 +4,8 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   Stethoscope,
-  TrendingUp,
-  BotMessageSquare,
+  Sparkles,
+  Pill,
   UserCircle,
   FileStack,
   Activity,
@@ -24,8 +24,8 @@ type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 const ITEMS: NavItem[] = [
   { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
   { id: "analyses", labelKey: "nav.analysesTab", Icon: Stethoscope },
-  { id: "trends", labelKey: "nav.trends", Icon: TrendingUp },
-  { id: "ai", labelKey: "nav.aiDoctor", Icon: BotMessageSquare },
+  { id: "insights", labelKey: "nav.insights", Icon: Sparkles },
+  { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
   { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },
 ];
 
@@ -107,10 +107,10 @@ export function SakbolDesktopSidebar() {
           {t(lang, "nav.archiveShort")}
         </Link>
         <Link
-          href="/?tab=trends"
+          href="/?tab=insights&insights=trends"
           className={cn(
             "flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-3 text-body font-medium transition-colors",
-            tab === "trends"
+            tab === "insights"
               ? "bg-teal-50 text-health-primary ring-1 ring-teal-100"
               : "text-health-text-secondary hover:bg-slate-50 hover:text-health-text",
           )}

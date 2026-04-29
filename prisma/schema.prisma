@@ -73,11 +73,91 @@ model Profile {
   /// Доступы к этому профилю, которые были выданы другим (этот профиль — источник).
   sharedAccesses   ProfileAccess[] @relation("AccessSource")
 
+  medicineRequests MedicineRequest[]
+  ownedPharmacy    Pharmacy?       @relation("PharmacyOwner")
+
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
   @@index([familyId])
   @@index([familyId, familyRole])
+}
+
+/// Аптека: бесплатная регистрация, ответы на запросы пользователей (фармпоиск в SakBol).
+model Pharmacy {
+  id        String  @id @default(cuid())
+  name      String
+  address   String
+  city      String  @default("Бишкек")
+  phones    String[]
+  latitude  Float?
+  longitude Float?
+  workHours String?
+  logoUrl   String?
+
+  isVerified Boolean @default(false)
+  isActive   Boolean @default(true)
+
+  /// Личный чат Telegram владельца с ботом — для push о новых заявках.
+  telegramNotifyChatId String?
+
+  ownerProfileId String? @unique
+  ownerProfile   Profile? @relation("PharmacyOwner", fields: [ownerProfileId], references: [id], onDelete: SetNull)
+
+  responses MedicineRequestResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+/// Запрос пользователя «есть ли лекарство» (виден аптекам без персональных данных).
+model MedicineRequest {
+  id        String  @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  medicineName String
+  note         String?
+  imageUrl     String?
+
+  status    MedicineRequestStatus @default(OPEN)
+  expiresAt DateTime
+
+  responses MedicineRequestResponse[]
+
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([profileId])
+}
+
+model MedicineRequestResponse {
+  id        String @id @default(cuid())
+  requestId String
+  request   MedicineRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  pharmacyId String
+  pharmacy   Pharmacy @relation(fields: [pharmacyId], references: [id], onDelete: Cascade)
+
+  inStock   Boolean   @default(true)
+  price     Float?
+  priceUnit String?   @default("сом")
+  note      String?
+  notifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([requestId, pharmacyId])
+  @@index([requestId])
+  @@index([pharmacyId])
+}
+
+enum MedicineRequestStatus {
+  OPEN
+  CLOSED
+  EXPIRED
 }
 
 /// Совместный доступ: владелец одной семьи открывает конкретный профиль другой семье.
