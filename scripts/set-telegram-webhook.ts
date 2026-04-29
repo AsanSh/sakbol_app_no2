@@ -2,7 +2,7 @@
  * Установить webhook для бота (после деплоя).
  *
  * Usage:
- *   WEBHOOK_BASE_URL=https://your-domain.com TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=... npx tsx scripts/set-telegram-webhook.ts
+ *   WEBHOOK_BASE_URL=https://adventory.store TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=... npx tsx scripts/set-telegram-webhook.ts
  *
  * Или на Vercel (Preview): подставьте URL превью в WEBHOOK_BASE_URL.
  */
@@ -24,7 +24,7 @@ async function main() {
   }
   const base = baseUrl();
   if (!base) {
-    console.error("Set WEBHOOK_BASE_URL (e.g. https://sakbol.vercel.app) or deploy on Vercel (VERCEL_URL)");
+    console.error("Set WEBHOOK_BASE_URL (e.g. https://adventory.store) or deploy on Vercel (VERCEL_URL)");
     process.exit(1);
   }
   const url = `${base}/api/telegram/webhook`;

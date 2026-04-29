@@ -5,7 +5,7 @@ import type { DoctorEnriched } from "@/lib/doctors-kg/types";
 
 export const runtime = "nodejs";
 
-const UA = "SakBolDirectory/1.0 (+https://sakbol.vercel.app)";
+const UA = "SakBolDirectory/1.0 (+https://adventory.store)";
 
 function mergeLivePatch(
   base: DoctorEnriched | undefined,

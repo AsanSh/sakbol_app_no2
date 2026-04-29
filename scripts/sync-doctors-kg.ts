@@ -23,7 +23,7 @@ function sleep(ms: number) {
 
 async function enrichOne(summary: DoctorSummary): Promise<DoctorEnriched> {
   const res = await fetch(summary.sourceUrl, {
-    headers: { "User-Agent": "SakBolDirectorySync/1.0 (+https://sakbol.vercel.app)" },
+    headers: { "User-Agent": "SakBolDirectorySync/1.0 (+https://adventory.store)" },
   });
   const html = await res.text();
   const ld = extractLocalBusinessFromHtml(html);

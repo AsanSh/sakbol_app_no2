@@ -1,5 +1,5 @@
-# Пример для Ubuntu: /etc/nginx/sites-available/sakbol
-# Замените your-domain.kg и пути к сертификатам Let's Encrypt.
+# Пример для Ubuntu: /etc/nginx/sites-available/sakbol (продакшен: adventory.store).
+# Для другого домена замените server_name и пути Let's Encrypt ниже.
 # sudo ln -s /etc/nginx/sites-available/sakbol /etc/nginx/sites-enabled/
 # sudo nginx -t && sudo systemctl reload nginx
 
@@ -11,7 +11,7 @@ upstream sakbol_next {
 server {
     listen 80;
     listen [::]:80;
-    server_name your-domain.kg www.your-domain.kg;
+    server_name adventory.store www.adventory.store;
 
     location /.well-known/acme-challenge/ {
         root /var/www/certbot;
@@ -25,10 +25,10 @@ server {
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name your-domain.kg www.your-domain.kg;
+    server_name adventory.store www.adventory.store;
 
-    ssl_certificate     /etc/letsencrypt/live/your-domain.kg/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your-domain.kg/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/adventory.store/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/adventory.store/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 

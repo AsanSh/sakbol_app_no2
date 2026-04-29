@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
  * Одноразово привязать Telegram webhook к этому деплою (пункт «после Vercel»).
  * Заголовок: Authorization: Bearer <BOT_INTERNAL_SECRET>
  *
- * Тело (опционально): { "baseUrl": "https://your-domain.vercel.app" } — если origin из env неверен.
+ * Тело (опционально): { "baseUrl": "https://adventory.store" } — если origin из env неверен.
  */
 export async function POST(req: NextRequest) {
   const secret = process.env.BOT_INTERNAL_SECRET?.trim();

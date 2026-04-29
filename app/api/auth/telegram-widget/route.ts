@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Callback для виджета Telegram Login (браузер): та же сессия, что после Mini App, по telegramUserId.
- * В BotFather: /setdomain → домен сайта (например sakbol.vercel.app).
+ * В BotFather: /setdomain → домен сайта (например adventory.store).
  */
 export async function GET(req: NextRequest) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;

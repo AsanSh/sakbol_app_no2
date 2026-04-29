@@ -23,23 +23,23 @@ npm run dev
 
 ## Webhook после деплоя (пункт 2)
 
-Целевой URL: `https://<ваш-домен>/api/telegram/webhook`.
+Целевой URL: `https://adventory.store/api/telegram/webhook`.
 
 **Вариант A — уже задеплоено на Vercel** (токены в Project Settings → Environment Variables): один POST с сервера не нужен локально. Вызовите защищённый эндпоинт (в Vercel должны быть `BOT_INTERNAL_SECRET`, `TELEGRAM_BOT_TOKEN`, при необходимости `TELEGRAM_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL` или `VERCEL_URL`):
 
 ```bash
-curl -sS -X POST "https://<ваш-домен>/api/internal/telegram-set-webhook" \
+curl -sS -X POST "https://adventory.store/api/internal/telegram-set-webhook" \
   -H "Authorization: Bearer <BOT_INTERNAL_SECRET>" \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
 
-При неверном origin укажите явно: `-d '{"baseUrl":"https://your-domain.vercel.app"}'`.
+При неверном origin укажите явно: `-d '{"baseUrl":"https://adventory.store"}'`.
 
 **Вариант B — локально из репозитория:**
 
 ```bash
-export WEBHOOK_BASE_URL="https://your-domain.vercel.app"
+export WEBHOOK_BASE_URL="https://adventory.store"
 export TELEGRAM_BOT_TOKEN="..."
 export TELEGRAM_WEBHOOK_SECRET="..."
 npm run telegram:set-webhook

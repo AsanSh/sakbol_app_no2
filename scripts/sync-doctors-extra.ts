@@ -22,7 +22,7 @@ import type { DoctorEnriched } from "../lib/doctors-kg/types";
 // ── конфигурация ──────────────────────────────────────────────────────────────
 
 const DELAY_MS = 250; // задержка между запросами (вежливый краулер)
-const UA = "SakBolDirectorySync/2.0 (+https://sakbol.vercel.app)";
+const UA = "SakBolDirectorySync/2.0 (+https://adventory.store)";
 const MAX_MEDIK_PAGES = Number(process.env.MAX_MEDIK_PAGES ?? 600);
 const SKIP_MEDIK = process.env.SKIP_MEDIK === "1";
 const SKIP_ODOCTOR = process.env.SKIP_ODOCTOR === "1";

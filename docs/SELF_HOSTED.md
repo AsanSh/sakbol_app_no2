@@ -50,7 +50,7 @@ nano .env.production
 | Переменная | Зачем |
 |------------|--------|
 | `POSTGRES_PASSWORD` | Пароль БД (для `docker compose`) |
-| `NEXT_PUBLIC_APP_URL` и `APP_URL` | `https://ваш-домен.kg` |
+| `NEXT_PUBLIC_APP_URL` и `APP_URL` | `https://adventory.store` |
 | `WEBHOOK_BASE_URL` | Тот же URL (для webhook-скрипта) |
 | `TELEGRAM_BOT_TOKEN` | Бот |
 | `TELEGRAM_WEBHOOK_SECRET` | Секрет для проверки webhook |
@@ -121,7 +121,7 @@ docker compose -f docker-compose.selfhosted.yml exec web npx tsx prisma/seed.ts
 4. Получите сертификат (замените домен и email):
 
    ```bash
-   sudo certbot --nginx -d ваш-домен.kg -d www.ваш-домен.kg
+   sudo certbot --nginx -d adventory.store -d www.adventory.store
    ```
 
 5. Перезагрузка nginx:
@@ -130,7 +130,7 @@ docker compose -f docker-compose.selfhosted.yml exec web npx tsx prisma/seed.ts
    sudo systemctl reload nginx
    ```
 
-Сайт должен открываться по `https://ваш-домен.kg`.
+Сайт должен открываться по `https://adventory.store`.
 
 ## 6. Telegram
 
@@ -143,7 +143,7 @@ docker compose -f docker-compose.selfhosted.yml exec web npx tsx prisma/seed.ts
 
    Либо вызовите ваш защищённый роут `POST /api/internal/telegram-set-webhook` с `BOT_INTERNAL_SECRET`, если так настроено.
 
-2. В **@BotFather** для Mini App укажите URL: `https://ваш-домен.kg` (кнопка меню / Web App).
+2. В **@BotFather** для Mini App укажите URL: `https://adventory.store` (кнопка меню / Web App).
 
 ## 7. Cron (истечение заявок на лекарства)
 
@@ -156,7 +156,7 @@ sudo crontab -e
 Строка (подставьте домен и секрет из `CRON_SECRET`):
 
 ```cron
-0 * * * * curl -fsS -H "Authorization: Bearer ВАШ_CRON_SECRET" "https://ваш-домен.kg/api/cron/expire-medicine-requests" >/dev/null 2>&1
+0 * * * * curl -fsS -H "Authorization: Bearer ВАШ_CRON_SECRET" "https://adventory.store/api/cron/expire-medicine-requests" >/dev/null 2>&1
 ```
 
 ## 8. Перенос данных с Vercel / Neon
