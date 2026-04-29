@@ -2,8 +2,9 @@
 #
 # Локальная разработка по-прежнему: docker compose up -d (только Postgres, порт 5432).
 #
-# Запуск на сервере:
-#   docker compose -f docker-compose.selfhosted.yml --env-file .env.production up -d --build
+# Запуск на сервере (сначала symlink — иначе ${POSTGRES_PASSWORD} в YAML не подхватится):
+#   ln -sf .env.production .env
+#   docker compose -f docker-compose.selfhosted.yml up -d --build
 
 services:
   db:
@@ -11,7 +12,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-sakbol}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (symlink from .env.production)}
       POSTGRES_DB: ${POSTGRES_DB:-sakbol}
     volumes:
       - postgres_data:/var/lib/postgresql/data

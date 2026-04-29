@@ -76,8 +76,11 @@ NEXT_PUBLIC_ALLOW_DEV_LOGIN="false"
 
 Из `/opt/sakbol`:
 
+Docker Compose подставляет `${POSTGRES_PASSWORD}` в YAML из файла **`.env`** в корне проекта (не путать с `env_file` у сервисов). Поэтому один раз сделайте symlink:
+
 ```bash
-docker compose -f docker-compose.selfhosted.yml --env-file .env.production up -d --build
+ln -sf .env.production .env
+docker compose -f docker-compose.selfhosted.yml up -d --build
 ```
 
 При старте контейнер выполнит `prisma migrate deploy`, затем `next start`.
@@ -178,7 +181,8 @@ sudo crontab -e
 ```bash
 cd /opt/sakbol
 git pull
-docker compose -f docker-compose.selfhosted.yml --env-file .env.production up -d --build
+ln -sf .env.production .env
+docker compose -f docker-compose.selfhosted.yml up -d --build
 ```
 
 ## 10. Не передавайте пароли в чатах
