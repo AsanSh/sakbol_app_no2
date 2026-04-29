@@ -161,6 +161,21 @@ const ru: Dict = {
   "nav.insightsTrends": "Динамика",
   "nav.insightsAi": "ИИ",
   "nav.pharmacy": "Фармпоиск",
+  "nav.myPatients": "Пациенты",
+  "doctorPatients.title": "Мои пациенты",
+  "doctorPatients.subtitle":
+    "Профили людей, которые поделились с вами доступом (врач, опекун). Выберите действие — приложение переключится на этого человека.",
+  "doctorPatients.emptyTitle": "Пока никто не поделился профилем",
+  "doctorPatients.emptyBody":
+    "Попросите пациента или родственника открыть «Профиль» → «Совместный доступ» и отправить вам ссылку или код. После принятия приглашения профиль появится здесь и в общем переключателе семьи.",
+  "doctorPatients.accessSince": "Доступ открыт",
+  "doctorPatients.canEditDocs": "Можно добавлять файлы",
+  "doctorPatients.viewOnly": "Только просмотр",
+  "doctorPatients.openAnalyses": "Анализы",
+  "doctorPatients.openOverview": "Обзор / динамика",
+  "doctorPatients.openProfile": "Профиль",
+  "doctorPatients.downloadPdf": "PDF для врача",
+  "doctorPatients.pdfBusy": "Формируем…",
   "pharmacy.cabinetTitle": "Кабинет аптеки",
   "pharmacy.notifyOn": "уведомления о запросах",
   "pharmacy.notifyHint":
@@ -201,7 +216,7 @@ const ru: Dict = {
   "pharmacy.dualModePatient": "Для себя",
   "pharmacy.dualModeBusiness": "Моя аптека",
   "pharmacy.dualModeHint":
-    "Один аккаунт: анализы, семья и остальные разделы — во вкладках «Анализы», «Главная», «Обзор» и «Профиль».",
+    "Один аккаунт: анализы, семья и остальные разделы — во вкладках «Анализы», «Главная», «Обзор», «Пациенты» (если вам шарят профили) и «Профиль».",
   "home.discovery.title": "Врачи и клиники",
   "home.discovery.lead":
     "Найдите специалиста или медцентр. Каталог — демо на основе открытых специальностей (данные-заглушки).",
@@ -491,6 +506,21 @@ const kg: Dict = {
   "nav.insightsTrends": "Динамика",
   "nav.insightsAi": "ИИ",
   "nav.pharmacy": "Дары издөө",
+  "nav.myPatients": "Пациенттер",
+  "doctorPatients.title": "Менин пациенттерим",
+  "doctorPatients.subtitle":
+    "Сиз менен бөлүшкөн адамдардын профилдери (дарыер, камкор). Басканда тиркеме ошол адамга которулат.",
+  "doctorPatients.emptyTitle": "Азырынча эч ким бөлүшкөн эмес",
+  "doctorPatients.emptyBody":
+    "Пациент же тууганы «Профиль» → «Совместный доступ» аркылуу шилтема же код жөнөтсүн. Кабыл алгандан кийин профиль бул жерде жана үй-бүлө которгучунда көрүнөт.",
+  "doctorPatients.accessSince": "Кирүү ачылган",
+  "doctorPatients.canEditDocs": "Файл кошууга болот",
+  "doctorPatients.viewOnly": "Көрүү гана",
+  "doctorPatients.openAnalyses": "Анализдер",
+  "doctorPatients.openOverview": "Обзор / динамика",
+  "doctorPatients.openProfile": "Профиль",
+  "doctorPatients.downloadPdf": "Дарыерге PDF",
+  "doctorPatients.pdfBusy": "Даярдалууда…",
   "pharmacy.cabinetTitle": "Дароо кабинети",
   "pharmacy.notifyOn": "суроо жөнүндө эскертүүлөр",
   "pharmacy.notifyHint":
@@ -531,7 +561,7 @@ const kg: Dict = {
   "pharmacy.dualModePatient": "Өзүм үчүн",
   "pharmacy.dualModeBusiness": "Дароом",
   "pharmacy.dualModeHint":
-    "Бир эле аккаунт: анализдер, үй-бүлө жана башка бөлүмдөр — «Анализдер», «Башкы бет», «Обзор» жана «Профиль» вкладкаларында.",
+    "Бир эле аккаунт: анализдер, үй-бүлө жана башка бөлүмдөр — «Анализдер», «Башкы бет», «Обзор», профилдер бөлүшүлсө «Пациенттер» жана «Профиль».",
   "home.discovery.title": "Дарыерлер жана клиникалар",
   "home.discovery.lead":
     "Адис же медборборду табыңыз. Каталог — ачык адистикаларга негизделген демо (мок-маалымат).",

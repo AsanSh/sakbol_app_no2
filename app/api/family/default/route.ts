@@ -69,6 +69,7 @@ export async function GET() {
         select: {
           id: true,
           canWrite: true,
+          acceptedAt: true,
           sourceProfile: { select: PROFILE_SELECT },
         },
       }),
@@ -84,6 +85,7 @@ export async function GET() {
       isSharedGuest: true,
       sharedAccessId: a.id,
       sharedCanWrite: a.canWrite,
+      sharedAcceptedAt: a.acceptedAt?.toISOString() ?? null,
     }));
 
     return NextResponse.json({

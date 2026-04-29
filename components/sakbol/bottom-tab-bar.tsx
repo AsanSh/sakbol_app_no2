@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Stethoscope,
   Sparkles,
+  UsersRound,
   Pill,
   UserCircle,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const ITEMS: NavItem[] = [
   { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
   { id: "analyses", labelKey: "nav.analysesTab", Icon: Stethoscope },
   { id: "insights", labelKey: "nav.insights", Icon: Sparkles },
+  { id: "patients", labelKey: "nav.myPatients", Icon: UsersRound },
   { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
   { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },
 ];

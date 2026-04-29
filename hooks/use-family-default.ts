@@ -37,6 +37,8 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
     isSharedGuest: true,
     sharedAccessId: (p as { sharedAccessId?: string }).sharedAccessId,
     sharedCanWrite: (p as { sharedCanWrite?: boolean }).sharedCanWrite ?? true,
+    sharedAcceptedAt:
+      (p as { sharedAcceptedAt?: string | null }).sharedAcceptedAt ?? null,
   }));
   return {
     ...f,

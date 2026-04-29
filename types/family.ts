@@ -26,6 +26,8 @@ export type ProfileSummary = {
   isSharedGuest?: boolean;
   sharedAccessId?: string;
   sharedCanWrite?: boolean;
+  /** ISO: когда пациент подтвердил доступ (для экрана «Мои пациенты»). */
+  sharedAcceptedAt?: string | null;
 };
 
 export type FamilyWithProfiles = {

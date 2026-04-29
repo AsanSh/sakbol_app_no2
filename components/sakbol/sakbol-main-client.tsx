@@ -10,6 +10,7 @@ import { HomeTab } from "@/components/sakbol/tabs/home-tab";
 import { InsightsTab } from "@/components/sakbol/tabs/insights-tab";
 import { ProfileTabSakbol } from "@/components/sakbol/tabs/profile-tab-sakbol";
 import { PharmacyTab } from "@/features/pharmacy/pharmacy-tab";
+import { MyPatientsTab } from "@/features/doctor/my-patients-tab";
 import { useTabApp } from "@/context/tab-app-context";
 import { useLanguage } from "@/context/language-context";
 import { useFamilyDefault } from "@/hooks/use-family-default";
@@ -66,6 +67,7 @@ function TabPanels({
             }}
           />
         ) : null}
+        {tab === "patients" ? <MyPatientsTab /> : null}
         {tab === "pharmacy" ? <PharmacyTab /> : null}
         {tab === "profile" ? (
           <ProfileTabSakbol family={family} loading={loading} reload={reload} />
