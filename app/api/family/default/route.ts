@@ -91,6 +91,7 @@ export async function GET() {
     return NextResponse.json({
       ...family,
       tier: family.plan?.tier ?? "FREE",
+      viewerProfileId: session.profileId,
       sharedProfiles,
     });
   } catch {

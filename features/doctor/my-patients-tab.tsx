@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Loader2, UsersRound } from "lucide-react";
+import { FileText, Loader2, Stethoscope, UsersRound } from "lucide-react";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { ProfileAvatar } from "@/components/ui/avatar";
 import { useActiveProfile } from "@/context/active-profile-context";
@@ -128,6 +128,13 @@ export function MyPatientsTab() {
 
   const shared = family?.sharedProfiles ?? [];
 
+  const viewerMarkedDoctor = useMemo(() => {
+    const vid = family?.viewerProfileId;
+    if (!vid || !family) return false;
+    const row = family.profiles.find((p) => p.id === vid);
+    return Boolean(row?.medCardIsDoctor);
+  }, [family]);
+
   if (loading && !family) {
     return (
       <div className="flex w-full flex-col items-center justify-center gap-2 py-16">
@@ -141,6 +148,15 @@ export function MyPatientsTab() {
       <SakbolTopBar title={t(lang, "doctorPatients.title")} />
       <div className="mx-auto max-w-2xl space-y-4 px-4 pb-8 pt-2">
         <p className="text-caption leading-relaxed text-health-text-secondary">{t(lang, "doctorPatients.subtitle")}</p>
+        {viewerMarkedDoctor ? (
+          <div className="flex items-start gap-2 rounded-2xl bg-teal-50/90 px-3 py-2.5 ring-1 ring-teal-100">
+            <Stethoscope className="mt-0.5 h-4 w-4 shrink-0 text-health-primary" strokeWidth={2} aria-hidden />
+            <div>
+              <p className="text-[11px] font-bold text-health-primary">{t(lang, "profile.badgeDoctor")}</p>
+              <p className="mt-0.5 text-[11px] leading-snug text-teal-950/90">{t(lang, "doctorPatients.viewerDoctorHint")}</p>
+            </div>
+          </div>
+        ) : null}
         {shared.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-health-border bg-slate-50/90 px-4 py-8 text-center">
             <UsersRound className="mx-auto h-10 w-10 text-slate-400" strokeWidth={1.5} aria-hidden />

@@ -176,6 +176,8 @@ const ru: Dict = {
   "doctorPatients.openProfile": "Профиль",
   "doctorPatients.downloadPdf": "PDF для врача",
   "doctorPatients.pdfBusy": "Формируем…",
+  "doctorPatients.viewerDoctorHint":
+    "В «Профиль» у вашего аккаунта включена отметка «Я врач» — это справочно; юридическую квалификацию не подтверждает.",
   "pharmacy.cabinetTitle": "Кабинет аптеки",
   "pharmacy.notifyOn": "уведомления о запросах",
   "pharmacy.notifyHint":
@@ -521,6 +523,8 @@ const kg: Dict = {
   "doctorPatients.openProfile": "Профиль",
   "doctorPatients.downloadPdf": "Дарыерге PDF",
   "doctorPatients.pdfBusy": "Даярдалууда…",
+  "doctorPatients.viewerDoctorHint":
+    "«Профиль» бөлүмүндө «Дарыермин» белгиси күйгүзүлгөн — маалымдык гана; лицензия эмес.",
   "pharmacy.cabinetTitle": "Дароо кабинети",
   "pharmacy.notifyOn": "суроо жөнүндө эскертүүлөр",
   "pharmacy.notifyHint":

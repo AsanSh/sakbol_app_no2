@@ -30,6 +30,10 @@ function normalizeProfile(p: FamilyWithProfiles["profiles"][number]) {
 
 function normalizeFamily(raw: unknown): FamilyWithProfiles {
   const f = raw as FamilyWithProfiles & { sharedProfiles?: FamilyWithProfiles["profiles"] };
+  const viewerProfileId =
+    typeof (f as { viewerProfileId?: unknown }).viewerProfileId === "string"
+      ? (f as { viewerProfileId: string }).viewerProfileId
+      : undefined;
   const ownProfiles = f.profiles.map(normalizeProfile);
   // Расшаренные профили добавляем в конец общего списка
   const sharedProfiles = (f.sharedProfiles ?? []).map((p) => ({
@@ -42,6 +46,7 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
   }));
   return {
     ...f,
+    viewerProfileId,
     profiles: [...ownProfiles, ...sharedProfiles],
     sharedProfiles,
   };

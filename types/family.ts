@@ -34,6 +34,8 @@ export type FamilyWithProfiles = {
   id: string;
   name: string | null;
   tier?: "FREE" | "PREMIUM";
+  /** Профиль владельца сессии (своя семья); для бейджа «врач» на вкладке Пациенты. */
+  viewerProfileId?: string;
   profiles: ProfileSummary[];
   sharedProfiles?: ProfileSummary[];
 };
