@@ -28,6 +28,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Сервер не настроен (TELEGRAM_BOT_TOKEN)." }, { status: 503 });
   }
 
+  const sessionSecret = process.env.SESSION_SECRET?.trim();
+  if (!sessionSecret || sessionSecret.length < 16) {
+    return NextResponse.json(
+      { error: "Сервер не настроен (SESSION_SECRET: нужна строка не короче 16 символов)." },
+      { status: 503 },
+    );
+  }
+
   let body: { telegram?: string; phone?: string };
   try {
     body = (await req.json()) as { telegram?: string; phone?: string };

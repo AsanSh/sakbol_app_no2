@@ -32,6 +32,14 @@ function profileJson(profile: {
 }
 
 export async function POST(req: NextRequest) {
+  const sessionSecret = process.env.SESSION_SECRET?.trim();
+  if (!sessionSecret || sessionSecret.length < 16) {
+    return NextResponse.json(
+      { error: "Сервер не настроен (SESSION_SECRET: нужна строка не короче 16 символов)." },
+      { status: 503 },
+    );
+  }
+
   let body: { challengeId?: string; code?: string };
   try {
     body = (await req.json()) as { challengeId?: string; code?: string };
