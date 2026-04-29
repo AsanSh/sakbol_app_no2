@@ -34,6 +34,7 @@ import {
 } from "@/app/actions/profile";
 import { deleteManagedProfile, updateManagedProfileKinship } from "@/app/actions/family";
 import { profileKinshipLabel } from "@/lib/profile-kinship";
+import { downloadDoctorReportPdf } from "@/lib/client/download-doctor-report-pdf";
 import { telegramBotUsernameFromEnv } from "@/lib/telegram-public-urls";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 import { cn } from "@/lib/utils";
@@ -992,6 +993,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
     return family.profiles.find((p) => p.id === id) ?? null;
   }, [family, viewer, activeProfileId]);
 
+  const reportProfileId = viewer ? (editTarget?.id ?? viewer.id) : null;
+
   const age = editTarget?.dateOfBirth ? ageYearsFromIsoDob(editTarget.dateOfBirth) : null;
 
   const canEditMember = (profileId: string) => {
@@ -1158,6 +1161,32 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                   </div>
                 </div>
               </div>
+              {reportProfileId ? (
+                <button
+                  type="button"
+                  disabled={doctorReportBusy}
+                  onClick={() => {
+                    if (doctorReportBusy || !reportProfileId) return;
+                    setDoctorReportBusy(true);
+                    void downloadDoctorReportPdf(reportProfileId)
+                      .then((r) => {
+                        if (!r.ok) window.alert(r.error);
+                      })
+                      .catch(() => {
+                        window.alert("Сеть или сервер недоступны.");
+                      })
+                      .finally(() => setDoctorReportBusy(false));
+                  }}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-white/15 py-2.5 text-xs font-semibold text-white ring-1 ring-white/30 backdrop-blur-sm disabled:opacity-50"
+                >
+                  {doctorReportBusy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <FileDown className="h-4 w-4" aria-hidden />
+                  )}
+                  Медицинский отчёт для врача (PDF)
+                </button>
+              ) : null}
             </div>
 
             {sessionProfile && !sessionProfile.telegramUserId ? (
@@ -1222,48 +1251,6 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 </div>
               ))}
             </div>
-
-            {editTarget ? (
-              <button
-                type="button"
-                disabled={doctorReportBusy}
-                onClick={() => {
-                  if (doctorReportBusy || !editTarget) return;
-                  setDoctorReportBusy(true);
-                  void fetch(`/api/profile/${editTarget.id}/doctor-report/pdf`, {
-                    credentials: "include",
-                  })
-                    .then(async (res) => {
-                      if (!res.ok) {
-                        const j = (await res.json().catch(() => ({}))) as { error?: string };
-                        window.alert(j.error ?? "Не удалось сформировать PDF");
-                        return;
-                      }
-                      const blob = await res.blob();
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `sakbol-vrachu-${formatClinicalAnonymId(editTarget.id)}.pdf`;
-                      document.body.appendChild(a);
-                      a.click();
-                      a.remove();
-                      URL.revokeObjectURL(url);
-                    })
-                    .catch(() => {
-                      window.alert("Сеть или сервер недоступны.");
-                    })
-                    .finally(() => setDoctorReportBusy(false));
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#004253]/25 bg-[#f0f7f9] py-3 text-sm font-semibold text-[#004253] shadow-sm disabled:opacity-50"
-              >
-                {doctorReportBusy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : (
-                  <FileDown className="h-4 w-4" aria-hidden />
-                )}
-                Медицинский отчёт для врача (PDF)
-              </button>
-            ) : null}
 
             <section
               id="profile-family-section"

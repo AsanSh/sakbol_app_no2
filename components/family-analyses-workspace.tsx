@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BiologicalSex } from "@prisma/client";
+import { FileDown, Loader2 } from "lucide-react";
 import type { FamilyWithProfiles } from "@/types/family";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useLanguage } from "@/context/language-context";
@@ -15,6 +16,7 @@ import { UploadHealthDocumentModal } from "@/components/upload-health-document-m
 import { useActiveProfile } from "@/context/active-profile-context";
 import { t } from "@/lib/i18n";
 import { UploadFab } from "@/components/upload-fab";
+import { downloadDoctorReportPdf } from "@/lib/client/download-doctor-report-pdf";
 
 function normalizeFamily(raw: unknown): FamilyWithProfiles {
   const f = raw as FamilyWithProfiles;
@@ -85,6 +87,7 @@ export function FamilyAnalysesWorkspace({
   const [uploadMenuOpen, setUploadMenuOpen] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [analysesRefresh, setAnalysesRefresh] = useState(0);
+  const [doctorReportBusy, setDoctorReportBusy] = useState(false);
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -160,6 +163,31 @@ export function FamilyAnalysesWorkspace({
           joinFamilyHref="/join-family"
         />
       )}
+
+      {activeProfileId ? (
+        <button
+          type="button"
+          disabled={doctorReportBusy}
+          onClick={() => {
+            if (doctorReportBusy || !activeProfileId) return;
+            setDoctorReportBusy(true);
+            void downloadDoctorReportPdf(activeProfileId)
+              .then((r) => {
+                if (!r.ok) window.alert(r.error);
+              })
+              .catch(() => window.alert("Сеть или сервер недоступны."))
+              .finally(() => setDoctorReportBusy(false));
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-health-border bg-white px-4 py-3 text-caption font-semibold text-health-text shadow-sm ring-1 ring-health-border/70 disabled:opacity-50"
+        >
+          {doctorReportBusy ? (
+            <Loader2 className="h-4 w-4 animate-spin text-health-primary" aria-hidden />
+          ) : (
+            <FileDown className="h-4 w-4 text-health-primary" aria-hidden />
+          )}
+          {lang === "ru" ? "Медицинский отчёт для врача (PDF)" : "Дарыер үчүн PDF отчет"}
+        </button>
+      ) : null}
 
       {/* Подсказка + кнопка «Добавить члена» (компактная) */}
       {activeProfileId ? (
