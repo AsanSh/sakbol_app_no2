@@ -30,11 +30,12 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY package.json package-lock.json ./
+# `npm ci` runs postinstall → prisma generate; schema must exist first
+COPY --from=builder /app/prisma ./prisma
 RUN npm ci --omit=dev && npm install prisma@5.22.0 --no-save
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY docker/entrypoint.sh /entrypoint.sh
