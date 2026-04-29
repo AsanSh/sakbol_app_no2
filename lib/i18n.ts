@@ -221,7 +221,7 @@ const ru: Dict = {
   "pharmacy.dualModePatient": "Для себя",
   "pharmacy.dualModeBusiness": "Моя аптека",
   "pharmacy.dualModeHint":
-    "Один аккаунт: анализы, семья и остальные разделы — во вкладках «Анализы», «Главная», «Обзор», «Пациенты» (если вам шарят профили) и «Профиль».",
+    "Один аккаунт: анализы, семья, фармпоиск и обзор — во вкладках ниже; люди, поделившиеся с вами профилем, — в «Профиль», блок «Врачу и аптеке».",
   "home.discovery.title": "Врачи и клиники",
   "home.discovery.lead":
     "Найдите специалиста или медцентр. Каталог — демо на основе открытых специальностей (данные-заглушки).",
@@ -309,6 +309,14 @@ const ru: Dict = {
   "profile.practitionerReadonlyCaregiver": "По данным карточки: сиделка / уход",
   "profile.badgeDoctor": "Врач",
   "profile.badgeCaregiver": "Сиделка",
+  "profile.servicesForProfessionals": "Врачу и аптеке",
+  "profile.servicesForProfessionalsLead":
+    "Фармпоиск и список профилей с совместным доступом — здесь, без отдельной вкладки «Пациенты».",
+  "profile.openPharmacyTab": "Перейти к поиску лекарств и запросам",
+  "profile.sharedProfilesSectionTitle": "Профили с общим доступом",
+  "profile.sharedProfilesSectionHint":
+    "Чтобы отметить себя как врача, раскройте свою карточку в блоке «Семья» ниже и включите «Я работаю как врач».",
+  "profile.medicalReportPdf": "Медицинский отчёт для врача (PDF)",
   "footer.disclaimer":
     "Информационный сервис. Не является диагнозом. Обратитесь к врачу в КР.",
   "hub.healthScore": "Индекс здоровья",
@@ -571,7 +579,7 @@ const kg: Dict = {
   "pharmacy.dualModePatient": "Өзүм үчүн",
   "pharmacy.dualModeBusiness": "Дароом",
   "pharmacy.dualModeHint":
-    "Бир эле аккаунт: анализдер, үй-бүлө жана башка бөлүмдөр — «Анализдер», «Башкы бет», «Обзор», профилдер бөлүшүлсө «Пациенттер» жана «Профиль».",
+    "Бир эле аккаунт: анализдер, үй-бүлө, фармпоиск жана обзор — ылдыйкы вкладкаларда; сиз менен бөлүшкөн профилдер — «Профиль», «Дарыерге жана дароого» бөлүмүндө.",
   "home.discovery.title": "Дарыерлер жана клиникалар",
   "home.discovery.lead":
     "Адис же медборборду табыңыз. Каталог — ачык адистикаларга негизделген демо (мок-маалымат).",
@@ -659,6 +667,14 @@ const kg: Dict = {
   "profile.practitionerReadonlyCaregiver": "Карточка боюнча: карегер / камкордук",
   "profile.badgeDoctor": "Дарыер",
   "profile.badgeCaregiver": "Карегер",
+  "profile.servicesForProfessionals": "Дарыерге жана дароого",
+  "profile.servicesForProfessionalsLead":
+    "Фармпоиск жана орток кирүүсү бар профилдер — бул жерде, «Пациенттер» вкладкасыз.",
+  "profile.openPharmacyTab": "Дары издөө жана суроолорго өтүү",
+  "profile.sharedProfilesSectionTitle": "Орток кирүүсү бар профилдер",
+  "profile.sharedProfilesSectionHint":
+    "Өзүңүздү дарыер катары белгилөө үчүн ылдыйкы «Үй-бүлө» бөлүмүндө өз карточкаңызды ачып, «Дарыермин / мед. консультация берем» коюңуз.",
+  "profile.medicalReportPdf": "Дарыер үчүн медициналык отчёт (PDF)",
   "footer.disclaimer":
     "Маалыматтык кызмат. Диагноз эмес. КРдагы дарыерге кайрылыңыз.",
   "hub.healthScore": "Ден соолук индекси",

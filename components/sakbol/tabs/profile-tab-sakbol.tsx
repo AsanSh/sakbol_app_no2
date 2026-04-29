@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
-import { ChevronDown, Copy, FileDown, Loader2, Share2, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileDown, Loader2, Pill, Share2, Stethoscope, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
 import {
@@ -19,6 +19,7 @@ import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { useLanguage } from "@/context/language-context";
+import { useTabApp } from "@/context/tab-app-context";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import type { FamilyWithProfiles, ProfileSummary } from "@/types/family";
@@ -35,7 +36,9 @@ import {
 import { deleteManagedProfile, updateManagedProfileKinship } from "@/app/actions/family";
 import { profileKinshipLabel } from "@/lib/profile-kinship";
 import { downloadDoctorReportPdf } from "@/lib/client/download-doctor-report-pdf";
+import { DoctorPatientsSection } from "@/features/doctor/my-patients-tab";
 import { telegramBotUsernameFromEnv } from "@/lib/telegram-public-urls";
+import { hapticImpact } from "@/lib/telegram-haptics";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
 import { cn } from "@/lib/utils";
 
@@ -965,6 +968,7 @@ function ShareProfileSection({
 
 export function ProfileTabSakbol({ family, loading, reload }: Props) {
   const { lang } = useLanguage();
+  const { setTab } = useTabApp();
   const { activeProfileId } = useActiveProfile();
   const { authReady, isAuthenticated, state, syncViewerFromServer, signOut } = useTelegramSession();
   const [addOpen, setAddOpen] = useState(false);
@@ -1184,7 +1188,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                   ) : (
                     <FileDown className="h-4 w-4" aria-hidden />
                   )}
-                  Медицинский отчёт для врача (PDF)
+                  {t(lang, "profile.medicalReportPdf")}
                 </button>
               ) : null}
             </div>
@@ -1196,6 +1200,51 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             {sessionProfile && sessionProfile.telegramUserId ? (
               <WebLoginPhoneCard onSaved={() => reload()} />
             ) : null}
+
+            <section className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm">
+              <div className="flex items-start gap-2">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-[#004253] ring-1 ring-teal-100">
+                  <Stethoscope className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-manrope text-sm font-bold text-[#191c1d]">
+                    {t(lang, "profile.servicesForProfessionals")}
+                  </h2>
+                  <p className="mt-1 text-[11px] leading-snug text-[#70787d]">
+                    {t(lang, "profile.servicesForProfessionalsLead")}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  hapticImpact("light");
+                  setTab("pharmacy");
+                }}
+                className="mt-3 flex w-full items-center gap-3 rounded-xl border border-[#e7e8e9] bg-gradient-to-r from-teal-50/80 to-white px-3 py-3 text-left shadow-sm transition-colors hover:border-teal-200"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#004253] shadow-sm ring-1 ring-teal-100">
+                  <Pill className="h-5 w-5" strokeWidth={2} aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-[#191c1d]">{t(lang, "nav.pharmacy")}</span>
+                  <span className="mt-0.5 block text-[11px] text-[#70787d]">
+                    {t(lang, "profile.openPharmacyTab")}
+                  </span>
+                </span>
+              </button>
+              <div className="mt-4 border-t border-[#e7e8e9] pt-4">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#70787d]">
+                  {t(lang, "profile.sharedProfilesSectionTitle")}
+                </h3>
+                <p className="mt-1 text-[11px] leading-snug text-[#70787d]">
+                  {t(lang, "profile.sharedProfilesSectionHint")}
+                </p>
+                <div className="mt-3 rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-100">
+                  <DoctorPatientsSection family={family ?? null} loading={loading} variant="embedded" />
+                </div>
+              </div>
+            </section>
 
             <button
               type="button"

@@ -8,13 +8,12 @@ import { ProfileAvatar } from "@/components/ui/avatar";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useLanguage } from "@/context/language-context";
 import { useTabApp } from "@/context/tab-app-context";
-import { useFamilyDefault } from "@/hooks/use-family-default";
 import { downloadDoctorReportPdf } from "@/lib/client/download-doctor-report-pdf";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { t } from "@/lib/i18n";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { cn } from "@/lib/utils";
-import type { ProfileSummary } from "@/types/family";
+import type { FamilyWithProfiles, ProfileSummary } from "@/types/family";
 
 function PatientCard({
   profile,
@@ -120,9 +119,16 @@ function PatientCard({
   );
 }
 
-export function MyPatientsTab() {
+export type DoctorPatientsSectionProps = {
+  family: FamilyWithProfiles | null;
+  loading: boolean;
+  /** page — отдельная вкладка с шапкой; embedded — блок внутри профиля */
+  variant?: "page" | "embedded";
+};
+
+/** Список профилей с выданным вам совместным доступом (врач / опекун). */
+export function DoctorPatientsSection({ family, loading, variant = "page" }: DoctorPatientsSectionProps) {
   const { lang } = useLanguage();
-  const { family, loading } = useFamilyDefault();
   const { switchProfile } = useActiveProfile();
   const { setTab, setInsightsView } = useTabApp();
 
@@ -143,51 +149,60 @@ export function MyPatientsTab() {
     );
   }
 
+  const inner = (
+    <div className={cn("mx-auto w-full max-w-2xl space-y-4", variant === "page" ? "px-4 pb-8 pt-2" : "px-0 pb-2 pt-0")}>
+      <p className="text-caption leading-relaxed text-health-text-secondary">{t(lang, "doctorPatients.subtitle")}</p>
+      {viewerMarkedDoctor ? (
+        <div className="flex items-start gap-2 rounded-2xl bg-teal-50/90 px-3 py-2.5 ring-1 ring-teal-100">
+          <Stethoscope className="mt-0.5 h-4 w-4 shrink-0 text-health-primary" strokeWidth={2} aria-hidden />
+          <div>
+            <p className="text-[11px] font-bold text-health-primary">{t(lang, "profile.badgeDoctor")}</p>
+            <p className="mt-0.5 text-[11px] leading-snug text-teal-950/90">{t(lang, "doctorPatients.viewerDoctorHint")}</p>
+          </div>
+        </div>
+      ) : null}
+      {shared.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-health-border bg-slate-50/90 px-4 py-8 text-center">
+          <UsersRound className="mx-auto h-10 w-10 text-slate-400" strokeWidth={1.5} aria-hidden />
+          <p className="mt-3 font-semibold text-health-text">{t(lang, "doctorPatients.emptyTitle")}</p>
+          <p className="mx-auto mt-2 max-w-md text-caption leading-relaxed text-health-text-secondary">
+            {t(lang, "doctorPatients.emptyBody")}
+          </p>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {shared.map((p) => (
+            <PatientCard
+              key={p.id}
+              profile={p}
+              onOpenAnalyses={() => {
+                switchProfile(p.id);
+                setTab("analyses");
+              }}
+              onOpenOverview={() => {
+                switchProfile(p.id);
+                setInsightsView("trends");
+                setTab("insights");
+              }}
+              onOpenProfile={() => {
+                switchProfile(p.id);
+                setTab("profile");
+              }}
+            />
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
+  if (variant === "embedded") {
+    return <section className="w-full">{inner}</section>;
+  }
+
   return (
     <div className="w-full">
       <SakbolTopBar title={t(lang, "doctorPatients.title")} />
-      <div className="mx-auto max-w-2xl space-y-4 px-4 pb-8 pt-2">
-        <p className="text-caption leading-relaxed text-health-text-secondary">{t(lang, "doctorPatients.subtitle")}</p>
-        {viewerMarkedDoctor ? (
-          <div className="flex items-start gap-2 rounded-2xl bg-teal-50/90 px-3 py-2.5 ring-1 ring-teal-100">
-            <Stethoscope className="mt-0.5 h-4 w-4 shrink-0 text-health-primary" strokeWidth={2} aria-hidden />
-            <div>
-              <p className="text-[11px] font-bold text-health-primary">{t(lang, "profile.badgeDoctor")}</p>
-              <p className="mt-0.5 text-[11px] leading-snug text-teal-950/90">{t(lang, "doctorPatients.viewerDoctorHint")}</p>
-            </div>
-          </div>
-        ) : null}
-        {shared.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-health-border bg-slate-50/90 px-4 py-8 text-center">
-            <UsersRound className="mx-auto h-10 w-10 text-slate-400" strokeWidth={1.5} aria-hidden />
-            <p className="mt-3 font-semibold text-health-text">{t(lang, "doctorPatients.emptyTitle")}</p>
-            <p className="mx-auto mt-2 max-w-md text-caption leading-relaxed text-health-text-secondary">
-              {t(lang, "doctorPatients.emptyBody")}
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {shared.map((p) => (
-              <PatientCard
-                key={p.id}
-                profile={p}
-                onOpenAnalyses={() => {
-                  switchProfile(p.id);
-                  setTab("analyses");
-                }}
-                onOpenOverview={() => {
-                  switchProfile(p.id);
-                  setInsightsView("trends");
-                }}
-                onOpenProfile={() => {
-                  switchProfile(p.id);
-                  setTab("profile");
-                }}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
+      {inner}
     </div>
   );
 }
