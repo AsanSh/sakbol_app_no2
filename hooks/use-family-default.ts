@@ -35,6 +35,7 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
       ? (f as { viewerProfileId: string }).viewerProfileId
       : undefined;
   const ownProfiles = f.profiles.map(normalizeProfile);
+  const viewerOwnsPharmacy = Boolean((f as { viewerOwnsPharmacy?: unknown }).viewerOwnsPharmacy);
   // Расшаренные профили добавляем в конец общего списка
   const sharedProfiles = (f.sharedProfiles ?? []).map((p) => ({
     ...normalizeProfile(p),
@@ -47,6 +48,7 @@ function normalizeFamily(raw: unknown): FamilyWithProfiles {
   return {
     ...f,
     viewerProfileId,
+    viewerOwnsPharmacy,
     profiles: [...ownProfiles, ...sharedProfiles],
     sharedProfiles,
   };

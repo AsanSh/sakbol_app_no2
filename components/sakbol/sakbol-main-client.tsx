@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { BottomTabBar } from "@/components/sakbol/bottom-tab-bar";
@@ -10,11 +10,13 @@ import { HomeTab } from "@/components/sakbol/tabs/home-tab";
 import { InsightsTab } from "@/components/sakbol/tabs/insights-tab";
 import { ProfileTabSakbol } from "@/components/sakbol/tabs/profile-tab-sakbol";
 import { PharmacyTab } from "@/features/pharmacy/pharmacy-tab";
+import { DoctorPatientsSection } from "@/features/doctor/my-patients-tab";
 import { useTabApp } from "@/context/tab-app-context";
 import { useLanguage } from "@/context/language-context";
 import { useFamilyDefault } from "@/hooks/use-family-default";
 import { useDeviceType } from "@/hooks/use-device-type";
 import { t } from "@/lib/i18n";
+import { showPatientsTabForFamily } from "@/lib/show-patients-tab";
 import { cn } from "@/lib/utils";
 
 function TabPanels({
@@ -66,6 +68,9 @@ function TabPanels({
             }}
           />
         ) : null}
+        {tab === "patients" ? (
+          <DoctorPatientsSection family={family} loading={loading} variant="page" />
+        ) : null}
         {tab === "pharmacy" ? <PharmacyTab /> : null}
         {tab === "profile" ? (
           <ProfileTabSakbol family={family} loading={loading} reload={reload} />
@@ -82,9 +87,16 @@ function TabPanels({
 export function SakbolMainClient() {
   const device = useDeviceType();
   const { lang } = useLanguage();
-  const { tab, insightsView } = useTabApp();
+  const { tab, insightsView, setTab } = useTabApp();
   const { family, loading, reload } = useFamilyDefault();
   const { bumpAnalyses } = useAnalysesRefresh();
+  const showPatientsNav = showPatientsTabForFamily(family, loading);
+
+  useEffect(() => {
+    if (tab === "patients" && !showPatientsNav && !loading) {
+      setTab("profile");
+    }
+  }, [tab, showPatientsNav, loading, setTab]);
 
   const isDesktopWeb = device === "desktop-web";
 
@@ -95,7 +107,7 @@ export function SakbolMainClient() {
   if (isDesktopWeb) {
     return (
       <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-health-bg">
-        <SakbolDesktopSidebar />
+        <SakbolDesktopSidebar showPatientsTab={showPatientsNav} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-health-bg">
             <div
@@ -138,7 +150,7 @@ export function SakbolMainClient() {
         {t(lang, "analyses.disclaimer")}
       </p>
 
-      <BottomTabBar dock="fixed" />
+      <BottomTabBar dock="fixed" showPatientsTab={showPatientsNav} />
     </div>
   );
 }

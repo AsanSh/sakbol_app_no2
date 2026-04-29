@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Stethoscope,
   Sparkles,
+  UsersRound,
   Pill,
   UserCircle,
   FileStack,
@@ -21,10 +22,11 @@ import { t } from "@/lib/i18n";
 
 type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 
-const ITEMS: NavItem[] = [
+const ALL_NAV_ITEMS: NavItem[] = [
   { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
   { id: "analyses", labelKey: "nav.analysesTab", Icon: Stethoscope },
   { id: "insights", labelKey: "nav.insights", Icon: Sparkles },
+  { id: "patients", labelKey: "nav.myPatients", Icon: UsersRound },
   { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
   { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },
 ];
@@ -32,9 +34,14 @@ const ITEMS: NavItem[] = [
 /**
  * Левый сайдбар SaaS-дашборда: подписи, спокойная палитра, крупные зоны клика.
  */
-export function SakbolDesktopSidebar() {
+type SidebarProps = {
+  showPatientsTab?: boolean;
+};
+
+export function SakbolDesktopSidebar({ showPatientsTab = false }: SidebarProps) {
   const { tab, setTab } = useTabApp();
   const { lang } = useLanguage();
+  const items = showPatientsTab ? ALL_NAV_ITEMS : ALL_NAV_ITEMS.filter((i) => i.id !== "patients");
 
   return (
     <aside
@@ -59,7 +66,7 @@ export function SakbolDesktopSidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 px-3 pb-4">
-        {ITEMS.map(({ id, labelKey, Icon }) => {
+        {items.map(({ id, labelKey, Icon }) => {
           const highlighted = tab === id;
           return (
             <button

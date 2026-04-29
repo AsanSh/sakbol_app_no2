@@ -1,5 +1,6 @@
 "use client";
 
+import { saveBlobWithPickerOrDownload } from "@/lib/client/save-blob-as";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 
 function triggerDoctorReportAnchor(profileId: string) {
@@ -87,18 +88,7 @@ export async function downloadDoctorReportPdf(
 
   const buf = await res.arrayBuffer();
   const blob = new Blob([buf], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  try {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sakbol-vrachu-${formatClinicalAnonymId(profileId)}.pdf`;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  await saveBlobWithPickerOrDownload(blob, `sakbol-vrachu-${formatClinicalAnonymId(profileId)}.pdf`);
 
   return { ok: true };
 }

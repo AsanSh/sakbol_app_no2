@@ -36,6 +36,8 @@ export type FamilyWithProfiles = {
   tier?: "FREE" | "PREMIUM";
   /** Профиль владельца сессии (своя семья); для бейджа «врач» на вкладке Пациенты. */
   viewerProfileId?: string;
+  /** Зарегистрированная аптека / кабинет на этом профиле (`Pharmacy.ownerProfileId`). */
+  viewerOwnsPharmacy?: boolean;
   profiles: ProfileSummary[];
   sharedProfiles?: ProfileSummary[];
 };

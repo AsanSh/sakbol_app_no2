@@ -1,3 +1,5 @@
+import { saveBlobWithPickerOrDownload } from "@/lib/client/save-blob-as";
+
 /**
  * Скачивание PDF анализа в том же контексте, где есть httpOnly cookie.
  * Нельзя открывать /api/.../pdf через Telegram.openLink — внешний браузер без сессии → 401.
@@ -85,18 +87,7 @@ export async function downloadLabPdfClient(recordId: string): Promise<{ ok: true
 
   const buf = await res.arrayBuffer();
   const blob = new Blob([buf], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  try {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sakbol-analysis-${recordId}.pdf`;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  await saveBlobWithPickerOrDownload(blob, `sakbol-analysis-${recordId}.pdf`);
 
   return { ok: true };
 }

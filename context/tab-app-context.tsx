@@ -12,7 +12,7 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export type MainTab = "home" | "analyses" | "insights" | "pharmacy" | "profile";
+export type MainTab = "home" | "analyses" | "insights" | "patients" | "pharmacy" | "profile";
 
 export type InsightsView = "trends" | "ai";
 
@@ -21,6 +21,7 @@ const VALID_TABS = new Set<string>([
   "home",
   "analyses",
   "insights",
+  "patients",
   "pharmacy",
   "profile",
   "trends",
@@ -52,10 +53,7 @@ function parseUrlTabState(searchParams: URLSearchParams, pathname: string): {
   if (raw === "insights") {
     return { tab: "insights", insightsView };
   }
-  if (raw === "patients") {
-    return { tab: "profile", insightsView: "trends" };
-  }
-  if (raw && ["home", "analyses", "pharmacy", "profile"].includes(raw)) {
+  if (raw && ["home", "analyses", "patients", "pharmacy", "profile"].includes(raw)) {
     return { tab: raw as MainTab, insightsView: "trends" };
   }
   if (raw && VALID_TABS.has(raw)) {

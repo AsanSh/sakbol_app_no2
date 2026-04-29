@@ -208,6 +208,13 @@ const ru: Dict = {
   "pharmacy.phCity": "Город",
   "pharmacy.phPhone": "Телефон (можно несколько через запятую)",
   "pharmacy.phHours": "Часы работы",
+  "pharmacy.registerBadge": "Аптека / клиника",
+  "pharmacy.registerCardSubtitle":
+    "Бесплатная регистрация. Получайте запросы на лекарства от пользователей SakBol и отвечайте из кабинета.",
+  "pharmacy.hoursSection": "Часы работы",
+  "pharmacy.hours247": "Круглосуточно (24/7)",
+  "pharmacy.hoursFrom": "Открытие",
+  "pharmacy.hoursTo": "Закрытие",
   "pharmacy.registerFree": "Зарегистрироваться",
   "pharmacy.noMine": "У вас пока нет запросов.",
   "pharmacy.status": "Статус",
@@ -221,7 +228,7 @@ const ru: Dict = {
   "pharmacy.dualModePatient": "Для себя",
   "pharmacy.dualModeBusiness": "Моя аптека",
   "pharmacy.dualModeHint":
-    "Один аккаунт: анализы, семья, фармпоиск и обзор — во вкладках ниже; люди, поделившиеся с вами профилем, — в «Профиль», блок «Врачу и аптеке».",
+    "Один аккаунт: анализы, семья, фармпоиск и обзор — во вкладках; врачам, сиделкам и аптекам доступна вкладка «Пациенты».",
   "home.discovery.title": "Врачи и клиники",
   "home.discovery.lead":
     "Найдите специалиста или медцентр. Каталог — демо на основе открытых специальностей (данные-заглушки).",
@@ -311,8 +318,10 @@ const ru: Dict = {
   "profile.badgeCaregiver": "Сиделка",
   "profile.servicesForProfessionals": "Врачу и аптеке",
   "profile.servicesForProfessionalsLead":
-    "Фармпоиск и список профилей с совместным доступом — здесь, без отдельной вкладки «Пациенты».",
+    "Фармпоиск — ниже; список профилей с доступом — во вкладке «Пациенты» (если вы врач, сиделка или аптека).",
   "profile.openPharmacyTab": "Перейти к поиску лекарств и запросам",
+  "profile.sharedProfilesUsePatientsTab":
+    "Профили людей, которые поделились с вами доступом, открываются во вкладке «Пациенты» внизу.",
   "profile.sharedProfilesSectionTitle": "Профили с общим доступом",
   "profile.sharedProfilesSectionHint":
     "Чтобы отметить себя как врача, раскройте свою карточку в блоке «Семья» ниже и включите «Я работаю как врач».",
@@ -566,6 +575,13 @@ const kg: Dict = {
   "pharmacy.phCity": "Шаар",
   "pharmacy.phPhone": "Телефон (бир нече үтүр менен)",
   "pharmacy.phHours": "Иштөө убактысы",
+  "pharmacy.registerBadge": "Дароо / клиника",
+  "pharmacy.registerCardSubtitle":
+    "Акысыз каттоо. SakBol колдонуучуларынын дары суроолорун алып, кабинеттен жооп бериңиз.",
+  "pharmacy.hoursSection": "Иштөө убактысы",
+  "pharmacy.hours247": "Тууралуу (24/7)",
+  "pharmacy.hoursFrom": "Ачылуу",
+  "pharmacy.hoursTo": "Жабылуу",
   "pharmacy.registerFree": "Катталуу",
   "pharmacy.noMine": "Сизде азырынча суроолор жок.",
   "pharmacy.status": "Статус",
@@ -579,7 +595,7 @@ const kg: Dict = {
   "pharmacy.dualModePatient": "Өзүм үчүн",
   "pharmacy.dualModeBusiness": "Дароом",
   "pharmacy.dualModeHint":
-    "Бир эле аккаунт: анализдер, үй-бүлө, фармпоиск жана обзор — ылдыйкы вкладкаларда; сиз менен бөлүшкөн профилдер — «Профиль», «Дарыерге жана дароого» бөлүмүндө.",
+    "Бир эле аккаунт: анализдер, үй-бүлө, фармпоиск — вкладкаларда; дарыер, карегер жана дароого «Пациенттер» ачылат.",
   "home.discovery.title": "Дарыерлер жана клиникалар",
   "home.discovery.lead":
     "Адис же медборборду табыңыз. Каталог — ачык адистикаларга негизделген демо (мок-маалымат).",
@@ -669,8 +685,10 @@ const kg: Dict = {
   "profile.badgeCaregiver": "Карегер",
   "profile.servicesForProfessionals": "Дарыерге жана дароого",
   "profile.servicesForProfessionalsLead":
-    "Фармпоиск жана орток кирүүсү бар профилдер — бул жерде, «Пациенттер» вкладкасыз.",
+    "Фармпоиск — ылдыйда; орток профилдер — «Пациенттер» вкладкасында (дарыер, карегер же дароо болсоңуз).",
   "profile.openPharmacyTab": "Дары издөө жана суроолорго өтүү",
+  "profile.sharedProfilesUsePatientsTab":
+    "Сиз менен бөлүшкөн профилдер ылдыйкы «Пациенттер» вкладкасында.",
   "profile.sharedProfilesSectionTitle": "Орток кирүүсү бар профилдер",
   "profile.sharedProfilesSectionHint":
     "Өзүңүздү дарыер катары белгилөө үчүн ылдыйкы «Үй-бүлө» бөлүмүндө өз карточкаңызды ачып, «Дарыермин / мед. консультация берем» коюңуз.",

@@ -48,7 +48,7 @@ export async function GET() {
       }
     }
 
-    const [family, sharedAccesses] = await Promise.all([
+    const [family, sharedAccesses, pharmacyOwned] = await Promise.all([
       prisma.family.findUnique({
         where: { id: session.familyId },
         include: {
@@ -73,6 +73,10 @@ export async function GET() {
           sourceProfile: { select: PROFILE_SELECT },
         },
       }),
+      prisma.pharmacy.findFirst({
+        where: { ownerProfileId: session.profileId },
+        select: { id: true },
+      }),
     ]);
 
     if (!family) {
@@ -92,6 +96,7 @@ export async function GET() {
       ...family,
       tier: family.plan?.tier ?? "FREE",
       viewerProfileId: session.profileId,
+      viewerOwnsPharmacy: Boolean(pharmacyOwned),
       sharedProfiles,
     });
   } catch {

@@ -37,6 +37,7 @@ import { deleteManagedProfile, updateManagedProfileKinship } from "@/app/actions
 import { profileKinshipLabel } from "@/lib/profile-kinship";
 import { downloadDoctorReportPdf } from "@/lib/client/download-doctor-report-pdf";
 import { DoctorPatientsSection } from "@/features/doctor/my-patients-tab";
+import { showPatientsTabForFamily } from "@/lib/show-patients-tab";
 import { telegramBotUsernameFromEnv } from "@/lib/telegram-public-urls";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { ageYearsFromIsoDob } from "@/lib/risk-scores";
@@ -999,6 +1000,12 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
   const reportProfileId = viewer ? (editTarget?.id ?? viewer.id) : null;
 
+  const canSeePatientsTab = useMemo(
+    () => showPatientsTabForFamily(family ?? null, loading),
+    [family, loading],
+  );
+  const hasIncomingSharedProfiles = (family?.sharedProfiles?.length ?? 0) > 0;
+
   const age = editTarget?.dateOfBirth ? ageYearsFromIsoDob(editTarget.dateOfBirth) : null;
 
   const canEditMember = (profileId: string) => {
@@ -1233,17 +1240,27 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                   </span>
                 </span>
               </button>
-              <div className="mt-4 border-t border-[#e7e8e9] pt-4">
-                <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#70787d]">
-                  {t(lang, "profile.sharedProfilesSectionTitle")}
-                </h3>
-                <p className="mt-1 text-[11px] leading-snug text-[#70787d]">
-                  {t(lang, "profile.sharedProfilesSectionHint")}
-                </p>
-                <div className="mt-3 rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-100">
-                  <DoctorPatientsSection family={family ?? null} loading={loading} variant="embedded" />
+              {canSeePatientsTab || hasIncomingSharedProfiles ? (
+                <div className="mt-4 border-t border-[#e7e8e9] pt-4">
+                  {canSeePatientsTab ? (
+                    <p className="text-[11px] leading-snug text-[#70787d]">
+                      {t(lang, "profile.sharedProfilesUsePatientsTab")}
+                    </p>
+                  ) : (
+                    <>
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-[#70787d]">
+                        {t(lang, "profile.sharedProfilesSectionTitle")}
+                      </h3>
+                      <p className="mt-1 text-[11px] leading-snug text-[#70787d]">
+                        {t(lang, "profile.sharedProfilesSectionHint")}
+                      </p>
+                      <div className="mt-3 rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-100">
+                        <DoctorPatientsSection family={family ?? null} loading={loading} variant="embedded" />
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
+              ) : null}
             </section>
 
             <button

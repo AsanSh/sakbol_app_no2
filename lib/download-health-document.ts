@@ -1,3 +1,5 @@
+import { saveBlobWithPickerOrDownload } from "@/lib/client/save-blob-as";
+
 /**
  * Скачивание файла документа из /api/documents/:id/file?download=1 (с httpOnly-cookie).
  */
@@ -51,17 +53,16 @@ export async function downloadHealthDocumentClient(
   }
 
   const blob = await res.blob();
-  const objUrl = URL.createObjectURL(blob);
-  try {
-    const a = document.createElement("a");
-    a.href = objUrl;
-    a.download = safeName;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } finally {
-    URL.revokeObjectURL(objUrl);
-  }
+  await saveBlobWithPickerOrDownload(blob, safeName, [
+    {
+      description: "Document",
+      accept: {
+        "application/pdf": [".pdf"],
+        "image/png": [".png"],
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/webp": [".webp"],
+      },
+    },
+  ]);
   return { ok: true };
 }
