@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BiologicalSex } from "@prisma/client";
 import { FileDown, Loader2 } from "lucide-react";
 import type { FamilyWithProfiles } from "@/types/family";
@@ -14,6 +14,7 @@ import { PaywallModal } from "@/components/paywall-modal";
 import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
 import { UploadHealthDocumentModal } from "@/components/upload-health-document-modal";
 import { useActiveProfile } from "@/context/active-profile-context";
+import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
 import { t } from "@/lib/i18n";
 import { UploadFab } from "@/components/upload-fab";
 import { downloadDoctorReportPdf } from "@/lib/client/download-doctor-report-pdf";
@@ -72,6 +73,8 @@ export function FamilyAnalysesWorkspace({
   const { lang } = useLanguage();
   const { authReady, isAuthenticated } = useTelegramSession();
   const { activeProfileId } = useActiveProfile();
+  const { refreshKey: globalAnalysesRefreshKey } = useAnalysesRefresh();
+
   const [family, setFamily] = useState<FamilyWithProfiles | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +123,13 @@ export function FamilyAnalysesWorkspace({
     }
     load();
   }, [authReady, isAuthenticated, load]);
+
+  const activeProfileCanWrite = useMemo(() => {
+    if (!activeProfileId || !family) return true;
+    const p = family.profiles.find((x) => x.id === activeProfileId);
+    if (!p?.isSharedGuest) return true;
+    return p.sharedCanWrite !== false;
+  }, [family, activeProfileId]);
 
   const admin = family?.profiles.find((p) => p.familyRole === "ADMIN");
 
@@ -214,7 +224,7 @@ export function FamilyAnalysesWorkspace({
       ) : null}
 
       {/* FAB: плавающая кнопка загрузки (мобилка) */}
-      {activeProfileId ? (
+      {activeProfileId && activeProfileCanWrite ? (
         <UploadFab
           onClick={() => setUploadMenuOpen(true)}
           mobileOnly={false}
@@ -265,7 +275,7 @@ export function FamilyAnalysesWorkspace({
 
       <AnalysesPreview
         profiles={family.profiles}
-        refreshKey={analysesRefresh}
+        refreshKey={analysesRefresh + globalAnalysesRefreshKey}
         onRequestUpload={() => setUploadOpen(true)}
         mode={isTrends ? "trends" : "default"}
         archiveNeutral={!isTrends}
@@ -282,7 +292,7 @@ export function FamilyAnalysesWorkspace({
         familyProfilesForInvite={family.profiles.filter((p) => !p.isSharedGuest)}
       />
 
-      {activeProfileId ? (
+      {activeProfileId && activeProfileCanWrite ? (
         <>
           <UploadAnalysisModal
             open={uploadOpen}

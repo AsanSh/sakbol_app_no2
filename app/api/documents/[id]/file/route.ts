@@ -8,13 +8,15 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const asDownload = new URL(req.url).searchParams.get("download") === "1";
 
   const { id } = await ctx.params;
   const docId = id?.trim();
@@ -39,6 +41,11 @@ export async function GET(
     return NextResponse.redirect(doc.fileUrl, 302);
   }
 
+  const disp = (safeName: string) =>
+    asDownload
+      ? `attachment; filename*=UTF-8''${safeName}`
+      : `inline; filename*=UTF-8''${safeName}`;
+
   if (doc.fileData && doc.fileData.byteLength > 0) {
     const safeName = encodeURIComponent(
       doc.title.replace(/[^a-zA-Zа-яА-ЯёЁ0-9\s._-]+/g, "_").slice(0, 80) || "document",
@@ -46,7 +53,7 @@ export async function GET(
     return new NextResponse(new Uint8Array(doc.fileData), {
       headers: {
         "Content-Type": doc.mimeType,
-        "Content-Disposition": `inline; filename*=UTF-8''${safeName}`,
+        "Content-Disposition": disp(safeName),
         "Cache-Control": "private, max-age=3600",
       },
     });
@@ -64,7 +71,7 @@ export async function GET(
   return new NextResponse(new Uint8Array(buf), {
     headers: {
       "Content-Type": doc.mimeType,
-      "Content-Disposition": `inline; filename*=UTF-8''${safeName}`,
+      "Content-Disposition": disp(safeName),
       "Cache-Control": "private, max-age=3600",
     },
   });

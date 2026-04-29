@@ -6,9 +6,11 @@ import useSWRInfinite from "swr/infinite";
 import {
   ChevronDown,
   ChevronUp,
+  FileDown,
   FileText,
   Loader2,
   PlusCircle,
+  RefreshCw,
   Stethoscope,
   Trash2,
 } from "lucide-react";
@@ -40,6 +42,7 @@ import {
 import type { ParsedBiomarker } from "@/types/biomarker";
 import { categoryForBiomarkerKey } from "@/constants/biomarker-categories";
 import { downloadLabPdfClient } from "@/lib/download-lab-pdf";
+import { downloadHealthDocumentClient } from "@/lib/download-health-document";
 import { AnalysisComparePanel } from "@/components/analysis-compare-panel";
 import { archivePrimaryDateLabel, ARCHIVE_CATEGORY_RU } from "@/lib/archive-display-dates";
 import { effectiveAnalysisTimeMs } from "@/lib/lab-analysis-dates";
@@ -174,6 +177,8 @@ export function AnalysesPreview({
   const [openDocBusyId, setOpenDocBusyId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshTick, setAutoRefreshTick] = useState(0);
+  const [manualSyncTick, setManualSyncTick] = useState(0);
+  const [downloadDocBusyId, setDownloadDocBusyId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   const rowsRef = useRef(rows);
@@ -198,9 +203,9 @@ export function AnalysesPreview({
     },
     documentsFetcher,
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      dedupingInterval: 30_000,
+      dedupingInterval: 8_000,
       keepPreviousData: true,
     },
   );
@@ -218,10 +223,18 @@ export function AnalysesPreview({
 
   const ageMonths = useMemo(() => ageInMonthsFromDob(activeDob), [activeDob]);
 
+  /** Семья — полные права; гостевой профиль — по sharedCanWrite. */
+  const activeProfileCanWrite = useMemo(() => {
+    if (!activeProfileId) return true;
+    const p = profiles.find((x) => x.id === activeProfileId);
+    if (!p?.isSharedGuest) return true;
+    return p.sharedCanWrite !== false;
+  }, [profiles, activeProfileId]);
+
   useEffect(() => {
     if (!activeProfileId) return;
     const refresh = () => setAutoRefreshTick((v) => v + 1);
-    const intervalId = window.setInterval(refresh, 20_000);
+    const intervalId = window.setInterval(refresh, 12_000);
     const onVisible = () => {
       if (document.visibilityState === "visible") refresh();
     };
@@ -278,12 +291,12 @@ export function AnalysesPreview({
           setRefreshing(false);
         }
       });
-  }, [activeProfileId, refreshKey, autoRefreshTick, lang]);
+  }, [activeProfileId, refreshKey, autoRefreshTick, manualSyncTick, lang]);
 
   useEffect(() => {
     if (!docsApiUrl) return;
     void mutateDocs();
-  }, [docsApiUrl, refreshKey, autoRefreshTick, mutateDocs]);
+  }, [docsApiUrl, refreshKey, autoRefreshTick, manualSyncTick, mutateDocs]);
 
   useEffect(() => {
     if (!docsLoading && docsPages) {
@@ -522,9 +535,24 @@ export function AnalysesPreview({
         </>
       ) : null}
 
-      {!isTrends && syncedLabel ? (
-        <p className={cn("text-[10px] text-health-text-secondary", hideHeader ? "mt-0.5" : "mt-1")}>
-          {syncedLabel}
+      {!isTrends ? (
+        <div className={cn("flex flex-wrap items-center gap-2", hideHeader ? "mt-0.5" : "mt-1")}>
+          {syncedLabel ? (
+            <p className="text-[10px] text-health-text-secondary">{syncedLabel}</p>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 rounded-lg bg-slate-100/90 px-2 py-1 text-[10px] font-semibold text-health-primary ring-1 ring-health-border/70 hover:bg-slate-50"
+            onClick={() => setManualSyncTick((n) => n + 1)}
+          >
+            <RefreshCw className="h-3 w-3" aria-hidden />
+            {t(lang, "analyses.refreshSync")}
+          </button>
+        </div>
+      ) : null}
+      {!isTrends && !activeProfileCanWrite ? (
+        <p className="mt-1 rounded-lg bg-slate-50 px-2 py-1.5 text-[10px] text-health-text-secondary ring-1 ring-slate-200/80">
+          {t(lang, "analyses.readOnlyArchive")}
         </p>
       ) : null}
 
@@ -753,51 +781,92 @@ export function AnalysesPreview({
                     <div className="flex shrink-0 flex-col gap-1.5">
                       <button
                         type="button"
-                        disabled={editDocBusy && editingDoc?.id === d.id}
-                        className="rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-100 disabled:opacity-50"
+                        disabled={downloadDocBusyId === d.id || Boolean(openDocBusyId)}
+                        className="inline-flex items-center justify-center rounded-lg bg-teal-50 px-2 py-1 text-[11px] font-semibold text-health-primary ring-1 ring-teal-100 hover:bg-teal-100/80 disabled:opacity-50"
+                        title={t(lang, "analyses.downloadFile")}
                         onClick={(e) => {
                           e.preventDefault();
-                          startEditDoc(d);
-                        }}
-                      >
-                        Изменить
-                      </button>
-                      <button
-                        type="button"
-                        disabled={deleteDocBusyId === d.id}
-                        title={t(lang, "analyses.delete")}
-                        aria-label={t(lang, "analyses.delete")}
-                        className={cn(
-                          "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-red-50/90 px-2 py-1.5 text-red-800 ring-1 ring-red-200/80 shadow-sm transition-colors hover:bg-red-100/90 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
-                          compact && "min-w-10 px-1.5 py-1",
-                        )}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (!window.confirm(t(lang, "analyses.deleteDocConfirm"))) return;
-                          setDeleteDocBusyId(d.id);
-                          void deleteHealthDocument(d.id)
+                          const isExternal =
+                            d.fileUrl.startsWith("https://") || d.fileUrl.startsWith("http://");
+                          if (isExternal) {
+                            type TgWebApp = {
+                              openLink?: (u: string, o?: { try_instant_view?: boolean }) => void;
+                            };
+                            const tg = (window as unknown as { Telegram?: { WebApp?: TgWebApp } })
+                              .Telegram?.WebApp;
+                            if (typeof tg?.openLink === "function") {
+                              tg.openLink(d.fileUrl, { try_instant_view: false });
+                            } else {
+                              window.open(d.fileUrl, "_blank", "noopener,noreferrer");
+                            }
+                            return;
+                          }
+                          setDownloadDocBusyId(d.id);
+                          setError(null);
+                          void downloadHealthDocumentClient(d.id, d.title)
                             .then((r) => {
-                              if (!r.ok) {
-                                setError(r.error);
-                                return;
-                              }
-                              void mutateDocs((prev) => {
-                                if (!prev) return prev;
-                                return prev.map((page) => ({
-                                  ...page,
-                                  documents: page.documents.filter((x) => x.id !== d.id),
-                                }));
-                              }, false);
+                              if (!r.ok) setError(r.error);
                             })
-                            .finally(() => setDeleteDocBusyId(null));
+                            .finally(() => setDownloadDocBusyId(null));
                         }}
                       >
-                        {deleteDocBusyId === d.id ? (
-                          <Loader2 className={cn("animate-spin", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
+                        {downloadDocBusyId === d.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                         ) : (
-                          <Trash2 className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
+                          <FileDown className="h-3.5 w-3.5" aria-hidden />
                         )}
                       </button>
+                      {activeProfileCanWrite ? (
+                        <>
+                          <button
+                            type="button"
+                            disabled={editDocBusy && editingDoc?.id === d.id}
+                            className="rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-100 disabled:opacity-50"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              startEditDoc(d);
+                            }}
+                          >
+                            Изменить
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deleteDocBusyId === d.id}
+                            title={t(lang, "analyses.delete")}
+                            aria-label={t(lang, "analyses.delete")}
+                            className={cn(
+                              "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-red-50/90 px-2 py-1.5 text-red-800 ring-1 ring-red-200/80 shadow-sm transition-colors hover:bg-red-100/90 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
+                              compact && "min-w-10 px-1.5 py-1",
+                            )}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (!window.confirm(t(lang, "analyses.deleteDocConfirm"))) return;
+                              setDeleteDocBusyId(d.id);
+                              void deleteHealthDocument(d.id)
+                                .then((r) => {
+                                  if (!r.ok) {
+                                    setError(r.error);
+                                    return;
+                                  }
+                                  void mutateDocs((prev) => {
+                                    if (!prev) return prev;
+                                    return prev.map((page) => ({
+                                      ...page,
+                                      documents: page.documents.filter((x) => x.id !== d.id),
+                                    }));
+                                  }, false);
+                                })
+                                .finally(() => setDeleteDocBusyId(null));
+                            }}
+                          >
+                            {deleteDocBusyId === d.id ? (
+                              <Loader2 className={cn("animate-spin", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
+                            ) : (
+                              <Trash2 className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
+                            )}
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   </div>
                   {editingDoc?.id === d.id ? (
@@ -1193,7 +1262,7 @@ export function AnalysesPreview({
                       </button>
                     </div>
 
-                    {!compact ? (
+                    {!compact && activeProfileCanWrite ? (
                       <button
                         type="button"
                         disabled={deleteBusyId === a.id}

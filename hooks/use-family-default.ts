@@ -59,9 +59,12 @@ export function useFamilyDefault() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback((opts?: { silent?: boolean }) => {
+    const silent = Boolean(opts?.silent);
+    if (!silent) {
+      setLoading(true);
+      setError(null);
+    }
     void fetch("/api/family/default", { credentials: "include" })
       .then(async (r) => {
         if (r.status === 401) throw new Error(t(lang, "dashboard.authRequired"));
@@ -73,10 +76,14 @@ export function useFamilyDefault() {
       })
       .then((raw) => setFamily(normalizeFamily(raw)))
       .catch((e: unknown) => {
-        setError(e instanceof Error ? e.message : "…");
-        setFamily(null);
+        if (!silent) {
+          setError(e instanceof Error ? e.message : "…");
+          setFamily(null);
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!silent) setLoading(false);
+      });
   }, [lang]);
 
   useEffect(() => {
@@ -97,6 +104,16 @@ export function useFamilyDefault() {
     if (typeof window === "undefined") return;
     window.addEventListener("sakbol:session-updated", onSession);
     return () => window.removeEventListener("sakbol:session-updated", onSession);
+  }, [authReady, isAuthenticated, load]);
+
+  /** Фоновое обновление семьи при возврате на вкладку — новые шары/профили с других устройств. */
+  useEffect(() => {
+    if (!authReady || !isAuthenticated) return;
+    const onVis = () => {
+      if (document.visibilityState === "visible") void load({ silent: true });
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
   }, [authReady, isAuthenticated, load]);
 
   return { family, loading, error, reload: load };

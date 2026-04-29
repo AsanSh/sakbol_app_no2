@@ -43,13 +43,17 @@ export async function deleteLabAnalysis(recordId: string) {
     where: {
       id,
       kind: HealthRecordKind.LAB_ANALYSIS,
-      profile: { familyId: session.familyId },
     },
-    select: { id: true, data: true },
+    select: { id: true, profileId: true, data: true },
   });
 
   if (!record) {
     return { ok: false as const, error: "Запись не найдена." };
+  }
+
+  const access = await checkProfileAccess(session, record.profileId);
+  if (!access.ok || !access.canWrite) {
+    return { ok: false as const, error: "Нет прав удалять эту запись." };
   }
 
   const meta = record.data as LabMeta;

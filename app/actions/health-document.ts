@@ -105,11 +105,15 @@ export async function deleteHealthDocument(id: string) {
   }
 
   const doc = await prisma.healthDocument.findFirst({
-    where: { id: tid, profile: { familyId: session.familyId } },
-    select: { id: true, mimeType: true, fileUrl: true },
+    where: { id: tid },
+    select: { id: true, profileId: true, mimeType: true, fileUrl: true },
   });
   if (!doc) {
     return { ok: false as const, error: "Документ не найден." };
+  }
+  const access = await checkProfileAccess(session, doc.profileId);
+  if (!access.ok || !access.canWrite) {
+    return { ok: false as const, error: "Нет прав удалять этот документ." };
   }
 
   if (doc.fileUrl.startsWith("http://") || doc.fileUrl.startsWith("https://")) {
@@ -161,11 +165,15 @@ export async function updateHealthDocumentMeta(input: {
   }
 
   const doc = await prisma.healthDocument.findFirst({
-    where: { id, profile: { familyId: session.familyId } },
-    select: { id: true },
+    where: { id },
+    select: { id: true, profileId: true },
   });
   if (!doc) {
     return { ok: false as const, error: "Документ не найден." };
+  }
+  const access = await checkProfileAccess(session, doc.profileId);
+  if (!access.ok || !access.canWrite) {
+    return { ok: false as const, error: "Нет прав редактировать этот документ." };
   }
 
   await prisma.healthDocument.update({
