@@ -11,13 +11,19 @@ export default {
     extend: {
       fontSize: {
         /** H1 — 32px */
+        h1: ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em" }],
+        /** H1 — 32px */
         display: ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em" }],
         /** H2 — 24px */
         h2: ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.02em" }],
         /** H3 — 18px */
         h3: ["1.125rem", { lineHeight: "1.5rem", letterSpacing: "-0.01em" }],
+        /** H4 — 16px */
+        h4: ["1rem", { lineHeight: "1.375rem", letterSpacing: "-0.01em" }],
         /** Body — 15 regular */
         body: ["0.9375rem", { lineHeight: "1.5rem" }],
+        /** Small — 13px */
+        small: ["0.8125rem", { lineHeight: "1.125rem" }],
         /** Caption — 12 medium */
         caption: ["0.75rem", { lineHeight: "1rem" }],
       },
@@ -43,12 +49,24 @@ export default {
           "linear-gradient(105deg, #005b71 0%, #1a7a6a 45%, #e07a6f 100%)",
       },
       boxShadow: {
+        surface: "0 6px 20px -10px rgba(15, 23, 42, 0.14), 0 2px 8px -4px rgba(15, 118, 110, 0.1)",
         "cta-coral": "0 10px 28px -6px rgba(207, 95, 82, 0.35), 0 4px 12px -4px rgba(0, 66, 83, 0.2)",
         "health-soft":
           "0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 10px 24px -8px rgba(15, 118, 110, 0.12)",
         "health-lift": "0 18px 40px -12px rgba(15, 23, 42, 0.12), 0 8px 16px -8px rgba(15, 118, 110, 0.08)",
       },
+      borderRadius: {
+        lg: "0.75rem",
+        xl: "1rem",
+        "2xl": "1.25rem",
+      },
       colors: {
+        primary: "#0F766E",
+        secondary: "#14B8A6",
+        accent: "#22C55E",
+        bg: "#F8FAFC",
+        surface: "#FFFFFF",
+        text: "#0F172A",
         health: {
           primary: "#0F766E",
           secondary: "#14B8A6",

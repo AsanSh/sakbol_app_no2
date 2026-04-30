@@ -20,6 +20,12 @@ import {
 import { useLanguage } from "@/context/language-context";
 import { t } from "@/lib/i18n";
 import { PhoneSelectModal } from "@/components/PhoneSelectModal";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/Input";
+import { Section } from "@/components/ui/Section";
+import { Skeleton } from "@/components/ui/Skeleton";
 import type { DoctorForCall, PhoneSelectEntry } from "@/lib/callDoctor";
 import {
   formatPhoneDisplay,
@@ -37,6 +43,8 @@ import {
 import type { DoctorSummary } from "@/lib/doctors-kg/types";
 import { decodeHtmlEntities } from "@/lib/html-entities";
 import { cn } from "@/lib/utils";
+import { DoctorsList } from "@/features/home/DoctorsList";
+import type { DoctorCardModel } from "@/features/home/DoctorCard";
 
 type MetaCategory = { slug: string; label: string };
 type MetaCity = { filterSlug: string; code: string; label: string };
@@ -394,6 +402,42 @@ export function DoctorDiscoveryHome({
     });
   }, [meta, debouncedSearch]);
 
+  const doctorRowsBySlug = useMemo(() => {
+    const m = new Map<string, DoctorRow>();
+    for (const d of list?.doctors ?? []) m.set(d.slug, d);
+    return m;
+  }, [list?.doctors]);
+
+  const doctorCards = useMemo<DoctorCardModel[]>(() => {
+    return (list?.doctors ?? []).map((d) => {
+      const street = d.streetAddress ? decodeHtmlEntities(d.streetAddress).trim() : "";
+      const loc = d.locality ? decodeHtmlEntities(d.locality).trim() : "";
+      const reg = d.region ? decodeHtmlEntities(d.region).trim() : "";
+      const cityOnly = meta?.cities.find((c) => c.code === d.cityCode)?.label ?? d.cityCode ?? "";
+      const addressParts = [street, loc || reg].filter(Boolean);
+      const address =
+        addressParts.length > 0
+          ? addressParts.join(", ")
+          : cityOnly || (lang === "ru" ? "Адрес не указан" : "Дареги жок");
+      const specialtyText =
+        d.categorySlugs.length > 0
+          ? d.categorySlugs
+              .map((s) => catLabel.get(s) ?? s)
+              .join(", ")
+          : lang === "ru"
+            ? "Специализация не указана"
+            : "Адистиги көрсөтүлгөн эмес";
+      return {
+        slug: d.slug,
+        name: d.name,
+        image: d.image,
+        specialtyText,
+        addressText: address,
+        phones: d.telephones ?? [],
+      };
+    });
+  }, [list?.doctors, meta?.cities, lang, catLabel]);
+
   const resetFilters = () => {
     setCategory(null);
     setCity(null);
@@ -483,12 +527,12 @@ export function DoctorDiscoveryHome({
                 className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
                 aria-hidden
               />
-              <input
+              <Input
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={lang === "ru" ? "Найти направление…" : "Багыт табуу…"}
-                className="min-h-[44px] w-full rounded-xl border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
+                className="bg-slate-50 py-2.5 pl-11 pr-4 text-body shadow-inner ring-slate-200/90"
                 aria-label={lang === "ru" ? "Поиск направления" : "Багыт издөө"}
               />
             </div>
@@ -558,12 +602,12 @@ export function DoctorDiscoveryHome({
                   className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
                   aria-hidden
                 />
-                <input
+                <Input
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t(lang, "home.search.placeholder")}
-                  className="min-h-[44px] w-full rounded-xl border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-[14px] text-slate-900 shadow-inner ring-1 ring-slate-200/90 placeholder:text-slate-400 focus:ring-2 focus:ring-teal-300"
+                  className="bg-slate-50 py-2.5 pl-11 pr-4 text-body shadow-inner ring-slate-200/90"
                   aria-label={t(lang, "home.search.placeholder")}
                 />
                 {listLoading && mainTab === "doctors" ? (
@@ -762,135 +806,94 @@ export function DoctorDiscoveryHome({
           ) : null}
 
           {mainTab === "doctors" ? (
-          <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80">
-            <AnimatePresence mode="popLayout">
-              {(list?.doctors ?? []).map((d, idx) => {
-                const street = d.streetAddress
-                  ? decodeHtmlEntities(d.streetAddress).trim()
-                  : "";
-                const loc = d.locality ? decodeHtmlEntities(d.locality).trim() : "";
-                const reg = d.region ? decodeHtmlEntities(d.region).trim() : "";
-                const cityOnly =
-                  meta?.cities.find((c) => c.code === d.cityCode)?.label ??
-                  d.cityCode ??
-                  "";
-                const addressParts = [street, loc || reg].filter(Boolean);
-                const address = addressParts.length
-                  ? addressParts.join(", ")
-                  : cityOnly || (lang === "ru" ? "Адрес не указан" : "Дареги жок");
-                return (
-                <motion.article
-                  key={d.slug}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, delay: idx * 0.02 }}
-                  className="border-b border-slate-100 p-3 last:border-b-0 sm:p-4"
-                >
-                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1.25fr)_minmax(11rem,0.75fr)_minmax(0,1.2fr)] sm:items-start">
-                    <h3 className="font-manrope text-[15px] font-semibold leading-snug text-slate-900 sm:text-base">
-                      {d.name}
-                    </h3>
-                    <div className="space-y-1">
-                      {d.telephones?.length ? (
-                        d.telephones.map((p) => {
-                          const link = getTelLinkProps(p);
-                          return link ? (
-                            <a
-                              key={p}
-                              {...link}
-                              onClick={() => notifyTelegramCallNumber(p)}
-                              className="flex min-h-[34px] items-center gap-1.5 text-[13px] font-semibold text-health-primary"
-                            >
-                              <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                              <span className="break-words">{formatPhoneDisplay(p)}</span>
-                            </a>
-                          ) : (
-                            <span key={p} className="block text-[13px] text-slate-600">
-                              {formatPhoneDisplay(p)}
-                            </span>
-                          );
-                        })
-                      ) : (
-                        <span className="text-[13px] text-slate-400">
-                          {lang === "ru" ? "Телефон не указан" : "Телефон жок"}
-                        </span>
-                      )}
-                    </div>
-                    <p className="flex gap-1.5 text-[13px] leading-snug text-slate-700">
-                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
-                      <span className="break-words">{address}</span>
-                    </p>
-                  </div>
-                </motion.article>
-                );
-              })}
-            </AnimatePresence>
-          </div>
+            <>
+              {listLoading ? (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, idx) => (
+                    <Skeleton key={idx} className="min-h-[304px] rounded-2xl" />
+                  ))}
+                </div>
+              ) : (
+                <DoctorsList
+                  doctors={doctorCards}
+                  labels={{
+                    call: t(lang, "home.card.call"),
+                    details: t(lang, "home.card.more"),
+                    noPhone: lang === "ru" ? "Телефон не указан" : "Телефон жок",
+                  }}
+                  onCall={(doctor) => invokeDoctorCall({ telephones: doctor.phones })}
+                  onView={(doctor) => {
+                    const row = doctorRowsBySlug.get(doctor.slug);
+                    if (row) openDoctorDetail(row);
+                  }}
+                />
+              )}
+            </>
           ) : null}
 
           {list && list.total === 0 && mainTab === "doctors" ? (
-            <p className="py-8 text-center text-body text-slate-600">
-              {lang === "ru" ? "Ничего не найдено — смените запрос или фильтры." : "Табылган жок."}
-            </p>
+            <EmptyState
+              title={lang === "ru" ? "Ничего не найдено" : "Табылган жок"}
+              description={
+                lang === "ru"
+                  ? "Смените запрос или фильтры и попробуйте снова."
+                  : "Издөө же чыпкаларды өзгөртүп, кайра аракет кылыңыз."
+              }
+            />
           ) : null}
 
           {list && list.totalPages > 1 && mainTab === "doctors" ? (
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 disabled={page <= 1 || listLoading}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-white px-4 text-caption font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200 disabled:opacity-40"
+                className="gap-1"
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden />
                 {lang === "ru" ? "Назад" : "Артка"}
-              </button>
-              <span className="text-caption text-slate-600">
+              </Button>
+              <span className="text-caption text-health-text-secondary">
                 {page} / {list.totalPages} · {list.total}{" "}
                 {lang === "ru" ? "всего" : "бардыгы"}
               </span>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 disabled={page >= list.totalPages || listLoading}
                 onClick={() => setPage((p) => p + 1)}
-                className="inline-flex min-h-[44px] items-center gap-1 rounded-xl bg-white px-4 text-caption font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200 disabled:opacity-40"
+                className="gap-1"
               >
                 {lang === "ru" ? "Далее" : "Алдыга"}
                 <ChevronRight className="h-4 w-4" aria-hidden />
-              </button>
+              </Button>
             </div>
           ) : null}
         </>
       ) : (
-        <section>
-          <h2 className="font-manrope text-lg font-semibold text-slate-900 sm:text-[1.5rem]">
-            {t(lang, "home.clinics.title")}
-          </h2>
-          <p className="mt-1 text-caption text-slate-500">
-            {lang === "ru"
+        <Section
+          title={t(lang, "home.clinics.title")}
+          description={
+            lang === "ru"
               ? "Адреса и телефоны — в каталоге SakBol, без перехода на сторонние сайты."
-              : "Даректер SakBol каталогунда, башка сайттарга өтпөстөн."}
-          </p>
-          {clinicLoadErr ? (
-            <p className="mt-2 text-sm text-red-700">{clinicLoadErr}</p>
-          ) : null}
+              : "Даректер SakBol каталогунда, башка сайттарга өтпөстөн."
+          }
+        >
+          {clinicLoadErr ? <p className="text-small text-red-700">{clinicLoadErr}</p> : null}
           <div
             className={cn(
-              "mt-4 grid gap-4",
-              isDesktop ? "md:grid-cols-2 xl:grid-cols-2" : "grid-cols-1",
+              "grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3",
+              isDesktop && "xl:grid-cols-2",
             )}
           >
             {clinicsFiltered.map((c) => (
-              <article
-                key={c.id}
-                className="rounded-2xl bg-white p-4 shadow-md ring-1 ring-slate-200/80"
-              >
-                <h3 className="font-manrope text-[15px] font-semibold text-slate-900">{c.name}</h3>
-                <p className="mt-1 text-caption text-slate-600">
+              <Card key={c.id} className="flex h-full flex-col gap-3 p-4">
+                <h3 className="text-h4 font-semibold text-health-text">{c.name}</h3>
+                <p className="text-small text-health-text-secondary">
                   {c.city} · {lang === "ru" ? "врачей:" : "дарыер:"} {c.doctorCount}
                 </p>
-                <div className="mt-3 space-y-1">
+                <div className="space-y-1">
                   {c.phones.map((p) => {
                     const link = getTelLinkProps(p);
                     return link ? (
@@ -898,7 +901,7 @@ export function DoctorDiscoveryHome({
                         key={p}
                         {...link}
                         onClick={() => notifyTelegramCallNumber(p)}
-                        className="flex min-h-[44px] w-full items-center gap-2 text-left text-caption font-semibold text-health-primary"
+                        className="flex min-h-[44px] w-full items-center gap-2 text-left text-small font-semibold text-health-primary focus-visible:ring-2 focus-visible:ring-health-secondary"
                       >
                         <Phone className="h-4 w-4 shrink-0" aria-hidden />
                         <span className="break-words">{formatPhoneDisplay(p)}</span>
@@ -906,22 +909,28 @@ export function DoctorDiscoveryHome({
                     ) : null;
                   })}
                 </div>
-                <button
+                <Button
                   type="button"
+                  fullWidth
+                  className="mt-auto"
                   onClick={() => void openDoctorBySlug(c.sampleDoctorSlug)}
-                  className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-health-primary text-caption font-semibold text-white shadow-sm hover:bg-teal-700"
                 >
                   {t(lang, "home.card.more")}
-                </button>
-              </article>
+                </Button>
+              </Card>
             ))}
           </div>
           {clinicsFiltered.length === 0 ? (
-            <p className="py-8 text-center text-slate-600">
-              {lang === "ru" ? "Нет данных клиник — выполните npm run doctors-kg:sync" : "Маалымат жок."}
-            </p>
+            <EmptyState
+              title={lang === "ru" ? "Клиники не найдены" : "Клиникалар табылган жок"}
+              description={
+                lang === "ru"
+                  ? "Проверьте фильтры или обновите каталог doctors-kg."
+                  : "Чыпкаларды текшериңиз же doctors-kg каталогун жаңыртыңыз."
+              }
+            />
           ) : null}
-        </section>
+        </Section>
       )}
 
       <AnimatePresence>
@@ -991,22 +1000,19 @@ export function DoctorDiscoveryHome({
                 </div>
               </div>
               <div className="mt-6 flex gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  fullWidth
                   onClick={() => {
                     resetFilters();
                   }}
-                  className="min-h-[48px] flex-1 rounded-2xl bg-slate-100 text-caption font-semibold text-slate-800"
                 >
                   {resetLabel}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFiltersOpen(false)}
-                  className="min-h-[48px] flex-1 rounded-2xl bg-health-primary text-caption font-semibold text-white shadow-sm"
-                >
+                </Button>
+                <Button type="button" fullWidth onClick={() => setFiltersOpen(false)}>
                   {applyLabel}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </motion.div>
