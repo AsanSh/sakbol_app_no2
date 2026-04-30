@@ -3,7 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BiologicalSex, ManagedRelationRole, SubjectIdCountry } from "@prisma/client";
-import { ChevronDown, Copy, FileDown, Loader2, Pill, Share2, Stethoscope, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  Copy,
+  FileDown,
+  Loader2,
+  Pill,
+  Share2,
+  Shield,
+  Stethoscope,
+  Trash2,
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
 import {
@@ -123,6 +133,8 @@ function FamilyMemberEditableCard({
   );
   const [sidDigits, setSidDigits] = useState("");
   const [sidBusy, setSidBusy] = useState(false);
+  /** Полный номер не показываем никогда — форма смены только по явному действию */
+  const [subjectIdChangeOpen, setSubjectIdChangeOpen] = useState(!profile.hasSubjectId);
 
   useEffect(() => {
     const a = profile.dateOfBirth ? ageYearsFromIsoDob(profile.dateOfBirth) : null;
@@ -152,7 +164,8 @@ function FamilyMemberEditableCard({
   useEffect(() => {
     setSidCountry(profile.subjectIdCountry ?? SubjectIdCountry.KG);
     setSidDigits("");
-  }, [profile.id, profile.subjectIdCountry]);
+    setSubjectIdChangeOpen(!profile.hasSubjectId);
+  }, [profile.id, profile.subjectIdCountry, profile.hasSubjectId]);
 
   const hNum = Number.parseFloat(heightStr);
   const wNum = Number.parseFloat(weightStr);
@@ -306,81 +319,6 @@ function FamilyMemberEditableCard({
               placeholder="Например O(I)+"
             />
           </label>
-          {profile.id === viewerId ? (
-            <div className="space-y-2 rounded-xl border border-[#cfe8ef] bg-[#f4fafb] px-2.5 py-2.5">
-              <p className="text-[11px] font-semibold text-[#004253]">
-                {t(lang, "profile.practitionerTitle")}
-              </p>
-              <p className="text-[10px] leading-snug text-[#40484c]">
-                {t(lang, "profile.practitionerLead")}
-              </p>
-              <label className="flex cursor-pointer items-start gap-2 text-[11px] text-[#191c1d]">
-                <input
-                  type="checkbox"
-                  checked={isPractitionerDoctor}
-                  onChange={(e) => setIsPractitionerDoctor(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#004253]"
-                />
-                <span>{t(lang, "profile.practitionerDoctor")}</span>
-              </label>
-              {isPractitionerDoctor ? (
-                <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
-                  <span>{t(lang, "profile.practitionerDoctorHint")}</span>
-                  <textarea
-                    value={practitionerDoctorNote}
-                    onChange={(e) => setPractitionerDoctorNote(e.target.value.slice(0, 2000))}
-                    rows={3}
-                    className="resize-y rounded-lg border border-[#e7e8e9] bg-white px-2 py-1.5 text-xs text-[#191c1d]"
-                  />
-                </label>
-              ) : null}
-              <label className="flex cursor-pointer items-start gap-2 text-[11px] text-[#191c1d]">
-                <input
-                  type="checkbox"
-                  checked={isPractitionerCaregiver}
-                  onChange={(e) => setIsPractitionerCaregiver(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-[#004253]"
-                />
-                <span>{t(lang, "profile.practitionerCaregiver")}</span>
-              </label>
-              {isPractitionerCaregiver ? (
-                <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
-                  <span>{t(lang, "profile.practitionerCaregiverHint")}</span>
-                  <textarea
-                    value={practitionerCaregiverNote}
-                    onChange={(e) => setPractitionerCaregiverNote(e.target.value.slice(0, 2000))}
-                    rows={3}
-                    className="resize-y rounded-lg border border-[#e7e8e9] bg-white px-2 py-1.5 text-xs text-[#191c1d]"
-                  />
-                </label>
-              ) : null}
-            </div>
-          ) : null}
-          {profile.id !== viewerId &&
-          (profile.medCardIsDoctor || profile.medCardIsCaregiver) ? (
-            <div className="space-y-1.5 rounded-xl border border-[#cfe8ef] bg-[#f4fafb] px-2.5 py-2.5 text-[11px] text-[#191c1d]">
-              {profile.medCardIsDoctor ? (
-                <p className="font-semibold text-[#004253]">
-                  {t(lang, "profile.practitionerReadonlyDoctor")}
-                </p>
-              ) : null}
-              {profile.medCardDoctorNote?.trim() ? (
-                <p className="whitespace-pre-wrap text-[10px] leading-snug text-[#40484c]">
-                  {profile.medCardDoctorNote.trim()}
-                </p>
-              ) : null}
-              {profile.medCardIsCaregiver ? (
-                <p className="font-semibold text-[#004253]">
-                  {t(lang, "profile.practitionerReadonlyCaregiver")}
-                </p>
-              ) : null}
-              {profile.medCardCaregiverNote?.trim() ? (
-                <p className="whitespace-pre-wrap text-[10px] leading-snug text-[#40484c]">
-                  {profile.medCardCaregiverNote.trim()}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
           <p className="text-[10px] text-[#70787d]">BMI (по полям выше): {bmiPreview ?? "—"}</p>
           <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
             <span>{t(lang, "profile.biologicalSex")}</span>
@@ -419,86 +357,289 @@ function FamilyMemberEditableCard({
               </select>
             </label>
           ) : null}
+          {profile.id === viewerId ? (
+            <div className="rounded-2xl border-2 border-[#7eb8c8] bg-gradient-to-br from-sky-50 via-[#eef8fb] to-cyan-50 px-4 py-4 shadow-[0_6px_22px_-8px_rgba(0,66,83,0.35)] ring-1 ring-[#cfe8ef]/80">
+              <div className="mb-3 flex items-start gap-3 border-b border-[#cfe8ef]/80 pb-3">
+                <span
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#004253] text-white"
+                  aria-hidden
+                >
+                  <Stethoscope className="h-5 w-5" strokeWidth={2.25} />
+                </span>
+                <div>
+                  <p className="text-sm font-bold leading-tight text-[#004253]">
+                    {t(lang, "profile.practitionerTitle")}
+                  </p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-[#3d5258]">
+                    {t(lang, "profile.practitionerLead")}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-white/80 p-3 text-sm font-medium text-[#191c1d] ring-1 ring-[#d4eaef]">
+                  <input
+                    type="checkbox"
+                    checked={isPractitionerDoctor}
+                    onChange={(e) => setIsPractitionerDoctor(e.target.checked)}
+                    className="mt-0.5 h-5 w-5 shrink-0 accent-[#004253]"
+                  />
+                  <span className="leading-snug">{t(lang, "profile.practitionerDoctor")}</span>
+                </label>
+                {isPractitionerDoctor ? (
+                  <label className="flex flex-col gap-1.5 text-xs text-[#40484c]">
+                    <span className="font-medium text-[#004253]">
+                      {t(lang, "profile.practitionerDoctorHint")}
+                    </span>
+                    <textarea
+                      value={practitionerDoctorNote}
+                      onChange={(e) => setPractitionerDoctorNote(e.target.value.slice(0, 2000))}
+                      rows={4}
+                      className="min-h-[5rem] resize-y rounded-xl border-2 border-[#e0eef2] bg-white px-3 py-2.5 text-sm text-[#191c1d] shadow-inner"
+                    />
+                  </label>
+                ) : null}
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-white/80 p-3 text-sm font-medium text-[#191c1d] ring-1 ring-[#d4eaef]">
+                  <input
+                    type="checkbox"
+                    checked={isPractitionerCaregiver}
+                    onChange={(e) => setIsPractitionerCaregiver(e.target.checked)}
+                    className="mt-0.5 h-5 w-5 shrink-0 accent-[#004253]"
+                  />
+                  <span className="leading-snug">{t(lang, "profile.practitionerCaregiver")}</span>
+                </label>
+                {isPractitionerCaregiver ? (
+                  <label className="flex flex-col gap-1.5 text-xs text-[#40484c]">
+                    <span className="font-medium text-[#004253]">
+                      {t(lang, "profile.practitionerCaregiverHint")}
+                    </span>
+                    <textarea
+                      value={practitionerCaregiverNote}
+                      onChange={(e) => setPractitionerCaregiverNote(e.target.value.slice(0, 2000))}
+                      rows={4}
+                      className="min-h-[5rem] resize-y rounded-xl border-2 border-[#e0eef2] bg-white px-3 py-2.5 text-sm text-[#191c1d] shadow-inner"
+                    />
+                  </label>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          {profile.id !== viewerId && (profile.medCardIsDoctor || profile.medCardIsCaregiver) ? (
+            <div className="rounded-2xl border-2 border-[#7eb8c8] bg-gradient-to-br from-sky-50 via-[#eef8fb] to-cyan-50 px-4 py-4 shadow-[0_6px_22px_-8px_rgba(0,66,83,0.35)]">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#004253] text-white">
+                  <Stethoscope className="h-5 w-5" strokeWidth={2.25} />
+                </span>
+                <p className="text-sm font-bold leading-snug text-[#004253]">
+                  Роль в системе здравоохранения (справочно)
+                </p>
+              </div>
+              <div className="mt-3 space-y-3 text-sm text-[#191c1d]">
+                {profile.medCardIsDoctor ? (
+                  <p className="font-semibold text-[#004253]">
+                    {t(lang, "profile.practitionerReadonlyDoctor")}
+                  </p>
+                ) : null}
+                {profile.medCardDoctorNote?.trim() ? (
+                  <p className="whitespace-pre-wrap rounded-xl bg-white/80 p-3 text-xs leading-relaxed text-[#40484c] ring-1 ring-[#d4eaef]">
+                    {profile.medCardDoctorNote.trim()}
+                  </p>
+                ) : null}
+                {profile.medCardIsCaregiver ? (
+                  <p className="font-semibold text-[#004253]">
+                    {t(lang, "profile.practitionerReadonlyCaregiver")}
+                  </p>
+                ) : null}
+                {profile.medCardCaregiverNote?.trim() ? (
+                  <p className="whitespace-pre-wrap rounded-xl bg-white/80 p-3 text-xs leading-relaxed text-[#40484c] ring-1 ring-[#d4eaef]">
+                    {profile.medCardCaregiverNote.trim()}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           {showSubjectIdEditor ? (
-            <div className="space-y-2 rounded-xl border border-[#e7e8e9] bg-[#fafbfb] px-2.5 py-2.5">
-              <p className="text-[11px] font-semibold text-[#004253]">
-                Гос. идентификатор (ИИН / ПИН / ПИНФЛ / СНИЛС)
-              </p>
+            <div className="space-y-3 rounded-2xl border-2 border-[#c5d4d8] bg-[#f7fafb] px-3 py-3 shadow-sm ring-1 ring-[#e2ebee]">
+              <div className="flex items-start gap-2">
+                <span
+                  className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#004253] text-white"
+                  aria-hidden
+                >
+                  <Shield className="h-4 w-4" strokeWidth={2.25} />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-[#004253]">
+                    Документ с гос. номером
+                  </p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-[#5a6a70]">
+                    Полный номер <strong>никогда не показывается</strong> в интерфейсе и{" "}
+                    <strong>не хранится</strong> на сервере в открытом виде — только защищённый
+                    признак для входа и совпадений.
+                  </p>
+                </div>
+              </div>
               {profile.hasSubjectId ? (
-                <p className="text-[10px] leading-snug text-[#40484c]">
-                  Привязан документ:{" "}
-                  <strong>
-                    {SUBJECT_ID_COUNTRY_OPTIONS.find((o) => o.value === profile.subjectIdCountry)
-                      ?.label ?? "указан"}
-                  </strong>
-                  . Номер в открытом виде не хранится.
-                </p>
+                <>
+                  <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-3 py-2.5 text-xs text-[#0f3d2e]">
+                    <p className="font-semibold">Идентификатор привязан</p>
+                    <p className="mt-1 text-[11px] leading-snug opacity-90">
+                      {SUBJECT_ID_COUNTRY_OPTIONS.find((o) => o.value === profile.subjectIdCountry)
+                        ?.label ?? "Страна указана"}
+                      :{" "}
+                      {SUBJECT_ID_COUNTRY_OPTIONS.find((o) => o.value === profile.subjectIdCountry)
+                        ?.docHint ?? "тип по стране"}
+                    </p>
+                  </div>
+                  {!subjectIdChangeOpen ? (
+                    <button
+                      type="button"
+                      className="w-full rounded-xl border-2 border-[#004253] bg-white py-2.5 text-sm font-semibold text-[#004253] transition-colors hover:bg-[#f0f9fb]"
+                      onClick={() => {
+                        setSubjectIdChangeOpen(true);
+                        setSidCountry(profile.subjectIdCountry ?? SubjectIdCountry.KG);
+                        setSidDigits("");
+                      }}
+                    >
+                      Заменить документ…
+                    </button>
+                  ) : (
+                    <>
+                      <p className="text-[11px] text-[#b45309]">
+                        Введите <strong>новый полный номер</strong> целиком — предыдущий не
+                        отображается и не подсказывается.
+                      </p>
+                      <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+                        <span>Страна документа</span>
+                        <SubjectIdCountrySelect
+                          value={sidCountry}
+                          onChange={setSidCountry}
+                          disabled={sidBusy}
+                          className="!rounded-lg !text-xs"
+                        />
+                      </label>
+                      <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+                        <span>Новый номер (только цифры)</span>
+                        <SubjectIdNumberInput
+                          country={sidCountry}
+                          value={sidDigits}
+                          onChange={setSidDigits}
+                          disabled={sidBusy}
+                          className="!rounded-lg !text-xs"
+                        />
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="flex-1 rounded-xl border border-[#94a3a8] bg-white py-2 text-xs font-semibold text-[#475569]"
+                          disabled={sidBusy}
+                          onClick={() => {
+                            setSubjectIdChangeOpen(false);
+                            setSidDigits("");
+                            setSidCountry(profile.subjectIdCountry ?? SubjectIdCountry.KG);
+                          }}
+                        >
+                          Отмена
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            sidBusy ||
+                            !isSubjectIdLengthSatisfied(
+                              sidCountry,
+                              sidDigits.replace(/\s/g, "").replace(/-/g, ""),
+                            )
+                          }
+                          onClick={() => {
+                            setSidBusy(true);
+                            setErr(null);
+                            const p = (async () => {
+                              if (profile.id === viewerId) {
+                                return updateOwnSubjectId(sidDigits, sidCountry);
+                              }
+                              return updateManagedMemberSubjectId(profile.id, {
+                                pin: sidDigits,
+                                subjectIdCountry: sidCountry,
+                              });
+                            })();
+                            void p.then((res) => {
+                              setSidBusy(false);
+                              if (!res.ok) {
+                                setErr(res.error);
+                                return;
+                              }
+                              setSidDigits("");
+                              setSubjectIdChangeOpen(false);
+                              onReload();
+                            });
+                          }}
+                          className="flex-1 rounded-xl bg-[#0d5c6e] py-2 text-xs font-semibold text-white disabled:opacity-50"
+                        >
+                          {sidBusy ? "Сохранение…" : "Сохранить новый"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
-                <p className="text-[10px] leading-snug text-[#40484c]">
-                  Укажите страну и номер — в базе сохраняется только защищённый идентификатор.
-                </p>
+                <>
+                  <p className="text-[11px] text-[#40484c]">
+                    Укажите страну и номер один раз для привязки профиля.
+                  </p>
+                  <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+                    <span>Страна</span>
+                    <SubjectIdCountrySelect
+                      value={sidCountry}
+                      onChange={setSidCountry}
+                      disabled={sidBusy}
+                      className="!rounded-lg !text-xs"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+                    <span>Номер (только цифры)</span>
+                    <SubjectIdNumberInput
+                      country={sidCountry}
+                      value={sidDigits}
+                      onChange={setSidDigits}
+                      disabled={sidBusy}
+                      className="!rounded-lg !text-xs"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    disabled={
+                      sidBusy ||
+                      !isSubjectIdLengthSatisfied(
+                        sidCountry,
+                        sidDigits.replace(/\s/g, "").replace(/-/g, ""),
+                      )
+                    }
+                    onClick={() => {
+                      setSidBusy(true);
+                      setErr(null);
+                      const p = (async () => {
+                        if (profile.id === viewerId) {
+                          return setOwnProfilePin(sidDigits, sidCountry);
+                        }
+                        return updateManagedMemberSubjectId(profile.id, {
+                          pin: sidDigits,
+                          subjectIdCountry: sidCountry,
+                        });
+                      })();
+                      void p.then((res) => {
+                        setSidBusy(false);
+                        if (!res.ok) {
+                          setErr(res.error);
+                          return;
+                        }
+                        setSidDigits("");
+                        onReload();
+                      });
+                    }}
+                    className="w-full rounded-xl bg-[#0d5c6e] px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {sidBusy ? "Сохранение…" : "Привязать документ"}
+                  </button>
+                </>
               )}
-              <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
-                <span>Страна</span>
-                <SubjectIdCountrySelect
-                  value={sidCountry}
-                  onChange={setSidCountry}
-                  disabled={sidBusy}
-                  className="!rounded-lg !text-xs"
-                />
-              </label>
-              <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
-                <span>Номер (только цифры)</span>
-                <SubjectIdNumberInput
-                  country={sidCountry}
-                  value={sidDigits}
-                  onChange={setSidDigits}
-                  disabled={sidBusy}
-                  className="!rounded-lg !text-xs"
-                />
-              </label>
-              <button
-                type="button"
-                disabled={
-                  sidBusy ||
-                  !isSubjectIdLengthSatisfied(
-                    sidCountry,
-                    sidDigits.replace(/\s/g, "").replace(/-/g, ""),
-                  )
-                }
-                onClick={() => {
-                  setSidBusy(true);
-                  setErr(null);
-                  const p = (async () => {
-                    if (profile.id === viewerId) {
-                      if (profile.hasSubjectId) {
-                        return updateOwnSubjectId(sidDigits, sidCountry);
-                      }
-                      return setOwnProfilePin(sidDigits, sidCountry);
-                    }
-                    return updateManagedMemberSubjectId(profile.id, {
-                      pin: sidDigits,
-                      subjectIdCountry: sidCountry,
-                    });
-                  })();
-                  void p.then((res) => {
-                    setSidBusy(false);
-                    if (!res.ok) {
-                      setErr(res.error);
-                      return;
-                    }
-                    setSidDigits("");
-                    onReload();
-                  });
-                }}
-                className="w-full rounded-lg bg-[#0d5c6e] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-              >
-                {sidBusy
-                  ? "Сохранение…"
-                  : profile.hasSubjectId
-                    ? "Сменить идентификатор"
-                    : "Сохранить идентификатор"}
-              </button>
             </div>
           ) : null}
           {err ? (
@@ -554,14 +695,14 @@ function FamilyMemberEditableCard({
                 : t(lang, "profile.sexUnknown")}
           </p>
           {profile.medCardIsDoctor || profile.medCardIsCaregiver ? (
-            <div className="mt-2 space-y-1.5 rounded-lg bg-[#f4fafb] px-2.5 py-2 text-[11px] text-[#191c1d] ring-1 ring-[#cfe8ef]">
+            <div className="mt-3 space-y-3 rounded-2xl border-2 border-[#7eb8c8] bg-gradient-to-br from-sky-50 via-[#eef8fb] to-cyan-50 px-4 py-3 text-sm text-[#191c1d] shadow-[0_4px_16px_-6px_rgba(0,66,83,0.3)]">
               {profile.medCardIsDoctor ? (
                 <p className="font-semibold text-[#004253]">
                   {t(lang, "profile.practitionerReadonlyDoctor")}
                 </p>
               ) : null}
               {profile.medCardDoctorNote?.trim() ? (
-                <p className="whitespace-pre-wrap text-[10px] leading-snug text-[#40484c]">
+                <p className="whitespace-pre-wrap rounded-xl bg-white/80 p-3 text-xs leading-relaxed text-[#40484c] ring-1 ring-[#d4eaef]">
                   {profile.medCardDoctorNote.trim()}
                 </p>
               ) : null}
@@ -571,7 +712,7 @@ function FamilyMemberEditableCard({
                 </p>
               ) : null}
               {profile.medCardCaregiverNote?.trim() ? (
-                <p className="whitespace-pre-wrap text-[10px] leading-snug text-[#40484c]">
+                <p className="whitespace-pre-wrap rounded-xl bg-white/80 p-3 text-xs leading-relaxed text-[#40484c] ring-1 ring-[#d4eaef]">
                   {profile.medCardCaregiverNote.trim()}
                 </p>
               ) : null}
