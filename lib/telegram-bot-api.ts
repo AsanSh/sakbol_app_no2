@@ -3,12 +3,24 @@ import "server-only";
 type TgOk<T> = { ok: true; result: T };
 type TgErr = { ok: false; description?: string; error_code?: number };
 
+function telegramApiBaseUrl(): string {
+  const raw = process.env.TELEGRAM_API_BASE_URL?.trim();
+  if (!raw) return "https://api.telegram.org";
+  return raw.replace(/\/+$/, "");
+}
+
+function telegramFileBaseUrl(): string {
+  const raw = process.env.TELEGRAM_FILE_BASE_URL?.trim();
+  if (!raw) return `${telegramApiBaseUrl()}/file`;
+  return raw.replace(/\/+$/, "");
+}
+
 async function tgCall<T>(path: string, init?: RequestInit): Promise<TgOk<T> | TgErr> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!botToken) {
     return { ok: false, description: "TELEGRAM_BOT_TOKEN missing" };
   }
-  const url = `https://api.telegram.org/bot${botToken}/${path}`;
+  const url = `${telegramApiBaseUrl()}/bot${botToken}/${path}`;
   try {
     const res = await fetch(url, {
       ...init,
@@ -177,7 +189,7 @@ export async function telegramDownloadFile(
   if (!botToken) {
     return { ok: false, description: "TELEGRAM_BOT_TOKEN missing" };
   }
-  const url = `https://api.telegram.org/file/bot${botToken}/${j.result.file_path}`;
+  const url = `${telegramFileBaseUrl()}/bot${botToken}/${j.result.file_path}`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     return { ok: false, description: `download failed ${res.status}` };
