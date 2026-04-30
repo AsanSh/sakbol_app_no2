@@ -1,0 +1,10 @@
+---
+description: Production is self-hosted VPS (Docker), not Vercel
+alwaysApply: true
+---
+
+# SakBol production
+
+- **Нет Vercel** для продакшена. Развёртывание — **свой сервер** (Ubuntu + Docker + nginx по `docs/SELF_HOSTED.md`).
+- Обновление: `git pull` → `docker compose -f docker-compose.selfhosted.yml up -d --build` из `/opt/sakbol` (после `ln -sf .env.production .env` при необходимости).
+- Не предлагать деплой через Vercel CLI или панель Vercel; при вопросах «задеплой» ориентироваться на Docker Compose и документацию self-hosted.
