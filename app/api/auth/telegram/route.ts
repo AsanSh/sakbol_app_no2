@@ -15,6 +15,7 @@ import {
   applyPendingProfileAccessForTelegramUser,
 } from "@/lib/profile-access-accept";
 import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
+import { parseSubjectIdCountryParam } from "@/lib/subject-id-country";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ function profileJson(profile: {
   familyRole: string;
   familyId: string;
   pinAnchor: string | null;
+  subjectIdCountry: import("@prisma/client").SubjectIdCountry | null;
 }) {
   return {
     id: profile.id,
@@ -47,6 +49,7 @@ function profileJson(profile: {
     familyRole: profile.familyRole,
     familyId: profile.familyId,
     needsPinCompletion: profile.pinAnchor == null,
+    subjectIdCountry: profile.subjectIdCountry ?? null,
   };
 }
 
@@ -63,9 +66,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { initData?: string; pin?: string };
+  let body: { initData?: string; pin?: string; subjectIdCountry?: string };
   try {
-    body = (await req.json()) as { initData?: string; pin?: string };
+    body = (await req.json()) as typeof body;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -76,6 +79,7 @@ export async function POST(req: NextRequest) {
   }
 
   const pinRaw = body.pin?.trim() ?? "";
+  const subjectCountry = parseSubjectIdCountryParam(body.subjectIdCountry);
 
   if (!verifyTelegramInitData(initData, botToken)) {
     return NextResponse.json({ error: "Invalid initData signature" }, { status: 401 });
@@ -132,7 +136,7 @@ export async function POST(req: NextRequest) {
       }
       let pinAnchor: string;
       try {
-        pinAnchor = pinAnchorFromUserInput(pinRaw);
+        pinAnchor = pinAnchorFromUserInput(pinRaw, subjectCountry);
       } catch (e) {
         return NextResponse.json(
           { error: e instanceof Error ? e.message : "Некорректный ПИН." },
@@ -183,6 +187,7 @@ export async function POST(req: NextRequest) {
             familyRole: FamilyRole.ADMIN,
             isManaged: false,
             pinAnchor,
+            subjectIdCountry: subjectCountry,
           },
         });
         console.log("[auth/telegram] created new profile + family", {
@@ -230,7 +235,7 @@ export async function POST(req: NextRequest) {
         }
         let pinAnchor: string;
         try {
-          pinAnchor = pinAnchorFromUserInput(pinRaw);
+          pinAnchor = pinAnchorFromUserInput(pinRaw, subjectCountry);
         } catch (e) {
           return NextResponse.json(
             { error: e instanceof Error ? e.message : "Некорректный ПИН." },
@@ -248,7 +253,7 @@ export async function POST(req: NextRequest) {
         }
         profile = await prisma.profile.update({
           where: { id: profile.id },
-          data: { pinAnchor },
+          data: { pinAnchor, subjectIdCountry: subjectCountry },
         });
       }
     }

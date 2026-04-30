@@ -1,4 +1,9 @@
-import type { BiologicalSex, FamilyRole, ManagedRelationRole } from "@prisma/client";
+import type {
+  BiologicalSex,
+  FamilyRole,
+  ManagedRelationRole,
+  SubjectIdCountry,
+} from "@prisma/client";
 
 export type ProfileSummary = {
   id: string;
@@ -7,6 +12,10 @@ export type ProfileSummary = {
   email: string | null;
   familyRole: FamilyRole;
   isManaged: boolean;
+  /** Есть привязанный гос. идентификатор (якорь в БД) */
+  hasSubjectId?: boolean;
+  /** Страна и тип номера (ИИН, ПИНФЛ, …) */
+  subjectIdCountry?: SubjectIdCountry | null;
   telegramUserId: string | null;
   managedRole: ManagedRelationRole | null;
   dateOfBirth: string | null;

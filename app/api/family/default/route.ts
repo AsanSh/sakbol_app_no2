@@ -23,6 +23,8 @@ const PROFILE_SELECT = {
   medCardDoctorNote: true,
   medCardIsCaregiver: true,
   medCardCaregiverNote: true,
+  subjectIdCountry: true,
+  pinAnchor: true,
 } as const;
 
 export async function GET() {
@@ -83,9 +85,17 @@ export async function GET() {
       return NextResponse.json({ error: "Family not found" }, { status: 404 });
     }
 
+    const mapProfile = (p: (typeof family.profiles)[number]) => {
+      const { pinAnchor, ...rest } = p;
+      return {
+        ...rest,
+        hasSubjectId: pinAnchor != null,
+      };
+    };
+
     // Добавляем расшаренные профили с флагом isSharedGuest
     const sharedProfiles = sharedAccesses.map((a) => ({
-      ...a.sourceProfile,
+      ...mapProfile(a.sourceProfile),
       isSharedGuest: true,
       sharedAccessId: a.id,
       sharedCanWrite: a.canWrite,
@@ -94,6 +104,7 @@ export async function GET() {
 
     return NextResponse.json({
       ...family,
+      profiles: family.profiles.map(mapProfile),
       tier: family.plan?.tier ?? "FREE",
       viewerProfileId: session.profileId,
       viewerOwnsPharmacy: Boolean(pharmacyOwned),

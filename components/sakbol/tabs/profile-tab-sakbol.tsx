@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
+import { BiologicalSex, ManagedRelationRole, SubjectIdCountry } from "@prisma/client";
 import { ChevronDown, Copy, FileDown, Loader2, Pill, Share2, Stethoscope, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { LinkTelegramCard } from "@/components/profile/link-telegram-card";
@@ -33,7 +33,17 @@ import {
   updateProfileBiologicalSex,
   updateProfileVitals,
 } from "@/app/actions/profile";
-import { deleteManagedProfile, updateManagedProfileKinship } from "@/app/actions/family";
+import {
+  deleteManagedProfile,
+  updateManagedMemberSubjectId,
+  updateManagedProfileKinship,
+} from "@/app/actions/family";
+import { setOwnProfilePin, updateOwnSubjectId } from "@/app/actions/profile-pin";
+import { SubjectIdCountrySelect, SubjectIdNumberInput } from "@/components/subject-id-inputs";
+import {
+  isSubjectIdLengthSatisfied,
+  SUBJECT_ID_COUNTRY_OPTIONS,
+} from "@/lib/subject-id-country";
 import { profileKinshipLabel } from "@/lib/profile-kinship";
 import { downloadDoctorReportPdf } from "@/lib/client/download-doctor-report-pdf";
 import { DoctorPatientsSection } from "@/features/doctor/my-patients-tab";
@@ -106,6 +116,14 @@ function FamilyMemberEditableCard({
   const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const showSubjectIdEditor =
+    profile.id === viewerId || (profile.isManaged && viewerIsAdmin);
+  const [sidCountry, setSidCountry] = useState<SubjectIdCountry>(
+    profile.subjectIdCountry ?? SubjectIdCountry.KG,
+  );
+  const [sidDigits, setSidDigits] = useState("");
+  const [sidBusy, setSidBusy] = useState(false);
+
   useEffect(() => {
     const a = profile.dateOfBirth ? ageYearsFromIsoDob(profile.dateOfBirth) : null;
     setName(profile.displayName);
@@ -130,6 +148,11 @@ function FamilyMemberEditableCard({
     profile.medCardDoctorNote,
     profile.medCardCaregiverNote,
   ]);
+
+  useEffect(() => {
+    setSidCountry(profile.subjectIdCountry ?? SubjectIdCountry.KG);
+    setSidDigits("");
+  }, [profile.id, profile.subjectIdCountry]);
 
   const hNum = Number.parseFloat(heightStr);
   const wNum = Number.parseFloat(weightStr);
@@ -395,6 +418,88 @@ function FamilyMemberEditableCard({
                 ))}
               </select>
             </label>
+          ) : null}
+          {showSubjectIdEditor ? (
+            <div className="space-y-2 rounded-xl border border-[#e7e8e9] bg-[#fafbfb] px-2.5 py-2.5">
+              <p className="text-[11px] font-semibold text-[#004253]">
+                Гос. идентификатор (ИИН / ПИН / ПИНФЛ / СНИЛС)
+              </p>
+              {profile.hasSubjectId ? (
+                <p className="text-[10px] leading-snug text-[#40484c]">
+                  Привязан документ:{" "}
+                  <strong>
+                    {SUBJECT_ID_COUNTRY_OPTIONS.find((o) => o.value === profile.subjectIdCountry)
+                      ?.label ?? "указан"}
+                  </strong>
+                  . Номер в открытом виде не хранится.
+                </p>
+              ) : (
+                <p className="text-[10px] leading-snug text-[#40484c]">
+                  Укажите страну и номер — в базе сохраняется только защищённый идентификатор.
+                </p>
+              )}
+              <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+                <span>Страна</span>
+                <SubjectIdCountrySelect
+                  value={sidCountry}
+                  onChange={setSidCountry}
+                  disabled={sidBusy}
+                  className="!rounded-lg !text-xs"
+                />
+              </label>
+              <label className="flex flex-col gap-0.5 text-[11px] text-[#40484c]">
+                <span>Номер (только цифры)</span>
+                <SubjectIdNumberInput
+                  country={sidCountry}
+                  value={sidDigits}
+                  onChange={setSidDigits}
+                  disabled={sidBusy}
+                  className="!rounded-lg !text-xs"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={
+                  sidBusy ||
+                  !isSubjectIdLengthSatisfied(
+                    sidCountry,
+                    sidDigits.replace(/\s/g, "").replace(/-/g, ""),
+                  )
+                }
+                onClick={() => {
+                  setSidBusy(true);
+                  setErr(null);
+                  const p = (async () => {
+                    if (profile.id === viewerId) {
+                      if (profile.hasSubjectId) {
+                        return updateOwnSubjectId(sidDigits, sidCountry);
+                      }
+                      return setOwnProfilePin(sidDigits, sidCountry);
+                    }
+                    return updateManagedMemberSubjectId(profile.id, {
+                      pin: sidDigits,
+                      subjectIdCountry: sidCountry,
+                    });
+                  })();
+                  void p.then((res) => {
+                    setSidBusy(false);
+                    if (!res.ok) {
+                      setErr(res.error);
+                      return;
+                    }
+                    setSidDigits("");
+                    onReload();
+                  });
+                }}
+                className="w-full rounded-lg bg-[#0d5c6e] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                {sidBusy
+                  ? "Сохранение…"
+                  : profile.hasSubjectId
+                    ? "Сменить идентификатор"
+                    : "Сохранить идентификатор"}
+              </button>
+            </div>
           ) : null}
           {err ? (
             <p className="text-[11px] text-red-600" role="alert">

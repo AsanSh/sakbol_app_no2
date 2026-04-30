@@ -1,4 +1,4 @@
-import { FamilyRole, SubscriptionTier } from "@prisma/client";
+import { FamilyRole, SubjectIdCountry, SubscriptionTier } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   getPinAnchorPepper,
@@ -27,6 +27,7 @@ export async function getOrCreateFirstDevAdmin() {
       where: { id: existing.id },
       data: {
         pinAnchor: pinAnchorFromNormalizedPin(pin, getPinAnchorPepper()),
+        subjectIdCountry: SubjectIdCountry.KG,
       },
     });
   }
@@ -59,7 +60,7 @@ export async function getOrCreateFirstDevAdmin() {
 
   const withPin = await prisma.profile.update({
     where: { id: admin.id },
-    data: { pinAnchor },
+    data: { pinAnchor, subjectIdCountry: SubjectIdCountry.KG },
   });
 
   await prisma.subscription.upsert({

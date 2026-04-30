@@ -10,7 +10,8 @@
  * Запуск: npx tsx scripts/sync-doctors-extra.ts
  *
  * Env-переменные:
- *  MAX_MEDIK_PAGES  — лимит страниц medik.kg (default: 600)
+ *  MAX_MEDIK_PAGES   — лимит страниц medik.kg (default: 2500)
+ *  MEDIK_EMPTY_STREAK — подряд пустых страниц до остановки (default: 10)
  *  SKIP_MEDIK       — "1" чтобы пропустить medik.kg
  *  SKIP_ODOCTOR     — "1" чтобы пропустить odoctor.kg
  */
@@ -23,7 +24,8 @@ import type { DoctorEnriched } from "../lib/doctors-kg/types";
 
 const DELAY_MS = 250; // задержка между запросами (вежливый краулер)
 const UA = "SakBolDirectorySync/2.0 (+https://adventory.store)";
-const MAX_MEDIK_PAGES = Number(process.env.MAX_MEDIK_PAGES ?? 600);
+const MAX_MEDIK_PAGES = Number(process.env.MAX_MEDIK_PAGES ?? 2500);
+const MEDIK_EMPTY_STREAK = Math.max(3, Number(process.env.MEDIK_EMPTY_STREAK ?? 10));
 const SKIP_MEDIK = process.env.SKIP_MEDIK === "1";
 const SKIP_ODOCTOR = process.env.SKIP_ODOCTOR === "1";
 
@@ -201,7 +203,7 @@ async function scrapeMedik(
   let page = 1;
   let emptyStreak = 0;
 
-  while (page <= MAX_MEDIK_PAGES && emptyStreak < 3) {
+  while (page <= MAX_MEDIK_PAGES && emptyStreak < MEDIK_EMPTY_STREAK) {
     process.stdout.write(`\r  Страница ${page}/${MAX_MEDIK_PAGES}... +${collected.length} новых`);
 
     const html = await fetchMedikPage(page);

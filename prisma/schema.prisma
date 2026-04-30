@@ -7,6 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Страна выдачи гос. идентификатора (ИИН/ПИН/ПИНФЛ/СНИЛС) — задаёт формат ввода и расчёт якоря.
+enum SubjectIdCountry {
+  KG
+  KZ
+  UZ
+  RU
+}
+
 /// Household / access boundary for Family RBAC.
 model Family {
   id        String    @id @default(cuid())
@@ -39,6 +47,9 @@ model Profile {
 
   /// HMAC-якорь ПИН/ИНН (КР); сырой ПИН в БД не хранится. Обязателен для всех профилей после миграции.
   pinAnchor      String?    @unique
+
+  /// Страна идентификатора; для КР (KG) якорь считается как раньше — только по цифрам (совместимость с OCR).
+  subjectIdCountry SubjectIdCountry?
 
   isManaged      Boolean    @default(false)
   familyRole     FamilyRole @default(MEMBER)

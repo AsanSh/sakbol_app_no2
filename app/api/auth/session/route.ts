@@ -20,6 +20,7 @@ export async function GET() {
       familyRole: true,
       familyId: true,
       pinAnchor: true,
+      subjectIdCountry: true,
     },
   });
 
@@ -35,6 +36,7 @@ export async function GET() {
       familyRole: profile.familyRole,
       familyId: profile.familyId,
       needsPinCompletion: profile.pinAnchor == null,
+      subjectIdCountry: profile.subjectIdCountry ?? null,
     },
   });
 }

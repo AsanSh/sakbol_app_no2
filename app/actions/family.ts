@@ -3,6 +3,7 @@
 import {
   BiologicalSex,
   FamilyRole,
+  SubjectIdCountry,
   type ManagedRelationRole,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -11,16 +12,18 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import {
   dateOfBirthFromKg14Pin,
-  normalizeKgPinInput,
   pinAnchorFromUserInput,
 } from "@/lib/pin-subject-anchor";
+import { normalizeSubjectIdDigits } from "@/lib/subject-id-country";
 
 export type CreateManagedProfileInput = {
   displayName: string;
   managedRole: ManagedRelationRole;
   avatarUrl?: string | null;
   biologicalSex?: BiologicalSex;
-  /** ПИН/ИНН (КР), обязателен — на сервер сохраняется только HMAC-якорь; для 14-зн. ПИН дата рождения берётся из номера */
+  /** Страна идентификатора; по умолчанию Кыргызстан */
+  subjectIdCountry?: SubjectIdCountry;
+  /** Гос. номер: на сервер только HMAC; для KG и 14 цифр — дата из ПИН */
   pin: string;
 };
 
@@ -61,9 +64,11 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
     };
   }
 
+  const country = input.subjectIdCountry ?? SubjectIdCountry.KG;
+
   let pinAnchor: string;
   try {
-    pinAnchor = pinAnchorFromUserInput(input.pin);
+    pinAnchor = pinAnchorFromUserInput(input.pin, country);
   } catch (e) {
     return {
       ok: false as const,
@@ -71,8 +76,9 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
     };
   }
 
-  const normalizedPin = normalizeKgPinInput(input.pin);
-  const dateOfBirth = dateOfBirthFromKg14Pin(normalizedPin);
+  const normalizedPin = normalizeSubjectIdDigits(input.pin);
+  const dateOfBirth =
+    country === SubjectIdCountry.KG ? dateOfBirthFromKg14Pin(normalizedPin) : null;
 
   const taken = await prisma.profile.findFirst({
     where: { pinAnchor },
@@ -88,6 +94,7 @@ export async function createManagedProfile(input: CreateManagedProfileInput) {
       displayName: name,
       avatarUrl: input.avatarUrl?.trim() || null,
       pinAnchor,
+      subjectIdCountry: country,
       isManaged: true,
       telegramUserId: null,
       familyRole: FamilyRole.MEMBER,
@@ -217,6 +224,85 @@ export async function updateManagedProfileKinship(
   await prisma.profile.update({
     where: { id: profileId },
     data: { managedRole },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/profile");
+  return { ok: true as const };
+}
+
+/** Смена гос. идентификатора у карточного члена семьи. Только ADMIN. */
+export async function updateManagedMemberSubjectId(
+  profileId: string,
+  input: { pin: string; subjectIdCountry: SubjectIdCountry },
+) {
+  const session = await getSession();
+  if (!session) {
+    return { ok: false as const, error: "Требуется вход." };
+  }
+
+  const actor = await prisma.profile.findFirst({
+    where: {
+      id: session.profileId,
+      familyId: session.familyId,
+      familyRole: FamilyRole.ADMIN,
+    },
+  });
+  if (!actor) {
+    return {
+      ok: false as const,
+      error: "Только администратор семьи может изменить идентификатор.",
+    };
+  }
+
+  const target = await prisma.profile.findFirst({
+    where: { id: profileId, familyId: session.familyId },
+    select: { id: true, isManaged: true },
+  });
+  if (!target) {
+    return { ok: false as const, error: "Профиль не найден." };
+  }
+  if (!target.isManaged) {
+    return {
+      ok: false as const,
+      error: "Идентификатор этого профиля меняет сам пользователь в настройках.",
+    };
+  }
+
+  let pinAnchor: string;
+  try {
+    pinAnchor = pinAnchorFromUserInput(input.pin, input.subjectIdCountry);
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Некорректный номер.",
+    };
+  }
+
+  const normalizedPin = normalizeSubjectIdDigits(input.pin);
+  const dateOfBirth =
+    input.subjectIdCountry === SubjectIdCountry.KG
+      ? dateOfBirthFromKg14Pin(normalizedPin)
+      : null;
+
+  const taken = await prisma.profile.findFirst({
+    where: { pinAnchor, NOT: { id: profileId } },
+    select: { id: true },
+  });
+  if (taken) {
+    return {
+      ok: false as const,
+      error: "Этот идентификатор уже используется другим аккаунтом.",
+    };
+  }
+
+  await prisma.profile.update({
+    where: { id: profileId },
+    data: {
+      pinAnchor,
+      subjectIdCountry: input.subjectIdCountry,
+      ...(dateOfBirth ? { dateOfBirth } : {}),
+    },
   });
 
   revalidatePath("/");

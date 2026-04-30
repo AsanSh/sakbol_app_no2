@@ -1,12 +1,16 @@
 "use client";
 
+import { SubjectIdCountry } from "@prisma/client";
 import { useCallback, useState } from "react";
+import { SubjectIdCountrySelect, SubjectIdNumberInput } from "@/components/subject-id-inputs";
+import { isSubjectIdLengthSatisfied } from "@/lib/subject-id-country";
 
 export function EmailAuthPanel() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [subjectCountry, setSubjectCountry] = useState<SubjectIdCountry>(SubjectIdCountry.KG);
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -45,6 +49,7 @@ export function EmailAuthPanel() {
           password,
           displayName: displayName.trim(),
           pin: pin.trim(),
+          subjectIdCountry: subjectCountry,
         }),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
@@ -56,7 +61,7 @@ export function EmailAuthPanel() {
     } finally {
       setBusy(false);
     }
-  }, [displayName, email, password, pin]);
+  }, [displayName, email, password, pin, subjectCountry]);
 
   return (
     <div className="space-y-4">
@@ -122,13 +127,20 @@ export function EmailAuthPanel() {
             />
           </label>
           <label className="block text-left text-xs font-medium text-slate-600">
-            ПИН / ИНН (10–20 цифр)
-            <input
-              type="password"
-              autoComplete="off"
+            Страна документа с номером
+            <SubjectIdCountrySelect
+              value={subjectCountry}
+              onChange={setSubjectCountry}
+              className="mt-1.5 border-slate-200 text-slate-900 focus-visible:ring-[#229ED9]"
+            />
+          </label>
+          <label className="block text-left text-xs font-medium text-slate-600">
+            ИИН / ПИН / ПИНФЛ / СНИЛС (только цифры)
+            <SubjectIdNumberInput
+              country={subjectCountry}
               value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\s/g, ""))}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-[#229ED9]"
+              onChange={setPin}
+              className="mt-1.5 border-slate-200 text-sm text-slate-900 focus-visible:ring-[#229ED9]"
             />
           </label>
         </>
@@ -136,7 +148,13 @@ export function EmailAuthPanel() {
 
       <button
         type="button"
-        disabled={busy || !email.trim() || !password}
+        disabled={
+          busy ||
+          !email.trim() ||
+          !password ||
+          (mode === "register" &&
+            !isSubjectIdLengthSatisfied(subjectCountry, pin.replace(/\s/g, "").replace(/-/g, "")))
+        }
         onClick={() => void (mode === "login" ? submitLogin() : submitRegister())}
         className="w-full rounded-2xl bg-[#004253] px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#003845] disabled:opacity-50"
       >

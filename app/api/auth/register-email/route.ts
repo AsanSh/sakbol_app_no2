@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureFamilySubscription } from "@/lib/premium";
 import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
+import { parseSubjectIdCountryParam } from "@/lib/subject-id-country";
 import { hashPassword } from "@/lib/password";
 import {
   createSessionToken,
@@ -19,7 +20,7 @@ function normalizeEmail(raw: string): string {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
-  let body: { email?: string; password?: string; displayName?: string; pin?: string };
+  let body: { email?: string; password?: string; displayName?: string; pin?: string; subjectIdCountry?: string };
   try {
     body = (await req.json()) as typeof body;
   } catch {
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
   const password = body.password ?? "";
   const displayName = body.displayName?.trim() ?? "";
   const pinRaw = body.pin?.trim() ?? "";
+  const subjectCountry = parseSubjectIdCountryParam(body.subjectIdCountry);
 
   if (!email || !EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Укажите корректный email." }, { status: 400 });
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   let pinAnchor: string;
   try {
-    pinAnchor = pinAnchorFromUserInput(pinRaw);
+    pinAnchor = pinAnchorFromUserInput(pinRaw, subjectCountry);
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Некорректный ПИН." },
@@ -80,6 +82,7 @@ export async function POST(req: NextRequest) {
         familyRole: FamilyRole.ADMIN,
         isManaged: false,
         pinAnchor,
+        subjectIdCountry: subjectCountry,
       },
     });
 

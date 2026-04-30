@@ -3,6 +3,7 @@ import {
   FamilyRole,
   ManagedRelationRole,
   PrismaClient,
+  SubjectIdCountry,
 } from "@prisma/client";
 import {
   getPinAnchorPepper,
@@ -56,6 +57,7 @@ async function main() {
       avatarUrl: null,
       biologicalSex: BiologicalSex.FEMALE,
       pinAnchor: adminPin,
+      subjectIdCountry: SubjectIdCountry.KG,
     },
   });
 
@@ -70,6 +72,7 @@ async function main() {
       dateOfBirth: new Date("2020-05-15"),
       biologicalSex: BiologicalSex.MALE,
       pinAnchor: childPin,
+      subjectIdCountry: SubjectIdCountry.KG,
     },
   });
 

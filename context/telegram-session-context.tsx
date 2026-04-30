@@ -7,6 +7,7 @@
  *
  * Состояния: idle → loading → (authenticated | needs_new_user_pin | error | unauthenticated).
  */
+import { SubjectIdCountry } from "@prisma/client";
 import {
   createContext,
   useCallback,
@@ -29,6 +30,8 @@ export type TelegramViewer = {
   familyRole: string;
   familyId: string;
   needsPinCompletion?: boolean;
+  /** Страна идентификатора после сохранения */
+  subjectIdCountry?: string | null;
 };
 
 /** `error` — Mini App-специфичный сбой (нет initData, плохая подпись, упал сервер). */
@@ -48,7 +51,7 @@ type TelegramSessionContextValue = {
   isAuthenticated: boolean;
   refresh: () => void;
   syncViewerFromServer: () => Promise<void>;
-  submitNewUserPin: (pin: string) => Promise<SubmitPinResult>;
+  submitNewUserPin: (pin: string, subjectIdCountry?: SubjectIdCountry) => Promise<SubmitPinResult>;
   signOut: () => Promise<void>;
 };
 
@@ -140,7 +143,10 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const submitNewUserPin = useCallback(async (pin: string): Promise<SubmitPinResult> => {
+  const submitNewUserPin = useCallback(async (
+    pin: string,
+    subjectIdCountry: SubjectIdCountry = SubjectIdCountry.KG,
+  ): Promise<SubmitPinResult> => {
     const initData = pendingInitDataRef.current;
     if (!initData) {
       return { ok: false, error: "Нет данных Telegram. Закройте и откройте мини-апп снова." };
@@ -151,7 +157,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ initData, pin }),
+        body: JSON.stringify({ initData, pin, subjectIdCountry }),
       });
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : "Сеть недоступна." };

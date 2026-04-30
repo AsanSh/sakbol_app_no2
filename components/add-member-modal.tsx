@@ -1,9 +1,11 @@
 "use client";
 
-import { BiologicalSex, ManagedRelationRole } from "@prisma/client";
+import { BiologicalSex, ManagedRelationRole, SubjectIdCountry } from "@prisma/client";
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { createManagedProfile } from "@/app/actions/family";
+import { SubjectIdCountrySelect, SubjectIdNumberInput } from "@/components/subject-id-inputs";
+import { isSubjectIdLengthSatisfied } from "@/lib/subject-id-country";
 import { cn } from "@/lib/utils";
 import type { ProfileSummary } from "@/types/family";
 import { telegramBotUsernameFromEnv } from "@/lib/telegram-public-urls";
@@ -48,6 +50,7 @@ export function AddMemberModal({
     ManagedRelationRole.CHILD,
   );
   const [biologicalSex, setBiologicalSex] = useState<BiologicalSex>(BiologicalSex.UNKNOWN);
+  const [subjectCountry, setSubjectCountry] = useState<SubjectIdCountry>(SubjectIdCountry.KG);
   const [pin, setPin] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -101,10 +104,12 @@ export function AddMemberModal({
         managedRole,
         biologicalSex,
         pin,
+        subjectIdCountry: subjectCountry,
       });
       if (res.ok) {
         setName("");
         setPin("");
+        setSubjectCountry(SubjectIdCountry.KG);
         setManagedRole(ManagedRelationRole.CHILD);
         setBiologicalSex(BiologicalSex.UNKNOWN);
         onCreated();
@@ -280,20 +285,28 @@ export function AddMemberModal({
               </div>
               <div>
                 <label className="block text-xs font-medium text-emerald-900/80">
-                  ПИН / ИНН (КР) — милдеттүү, 10–20 сан
+                  Документ жана өлкө
                 </label>
-                <input
-                  inputMode="numeric"
-                  autoComplete="off"
-                  className="mt-1 w-full rounded-xl border border-emerald-900/20 px-3 py-2 text-sm tracking-wider text-emerald-950 outline-none ring-emerald-600 focus-visible:ring-2"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 20))}
-                  required
+                <SubjectIdCountrySelect
+                  value={subjectCountry}
+                  onChange={setSubjectCountry}
                   disabled={pending}
-                  placeholder="Сан гана, пробелсиз"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-emerald-900/80">
+                  Номер (ИИН / ПИН / ПИНФЛ / СНИЛС ж.б.)
+                </label>
+                <SubjectIdNumberInput
+                  country={subjectCountry}
+                  value={pin}
+                  onChange={setPin}
+                  disabled={pending}
+                  className="mt-1 text-sm tracking-wider"
                 />
                 <p className="mt-1 text-[10px] text-emerald-800/65">
-                  Ачык ПИН сакталбайт — серверде гана корголгон идентификатор.
+                  Номер ачык сакталбайт — серверде гана корголгон идентификатор.
                 </p>
               </div>
 
@@ -314,7 +327,11 @@ export function AddMemberModal({
                 </button>
                 <button
                   type="submit"
-                  disabled={pending || !name.trim() || pin.length < 10}
+                  disabled={
+                    pending ||
+                    !name.trim() ||
+                    !isSubjectIdLengthSatisfied(subjectCountry, pin.replace(/\s/g, "").replace(/-/g, ""))
+                  }
                   className="rounded-xl bg-sakbol-cta px-4 py-2 text-sm font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05] disabled:opacity-50"
                 >
                   {pending ? "Сакталууда…" : "Кошуу"}
