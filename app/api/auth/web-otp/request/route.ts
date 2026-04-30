@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
   }
 
   let profile: Profile | null = null;
+  let tgLookupFailed = false;
 
   // 1) Сначала пробуем по сохранённому номеру (быстрый и стабильный путь).
   if (phoneNorm) {
@@ -83,11 +84,23 @@ export async function POST(req: NextRequest) {
       const got = await telegramGetChatId(parsed.ref);
       if (got.ok) {
         profile = await prisma.profile.findUnique({ where: { telegramUserId: got.id } });
+      } else {
+        tgLookupFailed = true;
+        console.warn("[web-otp/request] telegram lookup failed", got.description);
       }
     }
   }
 
   if (!profile?.telegramUserId) {
+    if (tgLookupFailed) {
+      return NextResponse.json(
+        {
+          error:
+            "Временная ошибка связи с Telegram. Повторите через 20–30 секунд или введите телефон из Профиля.",
+        },
+        { status: 502 },
+      );
+    }
     return NextResponse.json({ error: NOT_LINKED_HINT }, { status: 404 });
   }
 

@@ -9,8 +9,17 @@ async function tgCall<T>(path: string, init?: RequestInit): Promise<TgOk<T> | Tg
     return { ok: false, description: "TELEGRAM_BOT_TOKEN missing" };
   }
   const url = `https://api.telegram.org/bot${botToken}/${path}`;
-  const res = await fetch(url, { ...init, cache: "no-store" });
-  return (await res.json()) as TgOk<T> | TgErr;
+  try {
+    const res = await fetch(url, {
+      ...init,
+      cache: "no-store",
+      signal: init?.signal ?? AbortSignal.timeout(10_000),
+    });
+    return (await res.json()) as TgOk<T> | TgErr;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "telegram request failed";
+    return { ok: false, description: `telegram network error: ${msg}` };
+  }
 }
 
 /** @param chatIdOrUsername — числовой id или @username (пользователь должен был нажать Start у бота). */
