@@ -308,6 +308,86 @@ function openaiLabOcrModel(): string {
   return process.env.OPENAI_LAB_OCR_MODEL?.trim() || "gpt-4o-mini";
 }
 
+/** Модель для PDF через `/v1/responses` + `input_file` (можно задать отдельно). */
+function openaiLabOcrPdfModel(): string {
+  return process.env.OPENAI_LAB_OCR_PDF_MODEL?.trim() || openaiLabOcrModel();
+}
+
+function extractOpenAIResponsesText(data: unknown): string {
+  const o = data as {
+    output?: Array<{
+      type?: string;
+      content?: Array<{ type?: string; text?: string }>;
+    }>;
+    status?: string;
+    error?: { message?: string } | null;
+  };
+  if (o.error) {
+    const m = o.error && typeof o.error === "object" && "message" in o.error ? String(o.error.message) : "";
+    throw new Error(m || "OpenAI Responses error");
+  }
+  if (o.status && o.status !== "completed") {
+    throw new Error(`OpenAI Responses status: ${o.status}`);
+  }
+  const parts: string[] = [];
+  for (const item of o.output ?? []) {
+    if (item.type !== "message") continue;
+    for (const c of item.content ?? []) {
+      if (c.type === "output_text" && c.text) parts.push(c.text);
+    }
+  }
+  const text = parts.join("").trim();
+  if (!text) throw new Error("Empty OpenAI Responses output");
+  return text;
+}
+
+/** PDF: OpenAI Responses API с `input_file` (base64 data URL). */
+async function parseWithOpenAIPdf(buffer: Buffer): Promise<LabOcrDraft> {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("No API key");
+
+  const b64 = buffer.toString("base64");
+  const fileData = `data:application/pdf;base64,${b64}`;
+
+  const res = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: openaiLabOcrPdfModel(),
+      temperature: 0.1,
+      instructions: LLM_BIOMARKER_SYSTEM,
+      input: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: "Чыгарып бер: JSON объект { analysisDate, labName, biomarkers } гана, башка текст жок.",
+            },
+            {
+              type: "input_file",
+              filename: "analysis.pdf",
+              file_data: fileData,
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`OpenAI ${res.status}: ${t.slice(0, 400)}`);
+  }
+
+  const json = (await res.json()) as unknown;
+  const text = extractOpenAIResponsesText(json);
+  return labDraftFromLlmJsonText(text);
+}
+
 async function parseWithOpenAIVision(
   buffer: Buffer,
   mimeType: string,
@@ -357,10 +437,10 @@ async function parseWithOpenAIVision(
 
 /**
  * OCR/LLM извлечения показателей:
- * - PDF: только Gemini (inline), если задан GEMINI_API_KEY.
- * - Фото: по умолчанию сначала OpenAI Vision (`OPENAI_LAB_OCR_MODEL`, обычно gpt-4o-mini), при ошибке — Gemini.
- * - `LAB_OCR_PREFER_GEMINI_FIRST=1` — вернуть порядок «сначала Gemini, потом OpenAI».
- * - `LAB_OCR_PREFER_OPENAI=1` — явно предпочесть OpenAI (редко нужно; так и так по умолчанию при наличии ключа).
+ * - PDF: по умолчанию OpenAI (`/v1/responses` + `input_file`, модель `OPENAI_LAB_OCR_PDF_MODEL` или `OPENAI_LAB_OCR_MODEL`), при ошибке — Gemini.
+ * - Фото: по умолчанию OpenAI Vision (`OPENAI_LAB_OCR_MODEL`), при ошибке — Gemini.
+ * - `LAB_OCR_PREFER_GEMINI_FIRST=1` — сначала Gemini, потом OpenAI.
+ * - `LAB_OCR_PREFER_OPENAI=1` — явно предпочесть OpenAI (по умолчанию и так, если не задан prefer Gemini first).
  * Мок только при ALLOW_MOCK_LAB_PARSER=1.
  */
 export async function processMedicalDocument(
@@ -375,9 +455,10 @@ export async function processMedicalDocument(
   const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
   const hasOpenAI = !!process.env.OPENAI_API_KEY?.trim();
   const isImage = mimeType.startsWith("image/");
-  const canGemini =
-    hasGemini && (isImage || mimeType === "application/pdf");
+  const isPdf = mimeType === "application/pdf";
+  const canGemini = hasGemini && (isImage || isPdf);
   const canOpenAIVision = isImage && hasOpenAI;
+  const canOpenAIPdf = isPdf && hasOpenAI;
 
   const preferGeminiFirst =
     process.env.LAB_OCR_PREFER_GEMINI_FIRST?.trim().toLowerCase() === "1" ||
@@ -389,8 +470,9 @@ export async function processMedicalDocument(
     process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "true" ||
     process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "yes";
 
-  /** По умолчанию для фото: OpenAI → Gemini. Старый порядок: LAB_OCR_PREFER_GEMINI_FIRST=1 */
-  const preferOpenAI = preferOpenAIExplicit || (!preferGeminiFirst && canOpenAIVision);
+  /** По умолчанию: OpenAI → Gemini для фото и PDF (если есть соответствующий ключ). Иначе: LAB_OCR_PREFER_GEMINI_FIRST=1 */
+  const preferOpenAI =
+    preferOpenAIExplicit || (!preferGeminiFirst && (canOpenAIVision || canOpenAIPdf));
 
   const fromDraft = (
     draft: LabOcrDraft,
@@ -412,6 +494,7 @@ export async function processMedicalDocument(
   }
 
   async function tryOpenAI(): Promise<LabOcrDraft> {
+    if (isPdf) return parseWithOpenAIPdf(buffer);
     return parseWithOpenAIVision(buffer, mimeType);
   }
 
@@ -466,14 +549,54 @@ export async function processMedicalDocument(
     }
   }
 
-  /** PDF — только Gemini. */
-  if (mimeType === "application/pdf" && canGemini) {
-    try {
-      return fromDraft(await tryGemini(), "gemini");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("[processMedicalDocument] Gemini:", msg);
-      throw new Error(humanizeGeminiFailureForUser(msg));
+  /** PDF — OpenAI Responses по умолчанию, иначе Gemini (порядок как у фото). */
+  if (isPdf && (canOpenAIPdf || canGemini)) {
+    if (preferOpenAI && canOpenAIPdf) {
+      try {
+        return fromDraft(await tryOpenAI(), "openai");
+      } catch (openErr) {
+        const omsg = openErr instanceof Error ? openErr.message : String(openErr);
+        console.error("[processMedicalDocument] OpenAI PDF (preferred):", omsg);
+        if (canGemini) {
+          try {
+            return fromDraft(await tryGemini(), "gemini");
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error("[processMedicalDocument] Gemini fallback:", msg);
+            throw new Error(humanizeGeminiFailureForUser(msg));
+          }
+        }
+        throw new Error(`OpenAI PDF: ${omsg}`);
+      }
+    }
+
+    if (canGemini) {
+      try {
+        return fromDraft(await tryGemini(), "gemini");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[processMedicalDocument] Gemini:", msg);
+        if (canOpenAIPdf) {
+          try {
+            return fromDraft(await tryOpenAI(), "openai");
+          } catch (openErr) {
+            const omsg = openErr instanceof Error ? openErr.message : String(openErr);
+            console.error("[processMedicalDocument] OpenAI PDF fallback:", omsg);
+            throw new Error(humanizeGeminiFailureForUser(msg));
+          }
+        }
+        throw new Error(humanizeGeminiFailureForUser(msg));
+      }
+    }
+
+    if (canOpenAIPdf) {
+      try {
+        return fromDraft(await tryOpenAI(), "openai");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[processMedicalDocument] OpenAI PDF:", msg);
+        throw new Error(`OpenAI PDF: ${msg}`);
+      }
     }
   }
 
@@ -490,7 +613,7 @@ export async function processMedicalDocument(
 
   if (!hasGemini && !hasOpenAI) {
     throw new Error(
-      "Не задан GEMINI_API_KEY (или OPENAI_API_KEY для фото). Добавьте ключ в .env на сервере и перезапустите.",
+      "Не задан OPENAI_API_KEY или GEMINI_API_KEY. Добавьте ключ в .env на сервере и перезапустите.",
     );
   }
 
@@ -499,6 +622,6 @@ export async function processMedicalDocument(
   }
 
   throw new Error(
-    "Для PDF нужен GEMINI_API_KEY. Для этого типа файла распознавание недоступно.",
+    "Для распознавания нужен OPENAI_API_KEY (рекомендуется) или GEMINI_API_KEY. Проверьте .env на сервере.",
   );
 }
