@@ -25,6 +25,8 @@ import { WebLoginPhoneCard } from "@/components/profile/web-login-phone-card";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { CopyIdButton } from "@/components/copy-id-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ProfilePractitionerForm } from "@/components/profile/profile-practitioner-form";
+import { PharmacyRegistrationCard } from "@/features/pharmacy/pharmacy-registration-card";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
@@ -39,7 +41,6 @@ import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import {
   updateMemberProfileBasics,
   updateOwnProfileBasics,
-  updateOwnProfilePractitionerFlags,
   updateProfileBiologicalSex,
   updateProfileVitals,
 } from "@/app/actions/profile";
@@ -110,18 +111,6 @@ function FamilyMemberEditableCard({
     typeof profile.weightKg === "number" ? String(profile.weightKg) : "",
   );
   const [blood, setBlood] = useState(profile.bloodType?.trim() ?? "");
-  const [isPractitionerDoctor, setIsPractitionerDoctor] = useState(
-    Boolean(profile.medCardIsDoctor),
-  );
-  const [isPractitionerCaregiver, setIsPractitionerCaregiver] = useState(
-    Boolean(profile.medCardIsCaregiver),
-  );
-  const [practitionerDoctorNote, setPractitionerDoctorNote] = useState(
-    profile.medCardDoctorNote?.trim() ?? "",
-  );
-  const [practitionerCaregiverNote, setPractitionerCaregiverNote] = useState(
-    profile.medCardCaregiverNote?.trim() ?? "",
-  );
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -143,10 +132,6 @@ function FamilyMemberEditableCard({
     setHeightStr(typeof profile.heightCm === "number" ? String(profile.heightCm) : "");
     setWeightStr(typeof profile.weightKg === "number" ? String(profile.weightKg) : "");
     setBlood(profile.bloodType?.trim() ?? "");
-    setIsPractitionerDoctor(Boolean(profile.medCardIsDoctor));
-    setIsPractitionerCaregiver(Boolean(profile.medCardIsCaregiver));
-    setPractitionerDoctorNote(profile.medCardDoctorNote?.trim() ?? "");
-    setPractitionerCaregiverNote(profile.medCardCaregiverNote?.trim() ?? "");
     setErr(null);
   }, [
     profile.id,
@@ -155,10 +140,6 @@ function FamilyMemberEditableCard({
     profile.heightCm,
     profile.weightKg,
     profile.bloodType,
-    profile.medCardIsDoctor,
-    profile.medCardIsCaregiver,
-    profile.medCardDoctorNote,
-    profile.medCardCaregiverNote,
   ]);
 
   useEffect(() => {
@@ -204,16 +185,6 @@ function FamilyMemberEditableCard({
       }
 
       if (profile.id === viewerId) {
-        const prRes = await updateOwnProfilePractitionerFlags({
-          isDoctor: isPractitionerDoctor,
-          isCaregiver: isPractitionerCaregiver,
-          doctorNote: practitionerDoctorNote.trim() || null,
-          caregiverNote: practitionerCaregiverNote.trim() || null,
-        });
-        if (!prRes.ok) {
-          setErr(prRes.error);
-          return;
-        }
         await syncViewerFromServer();
       }
       onReload();
@@ -356,72 +327,6 @@ function FamilyMemberEditableCard({
                 ))}
               </select>
             </label>
-          ) : null}
-          {profile.id === viewerId ? (
-            <div className="rounded-2xl border-2 border-[#7eb8c8] bg-gradient-to-br from-sky-50 via-[#eef8fb] to-cyan-50 px-4 py-4 shadow-[0_6px_22px_-8px_rgba(0,66,83,0.35)] ring-1 ring-[#cfe8ef]/80">
-              <div className="mb-3 flex items-start gap-3 border-b border-[#cfe8ef]/80 pb-3">
-                <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#004253] text-white"
-                  aria-hidden
-                >
-                  <Stethoscope className="h-5 w-5" strokeWidth={2.25} />
-                </span>
-                <div>
-                  <p className="text-sm font-bold leading-tight text-[#004253]">
-                    {t(lang, "profile.practitionerTitle")}
-                  </p>
-                  <p className="mt-1.5 text-xs leading-relaxed text-[#3d5258]">
-                    {t(lang, "profile.practitionerLead")}
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-white/80 p-3 text-sm font-medium text-[#191c1d] ring-1 ring-[#d4eaef]">
-                  <input
-                    type="checkbox"
-                    checked={isPractitionerDoctor}
-                    onChange={(e) => setIsPractitionerDoctor(e.target.checked)}
-                    className="mt-0.5 h-5 w-5 shrink-0 accent-[#004253]"
-                  />
-                  <span className="leading-snug">{t(lang, "profile.practitionerDoctor")}</span>
-                </label>
-                {isPractitionerDoctor ? (
-                  <label className="flex flex-col gap-1.5 text-xs text-[#40484c]">
-                    <span className="font-medium text-[#004253]">
-                      {t(lang, "profile.practitionerDoctorHint")}
-                    </span>
-                    <textarea
-                      value={practitionerDoctorNote}
-                      onChange={(e) => setPractitionerDoctorNote(e.target.value.slice(0, 2000))}
-                      rows={4}
-                      className="min-h-[5rem] resize-y rounded-xl border-2 border-[#e0eef2] bg-white px-3 py-2.5 text-sm text-[#191c1d] shadow-inner"
-                    />
-                  </label>
-                ) : null}
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-white/80 p-3 text-sm font-medium text-[#191c1d] ring-1 ring-[#d4eaef]">
-                  <input
-                    type="checkbox"
-                    checked={isPractitionerCaregiver}
-                    onChange={(e) => setIsPractitionerCaregiver(e.target.checked)}
-                    className="mt-0.5 h-5 w-5 shrink-0 accent-[#004253]"
-                  />
-                  <span className="leading-snug">{t(lang, "profile.practitionerCaregiver")}</span>
-                </label>
-                {isPractitionerCaregiver ? (
-                  <label className="flex flex-col gap-1.5 text-xs text-[#40484c]">
-                    <span className="font-medium text-[#004253]">
-                      {t(lang, "profile.practitionerCaregiverHint")}
-                    </span>
-                    <textarea
-                      value={practitionerCaregiverNote}
-                      onChange={(e) => setPractitionerCaregiverNote(e.target.value.slice(0, 2000))}
-                      rows={4}
-                      className="min-h-[5rem] resize-y rounded-xl border-2 border-[#e0eef2] bg-white px-3 py-2.5 text-sm text-[#191c1d] shadow-inner"
-                    />
-                  </label>
-                ) : null}
-              </div>
-            </div>
           ) : null}
           {profile.id !== viewerId && (profile.medCardIsDoctor || profile.medCardIsCaregiver) ? (
             <div className="rounded-2xl border-2 border-[#7eb8c8] bg-gradient-to-br from-sky-50 via-[#eef8fb] to-cyan-50 px-4 py-4 shadow-[0_6px_22px_-8px_rgba(0,66,83,0.35)]">
@@ -1617,9 +1522,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
             <section className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm">
               <h2 className="text-sm font-bold text-[#191c1d]">{t(lang, "profile.language")}</h2>
               <p className="mt-1 text-xs text-[#70787d]">{t(lang, "profile.languageHint")}</p>
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <span className="text-sm text-[#40484c]">RU / KG</span>
-                <LanguageSwitcher />
+              <div className="mt-4">
+                <LanguageSwitcher variant="segmented" />
               </div>
             </section>
 
@@ -1655,6 +1559,19 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                 </li>
               ))}
             </ul>
+
+            <section id="profile-b2b-section" className="scroll-mt-20 space-y-4">
+              <h2 className="text-sm font-bold text-[#191c1d]">{t(lang, "profile.b2bSectionTitle")}</h2>
+              {viewerOwnProfile ? (
+                <ProfilePractitionerForm
+                  lang={lang}
+                  profile={viewerOwnProfile}
+                  onSaved={reload}
+                  syncViewerFromServer={syncViewerFromServer}
+                />
+              ) : null}
+              <PharmacyRegistrationCard />
+            </section>
 
             <button
               type="button"

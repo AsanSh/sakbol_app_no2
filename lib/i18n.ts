@@ -11,7 +11,11 @@ const ru: Dict = {
   "profile.title": "Профиль",
   "profile.subtitle": "Язык и настройки.",
   "profile.language": "Язык интерфейса",
-  "profile.languageHint": "Статусы, заголовки и подсказки будут на выбранном языке.",
+  "profile.languageHint": "Интерфейс и подсказки.",
+  "profile.b2bSectionTitle": "Врачи и аптеки",
+  "profile.b2bPharmacyLead": "Для кабинета аптеки в SakBol.",
+  "profile.b2bPractitionerLead": "Отметка для семьи и коллег; не подтверждает лицензию.",
+  "profile.savePractitioner": "Сохранить",
   "analyses.title": "Анализы (активный профиль)",
   "analyses.subtitle":
     "Два способа: «С расшифровкой» (ИИ по анализу) или «Сохранить документ» (просто файл). Цвета карточек — по отклонению от нормы только у расшифрованных анализов.",
@@ -204,10 +208,9 @@ const ru: Dict = {
   "pharmacy.tabTitle": "Поиск лекарств",
   "pharmacy.segmentSearch": "Запрос",
   "pharmacy.segmentMine": "Мои запросы",
-  "pharmacy.searchLead":
-    "Опишите препарат — подключённые аптеки увидят запрос и смогут ответить.",
+  "pharmacy.searchLead": "",
   "pharmacy.medName": "Название лекарства",
-  "pharmacy.medNote": "Доза, форма выпуска, количество…",
+  "pharmacy.medNote": "Комментарий (необязательно)",
   "pharmacy.requestSent": "Запрос отправлен. Ответы появятся здесь и придут в Telegram.",
   "pharmacy.sendRequest": "Отправить запрос",
   "pharmacy.registerPharmacy": "Регистрация аптеки (бесплатно)",
@@ -235,8 +238,7 @@ const ru: Dict = {
   "pharmacy.onMap": "На карте",
   "pharmacy.dualModePatient": "Для себя",
   "pharmacy.dualModeBusiness": "Моя аптека",
-  "pharmacy.dualModeHint":
-    "Один аккаунт: анализы, семья, фармпоиск и обзор — во вкладках; врачам, сиделкам и аптекам доступна вкладка «Пациенты».",
+  "pharmacy.dualModeHint": "Вкладка «Пациенты» — при роли врача или аптеки.",
   "home.discovery.title": "Врачи и клиники",
   "home.discovery.lead":
     "Найдите специалиста или медцентр. Каталог — демо на основе открытых специальностей (данные-заглушки).",
@@ -315,7 +317,7 @@ const ru: Dict = {
   "profile.sexFemale": "Женский",
   "profile.practitionerTitle": "Работа врачом или сиделкой",
   "profile.practitionerLead":
-    "Отметьте, если оказываете такие услуги — это видно семье в медкарточке. Не заменяет лицензию и проверку квалификации.",
+    "Видно семье в карточке. Не лицензия.",
   "profile.practitionerDoctor": "Я работаю как врач / даю мед. консультации",
   "profile.practitionerDoctorHint": "Специальность, стаж, место работы (по желанию)",
   "profile.practitionerCaregiver": "Я работаю сиделкой / по уходу",
@@ -425,7 +427,11 @@ const kg: Dict = {
   "profile.title": "Профиль",
   "profile.subtitle": "Тил жана жөндөөлөр.",
   "profile.language": "Тил",
-  "profile.languageHint": "Системалык билдирүүлөрдүн тили.",
+  "profile.languageHint": "Колдонмонун тили.",
+  "profile.b2bSectionTitle": "Дарыерлер жана дароолор",
+  "profile.b2bPharmacyLead": "SakBol дароо кабинети үчүн.",
+  "profile.b2bPractitionerLead": "Үй-бүлөгө көрүнөт; лицензия эмес.",
+  "profile.savePractitioner": "Сактоо",
   "analyses.title": "Анализдер (активдүү профиль)",
   "analyses.subtitle":
     "Эки жол: «Түшүндүрмө менен» (ИИ) же «Документ сактоо» (файл гана). Түстөр — нормадан чыгуу боюнча гана түшүндүрүлгөн анализдерде.",
@@ -618,10 +624,9 @@ const kg: Dict = {
   "pharmacy.tabTitle": "Дары издөө",
   "pharmacy.segmentSearch": "Суроо",
   "pharmacy.segmentMine": "Менин суроолорум",
-  "pharmacy.searchLead":
-    "Дарманы сүрөттөңүз — туташкан дароо суроону көрүп, жооп бере алышат.",
+  "pharmacy.searchLead": "",
   "pharmacy.medName": "Дарынын аталышы",
-  "pharmacy.medNote": "Доза, форма, саны…",
+  "pharmacy.medNote": "Кошумча",
   "pharmacy.requestSent": "Суроо жөнөтүлдү. Жооптор бул жерде жана Telegramда көрүнөт.",
   "pharmacy.sendRequest": "Суроо жөнөтүү",
   "pharmacy.registerPharmacy": "Дароону каттоо (акысыз)",
@@ -649,8 +654,7 @@ const kg: Dict = {
   "pharmacy.onMap": "Картада",
   "pharmacy.dualModePatient": "Өзүм үчүн",
   "pharmacy.dualModeBusiness": "Дароом",
-  "pharmacy.dualModeHint":
-    "Бир эле аккаунт: анализдер, үй-бүлө, фармпоиск — вкладкаларда; дарыер, карегер жана дароого «Пациенттер» ачылат.",
+  "pharmacy.dualModeHint": "«Пациенттер» — дарыер же дароо үчүн.",
   "home.discovery.title": "Дарыерлер жана клиникалар",
   "home.discovery.lead":
     "Адис же медборборду табыңыз. Каталог — ачык адистикаларга негизделген демо (мок-маалымат).",
@@ -728,8 +732,7 @@ const kg: Dict = {
   "profile.sexMale": "Эркек",
   "profile.sexFemale": "Аял",
   "profile.practitionerTitle": "Дарыер же карегер катары",
-  "profile.practitionerLead":
-    "Мындай кызмат көрсөтсөңүз, белгилеңиз — үй-бүлө медкарточкасында көрүнөт. Лицензия же текшерүү эмес.",
+  "profile.practitionerLead": "Карточкада көрүнөт. Лицензия эмес.",
   "profile.practitionerDoctor": "Дарыермин / мед. консультация берем",
   "profile.practitionerDoctorHint": "Адистик, тажрыйба, жумуш жери (кааласаңыз)",
   "profile.practitionerCaregiver": "Карегермин / камкордук",
