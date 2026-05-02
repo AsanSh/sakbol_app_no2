@@ -304,6 +304,10 @@ async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<LabOcr
   );
 }
 
+function openaiLabOcrModel(): string {
+  return process.env.OPENAI_LAB_OCR_MODEL?.trim() || "gpt-4o-mini";
+}
+
 async function parseWithOpenAIVision(
   buffer: Buffer,
   mimeType: string,
@@ -321,7 +325,7 @@ async function parseWithOpenAIVision(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: openaiLabOcrModel(),
       temperature: 0.1,
       messages: [
         { role: "system", content: LLM_BIOMARKER_SYSTEM },
@@ -352,9 +356,12 @@ async function parseWithOpenAIVision(
 }
 
 /**
- * OCR/LLM: при `GEMINI_API_KEY` — Gemini (сүрөт + PDF); иначе сүрөттөр үчүн OpenAI.
- * Случайный «демо»-набор больше не подставляется: при ошибке API — исключение.
- * Мок только если явно ALLOW_MOCK_LAB_PARSER=1.
+ * OCR/LLM извлечения показателей:
+ * - PDF: только Gemini ( vision PDF inline ), если задан GEMINI_API_KEY.
+ * - Фото: GPT-4o mini через OpenAI Vision (`OPENAI_LAB_OCR_MODEL`, по умолчанию gpt-4o-mini) и/или Gemini.
+ * - `LAB_OCR_PREFER_OPENAI=1` — для фото сначала OpenAI, при ошибке — Gemini (если ключ есть).
+ * - Иначе порядок: сначала Gemini (если есть ключ), при ошибке на фото — OpenAI.
+ * Мок только при ALLOW_MOCK_LAB_PARSER=1.
  */
 export async function processMedicalDocument(
   buffer: Buffer,
@@ -366,40 +373,99 @@ export async function processMedicalDocument(
   parser: "gemini" | "openai" | "mock";
 }> {
   const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
+  const hasOpenAI = !!process.env.OPENAI_API_KEY?.trim();
+  const isImage = mimeType.startsWith("image/");
   const canGemini =
-    hasGemini &&
-    (mimeType.startsWith("image/") || mimeType === "application/pdf");
+    hasGemini && (isImage || mimeType === "application/pdf");
+  const canOpenAIVision = isImage && hasOpenAI;
 
-  if (canGemini) {
+  const preferOpenAI =
+    process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "1" ||
+    process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "true" ||
+    process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "yes";
+
+  const fromDraft = (
+    draft: LabOcrDraft,
+    parser: "gemini" | "openai",
+  ): {
+    biomarkers: ParsedBiomarker[];
+    analysisDate?: string;
+    labName?: string;
+    parser: "gemini" | "openai";
+  } => ({
+    biomarkers: draft.biomarkers,
+    analysisDate: draft.analysisDate,
+    labName: draft.labName,
+    parser,
+  });
+
+  async function tryGemini(): Promise<LabOcrDraft> {
+    return parseWithGemini(buffer, mimeType);
+  }
+
+  async function tryOpenAI(): Promise<LabOcrDraft> {
+    return parseWithOpenAIVision(buffer, mimeType);
+  }
+
+  /** Сценарий: только изображения — выбор порядка OpenAI / Gemini. */
+  if (isImage && (canOpenAIVision || canGemini)) {
+    if (preferOpenAI && canOpenAIVision) {
+      try {
+        return fromDraft(await tryOpenAI(), "openai");
+      } catch (openErr) {
+        const omsg = openErr instanceof Error ? openErr.message : String(openErr);
+        console.error("[processMedicalDocument] OpenAI (preferred):", omsg);
+        if (canGemini) {
+          try {
+            return fromDraft(await tryGemini(), "gemini");
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error("[processMedicalDocument] Gemini fallback:", msg);
+            throw new Error(humanizeGeminiFailureForUser(msg));
+          }
+        }
+        throw new Error(`OpenAI Vision: ${omsg}`);
+      }
+    }
+
+    if (canGemini) {
+      try {
+        return fromDraft(await tryGemini(), "gemini");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[processMedicalDocument] Gemini:", msg);
+        if (canOpenAIVision) {
+          try {
+            return fromDraft(await tryOpenAI(), "openai");
+          } catch (openErr) {
+            const omsg = openErr instanceof Error ? openErr.message : String(openErr);
+            console.error("[processMedicalDocument] OpenAI fallback:", omsg);
+            throw new Error(humanizeGeminiFailureForUser(msg));
+          }
+        }
+        throw new Error(humanizeGeminiFailureForUser(msg));
+      }
+    }
+
+    if (canOpenAIVision) {
+      try {
+        return fromDraft(await tryOpenAI(), "openai");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[processMedicalDocument] OpenAI:", msg);
+        throw new Error(`OpenAI Vision: ${msg}`);
+      }
+    }
+  }
+
+  /** PDF — только Gemini. */
+  if (mimeType === "application/pdf" && canGemini) {
     try {
-      const draft = await parseWithGemini(buffer, mimeType);
-      return {
-        biomarkers: draft.biomarkers,
-        analysisDate: draft.analysisDate,
-        labName: draft.labName,
-        parser: "gemini",
-      };
+      return fromDraft(await tryGemini(), "gemini");
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[processMedicalDocument] Gemini:", msg);
       throw new Error(humanizeGeminiFailureForUser(msg));
-    }
-  }
-
-  const canOpenAIVision = mimeType.startsWith("image/") && !!process.env.OPENAI_API_KEY?.trim();
-  if (canOpenAIVision) {
-    try {
-      const draft = await parseWithOpenAIVision(buffer, mimeType);
-      return {
-        biomarkers: draft.biomarkers,
-        analysisDate: draft.analysisDate,
-        labName: draft.labName,
-        parser: "openai",
-      };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      console.error("[processMedicalDocument] OpenAI:", msg);
-      throw new Error(`OpenAI Vision: ${msg}`);
     }
   }
 
@@ -414,7 +480,7 @@ export async function processMedicalDocument(
     };
   }
 
-  if (!hasGemini && !process.env.OPENAI_API_KEY?.trim()) {
+  if (!hasGemini && !hasOpenAI) {
     throw new Error(
       "Не задан GEMINI_API_KEY (или OPENAI_API_KEY для фото). Добавьте ключ в .env на сервере и перезапустите.",
     );
