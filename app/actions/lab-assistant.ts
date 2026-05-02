@@ -8,6 +8,7 @@ import { getSession, type SessionPayload } from "@/lib/session";
 import { generateClaudeLabChatAnswer } from "@/lib/anthropic-lab-chat";
 import { generateGeminiLabChatAnswer } from "@/lib/gemini-lab-chat";
 import { generateOpenAILabChatAnswer } from "@/lib/openai-lab-chat";
+import { generateBedrockLabChatAnswer } from "@/lib/bedrock-lab-chat";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const DISCLAIMER =
@@ -77,8 +78,8 @@ function fallbackWithoutGemini(question: string, block: string | null, reason: s
 
 /**
  * Ответ вкладки «ИИ» («Что это значит»): приоритет по env.
- * - По умолчанию: OPENAI_API_KEY (ChatGPT API) → GEMINI_API_KEY → ANTHROPIC_API_KEY (Claude), первый успешный ответ.
- * - LAB_ASSISTANT_PROVIDER=openai | gemini | anthropic — только один провайдер (без фолбэка).
+ * - По умолчанию: OPENAI → Bedrock (AWS_BEARER_TOKEN_BEDROCK) → Gemini → ANTHROPIC (прямой Claude API), первый успешный ответ.
+ * - LAB_ASSISTANT_PROVIDER=openai | bedrock | gemini | anthropic — только один провайдер (без фолбэка).
  */
 export async function askLabAssistantFromBook(
   question: string,
@@ -121,18 +122,23 @@ export async function askLabAssistantFromBook(
   async function tryGemini() {
     return generateGeminiLabChatAnswer(LAB_ASSISTANT_SYSTEM, userPrompt);
   }
+  async function tryBedrock() {
+    return generateBedrockLabChatAnswer(LAB_ASSISTANT_SYSTEM, userPrompt);
+  }
 
   type LlmTry = Awaited<ReturnType<typeof tryOpenAI>>;
   let llm: LlmTry | null = null;
 
   if (provider === "openai") {
     llm = await tryOpenAI();
+  } else if (provider === "bedrock") {
+    llm = await tryBedrock();
   } else if (provider === "gemini") {
     llm = await tryGemini();
   } else if (provider === "anthropic") {
     llm = await tryClaude();
   } else {
-    const chain: Array<() => Promise<LlmTry>> = [tryOpenAI, tryGemini, tryClaude];
+    const chain: Array<() => Promise<LlmTry>> = [tryOpenAI, tryBedrock, tryGemini, tryClaude];
     for (const fn of chain) {
       const r = await fn();
       if (r.ok) {
@@ -157,11 +163,13 @@ export async function askLabAssistantFromBook(
     const hint =
       provider === "openai"
         ? "На сервере не задан OPENAI_API_KEY."
-        : provider === "gemini"
-          ? "На сервере не задан GEMINI_API_KEY."
-          : provider === "anthropic"
-            ? "На сервере не задан ANTHROPIC_API_KEY."
-            : "На сервере не задан ни один из ключей: OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY.";
+        : provider === "bedrock"
+          ? "На сервере не задан AWS_BEARER_TOKEN_BEDROCK."
+          : provider === "gemini"
+            ? "На сервере не задан GEMINI_API_KEY."
+            : provider === "anthropic"
+              ? "На сервере не задан ANTHROPIC_API_KEY."
+              : "На сервере не задан ни один из ключей: OPENAI_API_KEY, AWS_BEARER_TOKEN_BEDROCK, GEMINI_API_KEY, ANTHROPIC_API_KEY.";
     return {
       ok: true,
       hasBook: false,
