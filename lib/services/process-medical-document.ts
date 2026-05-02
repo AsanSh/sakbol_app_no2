@@ -357,10 +357,10 @@ async function parseWithOpenAIVision(
 
 /**
  * OCR/LLM извлечения показателей:
- * - PDF: только Gemini ( vision PDF inline ), если задан GEMINI_API_KEY.
- * - Фото: GPT-4o mini через OpenAI Vision (`OPENAI_LAB_OCR_MODEL`, по умолчанию gpt-4o-mini) и/или Gemini.
- * - `LAB_OCR_PREFER_OPENAI=1` — для фото сначала OpenAI, при ошибке — Gemini (если ключ есть).
- * - Иначе порядок: сначала Gemini (если есть ключ), при ошибке на фото — OpenAI.
+ * - PDF: только Gemini (inline), если задан GEMINI_API_KEY.
+ * - Фото: по умолчанию сначала OpenAI Vision (`OPENAI_LAB_OCR_MODEL`, обычно gpt-4o-mini), при ошибке — Gemini.
+ * - `LAB_OCR_PREFER_GEMINI_FIRST=1` — вернуть порядок «сначала Gemini, потом OpenAI».
+ * - `LAB_OCR_PREFER_OPENAI=1` — явно предпочесть OpenAI (редко нужно; так и так по умолчанию при наличии ключа).
  * Мок только при ALLOW_MOCK_LAB_PARSER=1.
  */
 export async function processMedicalDocument(
@@ -379,10 +379,18 @@ export async function processMedicalDocument(
     hasGemini && (isImage || mimeType === "application/pdf");
   const canOpenAIVision = isImage && hasOpenAI;
 
-  const preferOpenAI =
+  const preferGeminiFirst =
+    process.env.LAB_OCR_PREFER_GEMINI_FIRST?.trim().toLowerCase() === "1" ||
+    process.env.LAB_OCR_PREFER_GEMINI_FIRST?.trim().toLowerCase() === "true" ||
+    process.env.LAB_OCR_PREFER_GEMINI_FIRST?.trim().toLowerCase() === "yes";
+
+  const preferOpenAIExplicit =
     process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "1" ||
     process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "true" ||
     process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "yes";
+
+  /** По умолчанию для фото: OpenAI → Gemini. Старый порядок: LAB_OCR_PREFER_GEMINI_FIRST=1 */
+  const preferOpenAI = preferOpenAIExplicit || (!preferGeminiFirst && canOpenAIVision);
 
   const fromDraft = (
     draft: LabOcrDraft,
