@@ -209,7 +209,7 @@ export function FamilyAnalysesWorkspace({
                 onClick={() => setAddOpen(true)}
                 className="shrink-0 rounded-xl bg-health-surface px-3 py-2 text-caption font-semibold text-health-primary shadow-sm ring-1 ring-health-border/80 transition-all duration-300 hover:shadow-md"
               >
-                {t(lang, "family.addMemberShort")}
+                {t(lang, "profile.addMember")}
               </button>
             ) : null}
           </div>

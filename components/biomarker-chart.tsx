@@ -72,7 +72,7 @@ export function BiomarkerChart({ title, unit, data, normMin, normMax }: Props) {
   const { lang } = useLanguage();
   const chartData: ChartRow[] = data.map((d) => ({
     ...d,
-    label: new Date(d.t).toLocaleDateString("ky-KG", {
+    label: new Date(d.t).toLocaleDateString(lang === "ru" ? "ru-RU" : "ky-KG", {
       day: "numeric",
       month: "short",
     }),

@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { scrubPlainTextForStorage } from "@/lib/client/scrub-pii-text";
+import { useLanguage } from "@/context/language-context";
+import { t } from "@/lib/i18n";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 type Phase =
@@ -46,6 +48,7 @@ function emptyRow(): ParsedBiomarker {
 }
 
 export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Props) {
+  const { lang } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [err, setErr] = useState<string | null>(null);
@@ -98,7 +101,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
     if (!picked) return;
     setErr(null);
     if (!isSupportedAnalysisMime(picked.type)) {
-      setErr("PDF же сүрөт гана (PNG, JPG, WEBP).");
+      setErr(t(lang, "uploadLab.errMime"));
       return;
     }
 
@@ -114,9 +117,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       setPhase("anonymized");
     } catch {
       const fallbackMime = picked.type || "application/octet-stream";
-      setErr(
-        "Превью с маской недоступно. Нажмите «Загрузить» — уйдет оригинал файла (таблица не закрашена).",
-      );
+      setErr(t(lang, "uploadLab.errMaskFallback"));
       setMaskedBlob(picked);
       setMaskedMime(fallbackMime);
       setPhase("anonymized");
@@ -146,7 +147,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       setPhase("review");
       hapticImpact("light");
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "OCR катасы");
+      setErr(e instanceof Error ? e.message : t(lang, "uploadLab.errOcr"));
       setPhase("error");
     }
   };
@@ -173,7 +174,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
     if (!originalFile || !ocrDraft) return;
     const valid = rows.filter((r) => r.biomarker.trim() && Number.isFinite(r.value));
     if (valid.length === 0) {
-      setErr("Укажите хотя бы одну строку: название показателя и значение.");
+      setErr(t(lang, "uploadLab.errNoRows"));
       return;
     }
     setErr(null);
@@ -206,7 +207,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       reset();
       onClose();
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Сактоо катасы");
+      setErr(e instanceof Error ? e.message : t(lang, "uploadLab.errSave"));
       setPhase("error");
     }
   };
@@ -232,7 +233,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       <button
         type="button"
         className="absolute inset-0 cursor-default"
-        aria-label="Жабуу"
+        aria-label={t(lang, "uploadLab.ariaCloseOverlay")}
         onClick={handleClose}
       />
       <div className="relative my-auto max-h-[min(92dvh,860px)] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-emerald-800/25 bg-gradient-to-b from-mint/30 to-white p-5 shadow-2xl">
@@ -242,12 +243,15 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
           </div>
           <div>
             <h2 id="upload-analysis-title" className="text-lg font-semibold text-emerald-950">
-              Smart Upload · анализ жүктөө
+              {t(lang, "uploadLab.title")}
             </h2>
             <p className="mt-0.5 text-sm text-emerald-900/75">
-              Төмөндө — маскалонгон көрүнүш гана. Серверге жана OCR{" "}
-              <strong className="font-semibold text-emerald-950">чыкылдаган файл</strong> жөнөтүлөт. Псевдо-ID:{" "}
-              <span className="font-mono text-emerald-950">{anonymId}</span>. Мисал текст скраббери:{" "}
+              {t(lang, "uploadLab.helpIntro")}{" "}
+              <strong className="font-semibold text-emerald-950">
+                {t(lang, "uploadLab.helpOriginalEmphasis")}
+              </strong>{" "}
+              {t(lang, "uploadLab.helpMid")}{" "}
+              <span className="font-mono text-emerald-950">{anonymId}</span>. {t(lang, "uploadLab.helpScrubLead")}{" "}
               <span className="block break-all text-[11px] text-emerald-800/90">{scrubDemo}</span>
             </p>
           </div>
@@ -285,7 +289,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
             ) : null}
             <FileUp className="relative z-[1] mx-auto h-10 w-10 text-emerald-800/60" />
             <p className="relative z-[1] mt-2 text-sm font-semibold text-emerald-950">
-              Сүйрөп киргизиңиз же басыңыз
+              {t(lang, "uploadLab.dropHint")}
             </p>
             <p className="relative z-[1] mt-1 text-xs text-emerald-600/70">PDF · PNG · JPG · WEBP</p>
           </div>
@@ -294,7 +298,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
         {phase === "anonymized" || phase === "ocr" || phase === "saving" || phase === "error" ? (
           <div className="mt-3 rounded-xl border border-emerald-900/15 bg-emerald-900/5 p-3">
             <p className="mb-2 text-center text-[11px] font-medium uppercase tracking-wide text-emerald-800/70">
-              Маскалонгон көрүнүш (имитация) — OCR үчүн оригинал
+              {t(lang, "uploadLab.maskCaption")}
             </p>
             {showImagePreview ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -305,7 +309,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
               />
             ) : maskedMime === "application/pdf" ? (
               <p className="py-6 text-center text-sm text-emerald-900/80">
-                PDF: превьюдо кара тилкелер. Талдоо үчүн оригинал PDF жөнөтүлөт.
+                {t(lang, "uploadLab.pdfPreviewNote")}
               </p>
             ) : null}
           </div>
@@ -314,11 +318,11 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
         {phase === "review" && ocrDraft ? (
           <div className="mt-4 space-y-3 rounded-xl border border-emerald-900/20 bg-white/90 p-3 text-sm text-emerald-950 shadow-inner">
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800/80">
-              Проверьте данные перед сохранением
+              {t(lang, "uploadLab.reviewHint")}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               <label className="flex flex-col gap-1">
-                <span className="text-caption text-emerald-900/70">Дата анализа</span>
+                <span className="text-caption text-emerald-900/70">{t(lang, "uploadLab.dateLabel")}</span>
                 <input
                   type="date"
                   className="rounded-lg border border-emerald-900/20 bg-white px-2 py-1.5 text-sm"
@@ -327,23 +331,25 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
                 />
               </label>
               <label className="flex flex-col gap-1 sm:col-span-2">
-                <span className="text-caption text-emerald-900/70">Название (лаборатория / клиника)</span>
+                <span className="text-caption text-emerald-900/70">{t(lang, "uploadLab.labLabel")}</span>
                 <input
                   type="text"
                   className="rounded-lg border border-emerald-900/20 bg-white px-2 py-1.5 text-sm"
                   value={labName}
                   onChange={(e) => setLabName(e.target.value)}
-                  placeholder="Например: Invivo"
+                  placeholder={t(lang, "uploadLab.labPlaceholder")}
                 />
               </label>
               <label className="flex flex-col gap-1 sm:col-span-2">
-                <span className="text-caption text-emerald-900/70">Заголовок записи (необязательно)</span>
+                <span className="text-caption text-emerald-900/70">
+                  {t(lang, "uploadLab.recordTitleLabel")}
+                </span>
                 <input
                   type="text"
                   className="rounded-lg border border-emerald-900/20 bg-white px-2 py-1.5 text-sm"
                   value={recordTitle}
                   onChange={(e) => setRecordTitle(e.target.value)}
-                  placeholder="Если пусто — сформируем из даты и названия"
+                  placeholder={t(lang, "uploadLab.recordTitlePlaceholder")}
                 />
               </label>
             </div>
@@ -352,10 +358,10 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
               <table className="w-full min-w-[320px] text-left text-caption">
                 <thead className="bg-emerald-900/10 text-[11px] uppercase text-emerald-900/80">
                   <tr>
-                    <th className="px-2 py-2">Показатель</th>
-                    <th className="px-2 py-2">Значение</th>
-                    <th className="px-2 py-2">Ед.</th>
-                    <th className="px-2 py-2">Реф.</th>
+                    <th className="px-2 py-2">{t(lang, "uploadLab.colBiomarker")}</th>
+                    <th className="px-2 py-2">{t(lang, "uploadLab.colValue")}</th>
+                    <th className="px-2 py-2">{t(lang, "uploadLab.colUnit")}</th>
+                    <th className="px-2 py-2">{t(lang, "uploadLab.colRef")}</th>
                     <th className="w-10 px-1 py-2" />
                   </tr>
                 </thead>
@@ -396,7 +402,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
                         <button
                           type="button"
                           className="rounded p-1 text-emerald-900/50 hover:bg-red-50 hover:text-red-600"
-                          aria-label="Удалить строку"
+                          aria-label={t(lang, "uploadLab.removeRowAria")}
                           onClick={() => removeRow(i)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -413,37 +419,35 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
               onClick={addRow}
             >
               <Plus className="h-4 w-4" />
-              Добавить строку
+              {t(lang, "uploadLab.addRow")}
             </button>
           </div>
         ) : null}
 
         <div className="mt-4 space-y-2 rounded-xl bg-emerald-900/8 px-3 py-3 text-sm">
           {phase === "idle" ? (
-            <p className="text-emerald-900/80">Файл тандаңыз.</p>
+            <p className="text-emerald-900/80">{t(lang, "uploadLab.pickFile")}</p>
           ) : null}
           {phase === "masking" ? (
             <p className="flex items-center gap-2 font-medium text-emerald-950">
               <Loader2 className="h-4 w-4 animate-spin text-emerald-800" />
-              Анонимизация данных…
+              {t(lang, "uploadLab.masking")}
             </p>
           ) : null}
           {phase === "anonymized" ? (
             <p className="flex items-center gap-2 font-medium text-emerald-900">
               <Sparkles className="h-4 w-4 text-amber-600" />
-              Данные анонимизированы — нажмите «Распознать»
+              {t(lang, "uploadLab.readyRecognize")}
             </p>
           ) : null}
           {phase === "ocr" || phase === "saving" ? (
             <p className="flex items-center gap-2 font-medium text-emerald-950">
               <Loader2 className="h-4 w-4 animate-spin text-emerald-800" />
-              {phase === "ocr"
-                ? "OCR / распознавание показателей…"
-                : "Сохранение файла и записи…"}
+              {phase === "ocr" ? t(lang, "uploadLab.ocrBusy") : t(lang, "uploadLab.savingBusy")}
             </p>
           ) : null}
           {phase === "done" ? (
-            <p className="text-emerald-800">Сакталды.</p>
+            <p className="text-emerald-800">{t(lang, "uploadLab.saved")}</p>
           ) : null}
           {phase === "error" && err ? (
             <p className="text-coral" role="alert">
@@ -459,7 +463,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
             onClick={handleClose}
             disabled={busy}
           >
-            Жабуу
+            {t(lang, "uploadLab.close")}
           </button>
           {phase === "review" ? (
             <>
@@ -472,7 +476,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
                 }}
                 disabled={busy}
               >
-                Артка
+                {t(lang, "uploadLab.back")}
               </button>
               <button
                 type="button"
@@ -480,7 +484,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
                 disabled={busy}
                 onClick={() => void commit()}
               >
-                Сохранить
+                {t(lang, "uploadLab.save")}
               </button>
             </>
           ) : (
@@ -490,7 +494,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
               disabled={phase !== "anonymized" || !originalFile || busy}
               onClick={() => void runOcr()}
             >
-              Распознать
+              {t(lang, "uploadLab.recognize")}
             </button>
           )}
         </div>
