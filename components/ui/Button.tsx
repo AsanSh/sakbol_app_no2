@@ -23,14 +23,15 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex min-h-[44px] items-center justify-center rounded-xl px-4 font-semibold outline-none transition-colors",
-        "focus-visible:ring-2 focus-visible:ring-health-secondary focus-visible:ring-offset-2",
+        "inline-flex min-h-[44px] items-center justify-center rounded-ui-md px-4 font-semibold outline-none transition-[filter,colors] duration-200",
+        "focus-visible:ring-2 focus-visible:ring-ui-accent focus-visible:ring-offset-2 focus-visible:ring-offset-ui-canvas",
         size === "md" && "text-body",
         size === "sm" && "text-small",
-        variant === "primary" && "bg-health-primary text-white hover:bg-teal-700",
+        variant === "primary" &&
+          "bg-ui-accent text-ui-accent-foreground hover:brightness-[0.92] active:brightness-[0.88]",
         variant === "secondary" &&
-          "bg-health-surface text-health-primary shadow-sm ring-1 ring-health-border hover:bg-slate-50",
-        variant === "ghost" && "bg-transparent text-health-primary hover:bg-teal-50",
+          "bg-ui-surface text-ui-foreground shadow-ui-card ring-1 ring-ui-border hover:bg-ui-border-subtle",
+        variant === "ghost" && "bg-transparent text-ui-accent hover:bg-ui-border-subtle",
         fullWidth && "w-full",
         rest.disabled && "cursor-not-allowed opacity-50",
         className,

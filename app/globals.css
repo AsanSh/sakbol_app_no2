@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0");
+@import "../styles/ui-kit-tokens.css";
 
 @tailwind base;
 @tailwind components;
@@ -18,11 +19,10 @@
 
 @layer base {
   body {
-    background-color: #f8fafc;
+    background-color: var(--ui-color-canvas);
+    /* Спокойный фон без «шума»; лёгкий акцент только сверху */
     background-image:
-      radial-gradient(ellipse 120% 80% at 50% -30%, rgba(20, 184, 166, 0.14), transparent 55%),
-      radial-gradient(ellipse 50% 40% at 100% 0%, rgba(15, 118, 110, 0.06), transparent 50%),
-      radial-gradient(ellipse 45% 35% at 0% 100%, rgba(148, 163, 184, 0.08), transparent 48%);
+      radial-gradient(ellipse 100% 60% at 50% -25%, rgba(0, 191, 165, 0.06), transparent 55%);
     background-attachment: fixed;
   }
 }

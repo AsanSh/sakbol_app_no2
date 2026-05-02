@@ -54,13 +54,38 @@ export default {
         "health-soft":
           "0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 10px 24px -8px rgba(15, 118, 110, 0.12)",
         "health-lift": "0 18px 40px -12px rgba(15, 23, 42, 0.12), 0 8px 16px -8px rgba(15, 118, 110, 0.08)",
+        /** UI Kit: без «решётки» из stroke — лёгкая глубина */
+        "ui-card": "var(--ui-shadow-card)",
+        "ui-float": "var(--ui-shadow-float)",
       },
       borderRadius: {
         lg: "0.75rem",
         xl: "1rem",
         "2xl": "1.25rem",
+        /** UI Kit 2.0 — единая шкала скруглений */
+        "ui-sm": "var(--ui-radius-sm)",
+        "ui-md": "var(--ui-radius-md)",
+        "ui-lg": "var(--ui-radius-lg)",
+        "ui-xl": "var(--ui-radius-xl)",
       },
       colors: {
+        /** SakBol UI Kit 2.0 — семантические цвета (премиум medical, спокойный фон) */
+        ui: {
+          canvas: "#F9FAFB",
+          surface: "#FFFFFF",
+          elevated: "#FFFFFF",
+          accent: "#00BFA5",
+          "accent-hover": "#00A693",
+          "accent-foreground": "#FFFFFF",
+          foreground: "#0F172A",
+          muted: "#475569",
+          subtle: "#64748B",
+          border: "#E2E8F0",
+          "border-subtle": "#F1F5F9",
+          danger: "#EF4444",
+          success: "#10B981",
+          warning: "#F59E0B",
+        },
         primary: "#0F766E",
         secondary: "#14B8A6",
         accent: "#22C55E",

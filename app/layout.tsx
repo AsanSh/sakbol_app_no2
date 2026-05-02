@@ -42,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body
-        className={`${inter.variable} ${manrope.variable} ${geistMono.variable} min-h-screen bg-health-bg font-sans text-health-text antialiased`}
+        className={`${inter.variable} ${manrope.variable} ${geistMono.variable} min-h-screen bg-ui-canvas font-sans text-ui-foreground antialiased`}
       >
         <TwaRoot />
         <AppProviders>{children}</AppProviders>

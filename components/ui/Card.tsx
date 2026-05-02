@@ -20,10 +20,11 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-2xl p-4 shadow-surface sm:p-5",
-        variant === "surface" && "bg-health-surface",
-        variant === "muted" && "bg-slate-50",
-        interactive && "transition-transform duration-200 hover:-translate-y-0.5",
+        "rounded-ui-lg border-0 p-4 shadow-ui-card ring-0 sm:p-5",
+        variant === "surface" && "bg-ui-surface",
+        variant === "muted" && "bg-ui-border-subtle",
+        interactive &&
+          "transition-[filter,transform] duration-200 hover:-translate-y-px hover:brightness-[0.99] active:brightness-[0.97]",
         className,
       )}
       {...rest}

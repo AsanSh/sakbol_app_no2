@@ -112,10 +112,10 @@ export function SakbolMainClient() {
 
   if (isDesktopWeb) {
     return (
-      <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-health-bg">
+      <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-ui-canvas">
         <SakbolDesktopSidebar showPatientsTab={showPatientsNav} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-health-bg">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-ui-canvas">
             <div
               className={cn(
                 "sakbol-dashboard-main mx-auto flex min-h-0 w-full max-w-[90rem] flex-1 flex-col",
@@ -138,7 +138,7 @@ export function SakbolMainClient() {
 
   /* Telegram + мобильный веб: как мини-приложение — нижний бар, без отдельной «сайтовой» шапки */
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-health-bg">
+    <div className="flex min-h-[100dvh] flex-col bg-ui-canvas">
       <div className="flex min-h-0 flex-1 flex-col">
         <div
           className={cn(
