@@ -428,6 +428,11 @@ const ru: Dict = {
   "uploadLab.errOcr": "Ошибка распознавания",
   "uploadLab.errNoRows": "Укажите хотя бы одну строку: название показателя и значение.",
   "uploadLab.errSave": "Ошибка сохранения",
+  "uploadLab.errServerTransport":
+    "Сервер вернул нестандартный ответ (часто лимит размера в nginx, таймаут или падение до приложения). Уменьшите файл, проверьте GEMINI_API_KEY в .env на сервере и лимиты nginx (client_max_body_size, proxy_read_timeout).",
+  "uploadLab.errPayloadTooLarge":
+    "Файл слишком большой для прокси. Уменьшите PDF или увеличьте client_max_body_size в nginx (рекомендуется ≥15m).",
+  "uploadLab.errNetwork": "Не удалось связаться с сервером. Проверьте интернет и попробуйте снова.",
 };
 
 const kg: Dict = {
@@ -855,6 +860,11 @@ const kg: Dict = {
   "uploadLab.errOcr": "Таануу катасы",
   "uploadLab.errNoRows": "Эң аз бир сап көрсөтүңүз: көрсөткүчтүн аталышы жана мааниси.",
   "uploadLab.errSave": "Сактоо катасы",
+  "uploadLab.errServerTransport":
+    "Сервер күтүлбөгөн жооп кайтарды (nginx лимити же убакыт бүттү). Файлды кичирейтиңиз, серверде GEMINI_API_KEY жана nginx лимиттерин текшериңиз.",
+  "uploadLab.errPayloadTooLarge":
+    "Файл өтө чоң. PDF кичирейтиңиз же nginxте client_max_body_size көбөйтүңүз.",
+  "uploadLab.errNetwork": "Серверге туташуу жок. Интернетти текшериңиз.",
 };
 
 const dicts: Record<Lang, Dict> = { ru, kg };

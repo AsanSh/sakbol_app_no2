@@ -4,10 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { FileUp, Loader2, Plus, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import {
-  commitConfirmedLabUpload,
-  previewLabOcr,
-} from "@/app/actions/health-record";
-import {
   isSupportedAnalysisMime,
   maskFileForPrivacyPreview,
 } from "@/lib/client/mask-sensitive-document";
@@ -16,7 +12,7 @@ import { hapticImpact } from "@/lib/telegram-haptics";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { scrubPlainTextForStorage } from "@/lib/client/scrub-pii-text";
 import { useLanguage } from "@/context/language-context";
-import { t } from "@/lib/i18n";
+import { t, type Lang } from "@/lib/i18n";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 type Phase =
@@ -45,6 +41,30 @@ type Props = {
 
 function emptyRow(): ParsedBiomarker {
   return { biomarker: "", value: 0, unit: "", reference: "" };
+}
+
+function transportErr(lang: Lang, httpStatus: number): string {
+  if (httpStatus === 413) return t(lang, "uploadLab.errPayloadTooLarge");
+  return t(lang, "uploadLab.errServerTransport");
+}
+
+async function fetchLabJson<T>(url: string, fd: FormData, lang: Lang): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(url, { method: "POST", body: fd, credentials: "include" });
+  } catch {
+    throw new Error(t(lang, "uploadLab.errNetwork"));
+  }
+  const ct = res.headers.get("content-type") ?? "";
+  const raw = await res.text();
+  if (!ct.includes("application/json")) {
+    throw new Error(transportErr(lang, res.status));
+  }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw new Error(transportErr(lang, res.status));
+  }
 }
 
 export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Props) {
@@ -132,7 +152,13 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       const fd = new FormData();
       fd.set("profileId", profileId);
       fd.set("file", originalFile);
-      const res = await previewLabOcr(fd);
+      type Preview =
+        | {
+            ok: true;
+            draft: OcrDraft;
+          }
+        | { ok: false; error: string };
+      const res = await fetchLabJson<Preview>("/api/documents/lab-ocr-preview", fd, lang);
       if (!res.ok) {
         setErr(res.error);
         setPhase("error");
@@ -196,7 +222,8 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
       fd.set("profileId", profileId);
       fd.set("file", originalFile);
       fd.set("payload", payload);
-      const res = await commitConfirmedLabUpload(fd);
+      type Commit = { ok: true } | { ok: false; error: string };
+      const res = await fetchLabJson<Commit>("/api/documents/lab-ocr-commit", fd, lang);
       if (!res.ok) {
         setErr(res.error);
         setPhase("error");
