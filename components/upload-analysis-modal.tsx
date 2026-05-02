@@ -48,10 +48,18 @@ function transportErr(lang: Lang, httpStatus: number): string {
   return t(lang, "uploadLab.errServerTransport");
 }
 
+/** Абсолютный URL — надёжнее в Telegram Mini App / вложенных webview */
+function apiUrl(path: string): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return new URL(path, window.location.origin).toString();
+  }
+  return path;
+}
+
 async function fetchLabJson<T>(url: string, fd: FormData, lang: Lang): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(url, { method: "POST", body: fd, credentials: "include" });
+    res = await fetch(apiUrl(url), { method: "POST", body: fd, credentials: "include" });
   } catch {
     throw new Error(t(lang, "uploadLab.errNetwork"));
   }

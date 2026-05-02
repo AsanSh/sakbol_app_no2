@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { extForLabMime, LAB_UPLOAD_ROOT, labUploadDiskPath } from "@/lib/sakbol-lab-upload-path";
 import { extractMetricsWithAI } from "@/lib/extract-metrics-with-ai";
+import { executePreviewLabOcr } from "@/lib/lab-ocr-preview-execute";
 import { processMedicalDocument } from "@/lib/services/process-medical-document";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
@@ -293,53 +294,7 @@ async function persistLabAnalysisUpload(args: {
 
 /** Smart Upload: OCR без сохранения файла и без списания лимита. */
 export async function previewLabOcr(formData: FormData) {
-  const session = await getSession();
-  if (!session) {
-    return { ok: false as const, error: "Unauthorized." };
-  }
-
-  const profileId = String(formData.get("profileId") ?? "").trim();
-  const file = formData.get("file");
-
-  if (!profileId || !(file instanceof File)) {
-    return { ok: false as const, error: "Маалымат толук эмес." };
-  }
-
-  const access = await checkProfileAccess(session, profileId);
-  if (!access.ok) {
-    return { ok: false as const, error: "Профиль табылган жок." };
-  }
-  if (!access.canWrite) {
-    return { ok: false as const, error: "Нет прав добавлять анализы в этот профиль." };
-  }
-
-  const mime = file.type || "application/octet-stream";
-  if (!ALLOWED.has(mime)) {
-    return { ok: false as const, error: "Файл форматы колдоого алынбайт." };
-  }
-
-  const buf = Buffer.from(await file.arrayBuffer());
-  if (buf.length === 0 || buf.length > MAX_BYTES) {
-    return { ok: false as const, error: "Файл өлчөмү чектен ашып кетти." };
-  }
-
-  try {
-    const parsed = await processMedicalDocument(buf, mime);
-    return {
-      ok: true as const,
-      draft: {
-        biomarkers: parsed.biomarkers,
-        analysisDate: parsed.analysisDate,
-        labName: parsed.labName,
-        ocrParser: parsed.parser,
-      },
-    };
-  } catch (e) {
-    return {
-      ok: false as const,
-      error: e instanceof Error ? e.message : "Не удалось разобрать документ.",
-    };
-  }
+  return executePreviewLabOcr(formData);
 }
 
 /** После подтверждения формы: файл в хранилище + HealthRecord (динамика из metrics). */

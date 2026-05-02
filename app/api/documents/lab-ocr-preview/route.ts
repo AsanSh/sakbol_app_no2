@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { previewLabOcr } from "@/app/actions/health-record";
+import { executePreviewLabOcr } from "@/lib/lab-ocr-preview-execute";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await previewLabOcr(form);
+    const result = await executePreviewLabOcr(form);
     return NextResponse.json(result);
   } catch (e) {
     console.error("[lab-ocr-preview]", e);
