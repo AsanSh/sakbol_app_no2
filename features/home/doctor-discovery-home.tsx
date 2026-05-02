@@ -456,7 +456,14 @@ export function DoctorDiscoveryHome({
     lang === "ru" ? "Сбросить" : "Тазалоо";
 
   return (
-    <div id="doctor-catalog" className={cn("space-y-4 pb-8 scroll-mt-4", className)}>
+    <div
+      id="doctor-catalog"
+      className={cn(
+        "space-y-4 pb-8 scroll-mt-4",
+        !isDesktop && "pt-3",
+        className,
+      )}
+    >
       <div
         className="mx-auto w-full max-w-md rounded-full bg-[#e3e3e5]/90 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] sm:max-w-2xl"
         role="tablist"
