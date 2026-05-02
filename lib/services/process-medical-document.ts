@@ -2,10 +2,20 @@ import "server-only";
 
 import type { ParsedBiomarker } from "@/types/biomarker";
 
-export const LLM_BIOMARKER_SYSTEM = `Сен лабораториялык баяндамаларды структуралаган жардамчысың. Берилген текст же сүрөттөгү окуя боюнча кан анализинин көрсөткүчтөрүн чыгар.
-Кайтаруу: гана жарактуу JSON массиви, башка текст жок. Ар бир элемент: {"biomarker": string, "value": number, "unit": string, "reference": string}.
+/** Расширенный ответ для Smart Upload: дата бланка, лаборатория, строки таблицы. */
+export type LabOcrDraft = {
+  biomarkers: ParsedBiomarker[];
+  /** ISO date (YYYY-MM-DD) */
+  analysisDate?: string;
+  labName?: string;
+};
+
+export const LLM_BIOMARKER_SYSTEM = `Сен лабораториялык баяндамаларды структуралаган жардамчысың. Берилген текст же сүрөт боюнча кан анализинин маалыматтарын чыгар.
+Кайтаруу: гана жарактуу JSON объект, башка текст жок.
+Формат: {"analysisDate": "YYYY-MM-DD" (бланктагы дата; табылбаса бош строка), "labName": "лаборатория же клиниканын аталышы (табылбаса бош)", "biomarkers": [{"biomarker": string, "value": number, "unit": string, "reference": string}, ...]}.
 Эреже: оорулуунун аты-жөнү, дареги, ИНН, паспорт, телефон сыяктуу жеке маалыматтарды эч качан кошпо.
-Эгер сан чекит менен болсо, value үчүн JSON number колдон (мисалы 5.8).`;
+Эгер сан чекит менен болсо, value үчүн JSON number колдон (мисалы 5.8).
+Эски формат (бир гана массив) да колдоого алынат — анда analysisDate жана labName бош деп эсептелет.`;
 
 function allowMockLabParser(): boolean {
   const v = process.env.ALLOW_MOCK_LAB_PARSER?.trim().toLowerCase();
@@ -13,7 +23,16 @@ function allowMockLabParser(): boolean {
 }
 
 /** Только при ALLOW_MOCK_LAB_PARSER=1 (локальные тесты без API). */
-export function mockBiomarkers(): ParsedBiomarker[] {
+export function mockLabDraft(): LabOcrDraft {
+  const biomarkers = mockBiomarkersInner();
+  return {
+    biomarkers,
+    analysisDate: new Date().toISOString().slice(0, 10),
+    labName: "Демо-лаборатория",
+  };
+}
+
+function mockBiomarkersInner(): ParsedBiomarker[] {
   const hb: ParsedBiomarker = {
     biomarker: "Гемоглобин",
     value: 120 + Math.floor(Math.random() * 35),
@@ -72,29 +91,29 @@ export function mockBiomarkers(): ParsedBiomarker[] {
   return [hb, vitD, ...picked];
 }
 
+/** @deprecated use mockLabDraft */
+export function mockBiomarkers(): ParsedBiomarker[] {
+  return mockBiomarkersInner();
+}
+
 async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-function biomarkersFromLlmJsonText(text: string): ParsedBiomarker[] {
-  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  const parsed = JSON.parse(cleaned) as unknown;
-  let rows: unknown[];
-  if (Array.isArray(parsed)) {
-    rows = parsed;
-  } else if (parsed && typeof parsed === "object") {
-    const o = parsed as Record<string, unknown>;
-    if (Array.isArray(o.biomarkers)) rows = o.biomarkers;
-    else if (Array.isArray(o.items)) rows = o.items;
-    else throw new Error("LLM JSON must be an array or { biomarkers: [...] }");
-  } else {
-    throw new Error("LLM returned invalid JSON");
-  }
+function normalizeOptionalIsoDate(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  const t = raw.trim();
+  if (!t) return undefined;
+  const ms = Date.parse(t);
+  if (Number.isNaN(ms)) return undefined;
+  return new Date(ms).toISOString().slice(0, 10);
+}
 
+function biomarkersFromRows(rows: unknown[]): ParsedBiomarker[] {
   const out: ParsedBiomarker[] = [];
   for (const row of rows) {
     const r = row as Record<string, unknown>;
-    const biomarker = String(r.biomarker ?? "").trim();
+    const biomarker = String(r.biomarker ?? r.name ?? "").trim();
     const value = Number(r.value);
     if (!biomarker || Number.isNaN(value)) continue;
     out.push({
@@ -106,6 +125,35 @@ function biomarkersFromLlmJsonText(text: string): ParsedBiomarker[] {
   }
   if (out.length === 0) throw new Error("No biomarkers in LLM output");
   return out;
+}
+
+/** Парсит JSON модели: объект Smart Upload же legacy-массив. */
+export function labDraftFromLlmJsonText(text: string): LabOcrDraft {
+  const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const parsed = JSON.parse(cleaned) as unknown;
+  if (Array.isArray(parsed)) {
+    return { biomarkers: biomarkersFromRows(parsed) };
+  }
+  if (parsed && typeof parsed === "object") {
+    const o = parsed as Record<string, unknown>;
+    let rows: unknown[] | null = null;
+    if (Array.isArray(o.biomarkers)) rows = o.biomarkers;
+    else if (Array.isArray(o.items)) rows = o.items;
+    if (!rows) throw new Error("LLM JSON must be an array or { biomarkers: [...] }");
+    const analysisDate =
+      normalizeOptionalIsoDate(o.analysisDate) ??
+      normalizeOptionalIsoDate(o.date) ??
+      normalizeOptionalIsoDate(o.labDate);
+    const labNameRaw = o.labName ?? o.title ?? o.name;
+    const labName =
+      typeof labNameRaw === "string" && labNameRaw.trim() ? labNameRaw.trim() : undefined;
+    return {
+      biomarkers: biomarkersFromRows(rows),
+      ...(analysisDate ? { analysisDate } : {}),
+      ...(labName ? { labName } : {}),
+    };
+  }
+  throw new Error("LLM returned invalid JSON");
 }
 
 /**
@@ -179,10 +227,10 @@ async function generateContentWithGeminiModel(
   mimeType: string,
   key: string,
   apiVersion: (typeof GEMINI_API_VERSIONS)[number],
-): Promise<ParsedBiomarker[]> {
+): Promise<LabOcrDraft> {
   const b64 = buffer.toString("base64");
   const userPrompt =
-    "Чыгарып бер: лабораториялык көрсөткүчтөрдүн JSON массиви гана, башка текст жок.";
+    "Чыгарып бер: гана JSON — объект { analysisDate, labName, biomarkers } (көрсөткүчтөрдүн тизмеси), башка текст жок.";
 
   const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${encodeURIComponent(model)}:generateContent`;
   const res = await fetch(url, {
@@ -227,11 +275,11 @@ async function generateContentWithGeminiModel(
   const text =
     cand?.content?.parts?.map((part) => part.text ?? "").join("")?.trim() ?? "";
   if (!text) throw new Error("Empty Gemini response");
-  return biomarkersFromLlmJsonText(text);
+  return labDraftFromLlmJsonText(text);
 }
 
 /** Google AI Studio / Gemini API: изображения и PDF (inline). */
-async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<ParsedBiomarker[]> {
+async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
   const key = process.env.GEMINI_API_KEY?.trim();
   if (!key) throw new Error("No Gemini API key");
 
@@ -259,7 +307,7 @@ async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<Parsed
 async function parseWithOpenAIVision(
   buffer: Buffer,
   mimeType: string,
-): Promise<ParsedBiomarker[]> {
+): Promise<LabOcrDraft> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("No API key");
 
@@ -282,7 +330,7 @@ async function parseWithOpenAIVision(
           content: [
             {
               type: "text",
-              text: "Чыгарып бер: көрсөткүчтөрдүн JSON массиви гана (кыска).",
+              text: "Чыгарып бер: JSON объект { analysisDate, labName, biomarkers } гана.",
             },
             { type: "image_url", image_url: { url: dataUrl } },
           ],
@@ -300,7 +348,7 @@ async function parseWithOpenAIVision(
     choices?: Array<{ message?: { content?: string } }>;
   };
   const text = json.choices?.[0]?.message?.content?.trim() ?? "";
-  return biomarkersFromLlmJsonText(text);
+  return labDraftFromLlmJsonText(text);
 }
 
 /**
@@ -311,7 +359,12 @@ async function parseWithOpenAIVision(
 export async function processMedicalDocument(
   buffer: Buffer,
   mimeType: string,
-): Promise<{ biomarkers: ParsedBiomarker[]; parser: "gemini" | "openai" | "mock" }> {
+): Promise<{
+  biomarkers: ParsedBiomarker[];
+  analysisDate?: string;
+  labName?: string;
+  parser: "gemini" | "openai" | "mock";
+}> {
   const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
   const canGemini =
     hasGemini &&
@@ -319,8 +372,13 @@ export async function processMedicalDocument(
 
   if (canGemini) {
     try {
-      const biomarkers = await parseWithGemini(buffer, mimeType);
-      return { biomarkers, parser: "gemini" };
+      const draft = await parseWithGemini(buffer, mimeType);
+      return {
+        biomarkers: draft.biomarkers,
+        analysisDate: draft.analysisDate,
+        labName: draft.labName,
+        parser: "gemini",
+      };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[processMedicalDocument] Gemini:", msg);
@@ -331,8 +389,13 @@ export async function processMedicalDocument(
   const canOpenAIVision = mimeType.startsWith("image/") && !!process.env.OPENAI_API_KEY?.trim();
   if (canOpenAIVision) {
     try {
-      const biomarkers = await parseWithOpenAIVision(buffer, mimeType);
-      return { biomarkers, parser: "openai" };
+      const draft = await parseWithOpenAIVision(buffer, mimeType);
+      return {
+        biomarkers: draft.biomarkers,
+        analysisDate: draft.analysisDate,
+        labName: draft.labName,
+        parser: "openai",
+      };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[processMedicalDocument] OpenAI:", msg);
@@ -342,7 +405,13 @@ export async function processMedicalDocument(
 
   if (allowMockLabParser()) {
     await sleep(500);
-    return { biomarkers: mockBiomarkers(), parser: "mock" };
+    const d = mockLabDraft();
+    return {
+      biomarkers: d.biomarkers,
+      analysisDate: d.analysisDate,
+      labName: d.labName,
+      parser: "mock",
+    };
   }
 
   if (!hasGemini && !process.env.OPENAI_API_KEY?.trim()) {

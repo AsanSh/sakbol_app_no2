@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { FileUp, Loader2, ShieldCheck, Sparkles } from "lucide-react";
-import { uploadHealthRecord } from "@/app/actions/health-record";
+import { FileUp, Loader2, Plus, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
+import {
+  commitConfirmedLabUpload,
+  previewLabOcr,
+} from "@/app/actions/health-record";
 import {
   isSupportedAnalysisMime,
   maskFileForPrivacyPreview,
@@ -12,15 +15,24 @@ import { cn } from "@/lib/utils";
 import { hapticImpact } from "@/lib/telegram-haptics";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 import { scrubPlainTextForStorage } from "@/lib/client/scrub-pii-text";
+import type { ParsedBiomarker } from "@/types/biomarker";
 
 type Phase =
   | "idle"
   | "masking"
   | "anonymized"
-  | "uploading"
-  | "parsing"
+  | "ocr"
+  | "review"
+  | "saving"
   | "done"
   | "error";
+
+type OcrDraft = {
+  biomarkers: ParsedBiomarker[];
+  analysisDate?: string;
+  labName?: string;
+  ocrParser: "gemini" | "openai" | "mock";
+};
 
 type Props = {
   open: boolean;
@@ -28,6 +40,10 @@ type Props = {
   profileId: string;
   onSuccess: () => void;
 };
+
+function emptyRow(): ParsedBiomarker {
+  return { biomarker: "", value: 0, unit: "", reference: "" };
+}
 
 export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Props) {
   const [mounted, setMounted] = useState(false);
@@ -38,6 +54,12 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
   const [maskedBlob, setMaskedBlob] = useState<Blob | null>(null);
   const [maskedMime, setMaskedMime] = useState<string | null>(null);
   const [maskedObjectUrl, setMaskedObjectUrl] = useState<string | null>(null);
+
+  const [ocrDraft, setOcrDraft] = useState<OcrDraft | null>(null);
+  const [analysisDate, setAnalysisDate] = useState("");
+  const [labName, setLabName] = useState("");
+  const [recordTitle, setRecordTitle] = useState("");
+  const [rows, setRows] = useState<ParsedBiomarker[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -59,10 +81,15 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
     setOriginalFile(null);
     setMaskedBlob(null);
     setMaskedMime(null);
+    setOcrDraft(null);
+    setAnalysisDate("");
+    setLabName("");
+    setRecordTitle("");
+    setRows([]);
   }, []);
 
   const handleClose = () => {
-    if (phase === "masking" || phase === "uploading" || phase === "parsing") return;
+    if (phase === "masking" || phase === "ocr" || phase === "saving") return;
     reset();
     onClose();
   };
@@ -76,6 +103,8 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
     }
 
     setOriginalFile(picked);
+    setOcrDraft(null);
+    setRows([]);
 
     try {
       setPhase("masking");
@@ -94,38 +123,92 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
     }
   };
 
-  const submitWithOriginal = async (file: File) => {
-    if (!isSupportedAnalysisMime(file.type)) {
-      setErr("PDF же сүрөт гана (PNG, JPG, WEBP).");
-      setPhase("error");
-      return;
-    }
+  const runOcr = async () => {
+    if (!originalFile) return;
     setErr(null);
+    setPhase("ocr");
     try {
-      setPhase("uploading");
       const fd = new FormData();
       fd.set("profileId", profileId);
-      fd.set("file", file);
-      setPhase("parsing");
-      const res = await uploadHealthRecord(fd);
+      fd.set("file", originalFile);
+      const res = await previewLabOcr(fd);
       if (!res.ok) {
         setErr(res.error);
         setPhase("error");
         return;
       }
-      setPhase("done");
+      const d = res.draft;
+      setOcrDraft(d);
+      setRows(d.biomarkers.map((b) => ({ ...b })));
+      setAnalysisDate(d.analysisDate ?? "");
+      setLabName(d.labName ?? "");
+      setRecordTitle("");
+      setPhase("review");
+      hapticImpact("light");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "OCR катасы");
+      setPhase("error");
+    }
+  };
+
+  const updateRow = (index: number, patch: Partial<ParsedBiomarker>) => {
+    setRows((prev) => {
+      const next = [...prev];
+      const cur = next[index];
+      if (!cur) return prev;
+      next[index] = { ...cur, ...patch };
+      return next;
+    });
+  };
+
+  const removeRow = (index: number) => {
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addRow = () => {
+    setRows((prev) => [...prev, emptyRow()]);
+  };
+
+  const commit = async () => {
+    if (!originalFile || !ocrDraft) return;
+    const valid = rows.filter((r) => r.biomarker.trim() && Number.isFinite(r.value));
+    if (valid.length === 0) {
+      setErr("Укажите хотя бы одну строку: название показателя и значение.");
+      return;
+    }
+    setErr(null);
+    setPhase("saving");
+    try {
+      const payload = JSON.stringify({
+        biomarkers: valid.map((r) => ({
+          biomarker: r.biomarker.trim(),
+          value: r.value,
+          unit: r.unit.trim(),
+          reference: r.reference.trim(),
+        })),
+        ...(analysisDate.trim() ? { analysisDate: analysisDate.trim() } : {}),
+        ...(labName.trim() ? { labName: labName.trim() } : {}),
+        ...(recordTitle.trim() ? { title: recordTitle.trim() } : {}),
+        ocrParser: ocrDraft.ocrParser,
+      });
+      const fd = new FormData();
+      fd.set("profileId", profileId);
+      fd.set("file", originalFile);
+      fd.set("payload", payload);
+      const res = await commitConfirmedLabUpload(fd);
+      if (!res.ok) {
+        setErr(res.error);
+        setPhase("error");
+        return;
+      }
       hapticImpact("medium");
       onSuccess();
       reset();
       onClose();
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Жүктөө катасы");
+      setErr(e instanceof Error ? e.message : "Сактоо катасы");
       setPhase("error");
     }
-  };
-
-  const submitFromButton = () => {
-    if (originalFile) void submitWithOriginal(originalFile);
   };
 
   if (!open || !mounted) return null;
@@ -137,6 +220,7 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
   );
 
   const showImagePreview = maskedObjectUrl && maskedMime?.startsWith("image/");
+  const busy = phase === "masking" || phase === "ocr" || phase === "saving";
 
   const overlay = (
     <div
@@ -151,65 +235,66 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
         aria-label="Жабуу"
         onClick={handleClose}
       />
-      <div className="relative my-auto w-full max-w-lg rounded-2xl border-2 border-emerald-800/25 bg-gradient-to-b from-mint/30 to-white p-5 shadow-2xl">
+      <div className="relative my-auto max-h-[min(92dvh,860px)] w-full max-w-lg overflow-y-auto rounded-2xl border-2 border-emerald-800/25 bg-gradient-to-b from-mint/30 to-white p-5 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-900 text-mint">
             <ShieldCheck className="h-6 w-6" strokeWidth={2} />
           </div>
           <div>
             <h2 id="upload-analysis-title" className="text-lg font-semibold text-emerald-950">
-              Анализ жүктөө
+              Smart Upload · анализ жүктөө
             </h2>
             <p className="mt-0.5 text-sm text-emerald-900/75">
-              Төмөндө — маскалонгон көрүнүш гана. Серверге жана Gemini&apos;ге{" "}
-              <strong className="font-semibold text-emerald-950">чыкылдаган файл</strong> жөнөтүлөт (таблица
-              көрүнөт). Псевдо-ID: <span className="font-mono text-emerald-950">{anonymId}</span>. Мисал
-              текст скраббери:{" "}
+              Төмөндө — маскалонгон көрүнүш гана. Серверге жана OCR{" "}
+              <strong className="font-semibold text-emerald-950">чыкылдаган файл</strong> жөнөтүлөт. Псевдо-ID:{" "}
+              <span className="font-mono text-emerald-950">{anonymId}</span>. Мисал текст скраббери:{" "}
               <span className="block break-all text-[11px] text-emerald-800/90">{scrubDemo}</span>
             </p>
           </div>
         </div>
 
-        <div
-          className={cn(
-            "relative mt-4 flex min-h-[140px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-emerald-700/35 bg-white/70 px-4 py-8 text-center transition-colors hover:border-emerald-600/50",
-            phase === "masking" && "pointer-events-none opacity-80",
-          )}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            void onPickFile(e.dataTransfer.files[0] ?? null);
-          }}
-          onClick={() => {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "application/pdf,image/png,image/jpeg,image/webp";
-            input.onchange = () => void onPickFile(input.files?.[0] ?? null);
-            input.click();
-          }}
-        >
-          {phase === "masking" ? (
-            <div
-              className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[10px]"
-              aria-hidden
-            >
-              <div className="absolute inset-x-0 h-14 animate-sakbol-scan bg-gradient-to-b from-transparent via-emerald-400/50 to-transparent blur-[1px]" />
-            </div>
-          ) : null}
-          <FileUp className="relative z-[1] mx-auto h-10 w-10 text-emerald-800/60" />
-          <p className="relative z-[1] mt-2 text-sm font-semibold text-emerald-950">
-            Сүйрөп киргизиңиз же басыңыз
-          </p>
-          <p className="relative z-[1] mt-1 text-xs text-emerald-600/70">PDF · PNG · JPG · WEBP</p>
-        </div>
+        {phase !== "review" ? (
+          <div
+            className={cn(
+              "relative mt-4 flex min-h-[140px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-emerald-700/35 bg-white/70 px-4 py-8 text-center transition-colors hover:border-emerald-600/50",
+              phase === "masking" && "pointer-events-none opacity-80",
+            )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              void onPickFile(e.dataTransfer.files[0] ?? null);
+            }}
+            onClick={() => {
+              const input = document.createElement("input");
+              input.type = "file";
+              input.accept = "application/pdf,image/png,image/jpeg,image/webp";
+              input.onchange = () => void onPickFile(input.files?.[0] ?? null);
+              input.click();
+            }}
+          >
+            {phase === "masking" ? (
+              <div
+                className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[10px]"
+                aria-hidden
+              >
+                <div className="absolute inset-x-0 h-14 animate-sakbol-scan bg-gradient-to-b from-transparent via-emerald-400/50 to-transparent blur-[1px]" />
+              </div>
+            ) : null}
+            <FileUp className="relative z-[1] mx-auto h-10 w-10 text-emerald-800/60" />
+            <p className="relative z-[1] mt-2 text-sm font-semibold text-emerald-950">
+              Сүйрөп киргизиңиз же басыңыз
+            </p>
+            <p className="relative z-[1] mt-1 text-xs text-emerald-600/70">PDF · PNG · JPG · WEBP</p>
+          </div>
+        ) : null}
 
-        {phase === "anonymized" || phase === "uploading" || phase === "parsing" ? (
+        {phase === "anonymized" || phase === "ocr" || phase === "saving" || phase === "error" ? (
           <div className="mt-3 rounded-xl border border-emerald-900/15 bg-emerald-900/5 p-3">
             <p className="mb-2 text-center text-[11px] font-medium uppercase tracking-wide text-emerald-800/70">
-              Маскалонгон көрүнүш (имитация) — жүктөө оригинал менен
+              Маскалонгон көрүнүш (имитация) — OCR үчүн оригинал
             </p>
             {showImagePreview ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -226,6 +311,113 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
           </div>
         ) : null}
 
+        {phase === "review" && ocrDraft ? (
+          <div className="mt-4 space-y-3 rounded-xl border border-emerald-900/20 bg-white/90 p-3 text-sm text-emerald-950 shadow-inner">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800/80">
+              Проверьте данные перед сохранением
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-caption text-emerald-900/70">Дата анализа</span>
+                <input
+                  type="date"
+                  className="rounded-lg border border-emerald-900/20 bg-white px-2 py-1.5 text-sm"
+                  value={analysisDate}
+                  onChange={(e) => setAnalysisDate(e.target.value)}
+                />
+              </label>
+              <label className="flex flex-col gap-1 sm:col-span-2">
+                <span className="text-caption text-emerald-900/70">Название (лаборатория / клиника)</span>
+                <input
+                  type="text"
+                  className="rounded-lg border border-emerald-900/20 bg-white px-2 py-1.5 text-sm"
+                  value={labName}
+                  onChange={(e) => setLabName(e.target.value)}
+                  placeholder="Например: Invivo"
+                />
+              </label>
+              <label className="flex flex-col gap-1 sm:col-span-2">
+                <span className="text-caption text-emerald-900/70">Заголовок записи (необязательно)</span>
+                <input
+                  type="text"
+                  className="rounded-lg border border-emerald-900/20 bg-white px-2 py-1.5 text-sm"
+                  value={recordTitle}
+                  onChange={(e) => setRecordTitle(e.target.value)}
+                  placeholder="Если пусто — сформируем из даты и названия"
+                />
+              </label>
+            </div>
+
+            <div className="overflow-x-auto rounded-lg border border-emerald-900/15">
+              <table className="w-full min-w-[320px] text-left text-caption">
+                <thead className="bg-emerald-900/10 text-[11px] uppercase text-emerald-900/80">
+                  <tr>
+                    <th className="px-2 py-2">Показатель</th>
+                    <th className="px-2 py-2">Значение</th>
+                    <th className="px-2 py-2">Ед.</th>
+                    <th className="px-2 py-2">Реф.</th>
+                    <th className="w-10 px-1 py-2" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => (
+                    <tr key={i} className="border-t border-emerald-900/10">
+                      <td className="px-1 py-1">
+                        <input
+                          className="w-full min-w-[100px] rounded border border-transparent bg-white/80 px-1 py-0.5 text-sm focus:border-emerald-600"
+                          value={row.biomarker}
+                          onChange={(e) => updateRow(i, { biomarker: e.target.value })}
+                        />
+                      </td>
+                      <td className="px-1 py-1">
+                        <input
+                          type="number"
+                          step="any"
+                          className="w-20 rounded border border-transparent bg-white/80 px-1 py-0.5 text-sm focus:border-emerald-600"
+                          value={Number.isFinite(row.value) ? row.value : ""}
+                          onChange={(e) => updateRow(i, { value: Number(e.target.value) })}
+                        />
+                      </td>
+                      <td className="px-1 py-1">
+                        <input
+                          className="w-14 rounded border border-transparent bg-white/80 px-1 py-0.5 text-sm focus:border-emerald-600"
+                          value={row.unit}
+                          onChange={(e) => updateRow(i, { unit: e.target.value })}
+                        />
+                      </td>
+                      <td className="px-1 py-1">
+                        <input
+                          className="w-20 rounded border border-transparent bg-white/80 px-1 py-0.5 text-sm focus:border-emerald-600"
+                          value={row.reference}
+                          onChange={(e) => updateRow(i, { reference: e.target.value })}
+                        />
+                      </td>
+                      <td className="px-0 py-1 text-center">
+                        <button
+                          type="button"
+                          className="rounded p-1 text-emerald-900/50 hover:bg-red-50 hover:text-red-600"
+                          aria-label="Удалить строку"
+                          onClick={() => removeRow(i)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-caption font-medium text-emerald-800 hover:text-emerald-950"
+              onClick={addRow}
+            >
+              <Plus className="h-4 w-4" />
+              Добавить строку
+            </button>
+          </div>
+        ) : null}
+
         <div className="mt-4 space-y-2 rounded-xl bg-emerald-900/8 px-3 py-3 text-sm">
           {phase === "idle" ? (
             <p className="text-emerald-900/80">Файл тандаңыз.</p>
@@ -239,17 +431,17 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
           {phase === "anonymized" ? (
             <p className="flex items-center gap-2 font-medium text-emerald-900">
               <Sparkles className="h-4 w-4 text-amber-600" />
-              Данные анонимизированы
+              Данные анонимизированы — нажмите «Распознать»
             </p>
           ) : null}
-          {(phase === "uploading" || phase === "parsing") && (
+          {phase === "ocr" || phase === "saving" ? (
             <p className="flex items-center gap-2 font-medium text-emerald-950">
               <Loader2 className="h-4 w-4 animate-spin text-emerald-800" />
-              {phase === "uploading"
-                ? "Жүктөлүүдө…"
-                : "Распознавание показателей…"}
+              {phase === "ocr"
+                ? "OCR / распознавание показателей…"
+                : "Сохранение файла и записи…"}
             </p>
-          )}
+          ) : null}
           {phase === "done" ? (
             <p className="text-emerald-800">Сакталды.</p>
           ) : null}
@@ -260,23 +452,47 @@ export function UploadAnalysisModal({ open, onClose, profileId, onSuccess }: Pro
           ) : null}
         </div>
 
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
           <button
             type="button"
             className="rounded-xl px-4 py-2 text-sm font-medium text-emerald-900/80 hover:bg-emerald-900/5"
             onClick={handleClose}
-            disabled={phase === "masking" || phase === "uploading" || phase === "parsing"}
+            disabled={busy}
           >
             Жабуу
           </button>
-          <button
-            type="button"
-            className="rounded-xl bg-sakbol-cta px-4 py-2 text-sm font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05] disabled:opacity-45"
-            disabled={phase !== "anonymized" || !originalFile}
-            onClick={() => void submitFromButton()}
-          >
-            Загрузить анализ
-          </button>
+          {phase === "review" ? (
+            <>
+              <button
+                type="button"
+                className="rounded-xl px-4 py-2 text-sm font-medium text-emerald-900/80 hover:bg-emerald-900/5"
+                onClick={() => {
+                  setPhase("anonymized");
+                  setErr(null);
+                }}
+                disabled={busy}
+              >
+                Артка
+              </button>
+              <button
+                type="button"
+                className="rounded-xl bg-sakbol-cta px-4 py-2 text-sm font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05] disabled:opacity-45"
+                disabled={busy}
+                onClick={() => void commit()}
+              >
+                Сохранить
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="rounded-xl bg-sakbol-cta px-4 py-2 text-sm font-medium text-white shadow-sm shadow-coral/25 transition-[filter] hover:brightness-[1.05] disabled:opacity-45"
+              disabled={phase !== "anonymized" || !originalFile || busy}
+              onClick={() => void runOcr()}
+            >
+              Распознать
+            </button>
+          )}
         </div>
       </div>
     </div>
