@@ -1,12 +1,12 @@
 "use client";
 
 import {
+  BookMarked,
   LayoutDashboard,
-  Stethoscope,
-  Sparkles,
-  UsersRound,
   Pill,
+  Stethoscope,
   UserCircle,
+  UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,14 +20,16 @@ type Dock = "fixed" | "embedded";
 
 type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 
-const ALL_NAV_ITEMS: NavItem[] = [
+/** Порядок: Главная → Медкарта → Аптека → Врачи → Профиль. Вкладка «Пациенты» — опционально в конце (врачам). */
+const BASE_NAV_ITEMS: NavItem[] = [
   { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
-  { id: "analyses", labelKey: "nav.analysesTab", Icon: Stethoscope },
-  { id: "insights", labelKey: "nav.insights", Icon: Sparkles },
-  { id: "patients", labelKey: "nav.myPatients", Icon: UsersRound },
+  { id: "analyses", labelKey: "nav.medcard", Icon: BookMarked },
   { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
+  { id: "doctors", labelKey: "nav.doctors", Icon: Stethoscope },
   { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },
 ];
+
+const PATIENTS_ITEM: NavItem = { id: "patients", labelKey: "nav.myPatients", Icon: UsersRound };
 
 type TabBarProps = {
   /** fixed — на весь экран (TWA / моб. браузер); embedded — внутри узкой колонки на ПК */
@@ -39,7 +41,7 @@ type TabBarProps = {
 export function BottomTabBar({ dock = "fixed", showPatientsTab = false }: TabBarProps) {
   const { tab, setTab } = useTabApp();
   const { lang } = useLanguage();
-  const items = showPatientsTab ? ALL_NAV_ITEMS : ALL_NAV_ITEMS.filter((i) => i.id !== "patients");
+  const items = showPatientsTab ? [...BASE_NAV_ITEMS, PATIENTS_ITEM] : BASE_NAV_ITEMS;
 
   return (
     <nav

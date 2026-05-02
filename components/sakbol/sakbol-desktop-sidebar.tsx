@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import {
+  Activity,
+  BookMarked,
+  FileStack,
   LayoutDashboard,
   Stethoscope,
-  Sparkles,
   UsersRound,
   Pill,
   UserCircle,
-  FileStack,
-  Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,14 +22,15 @@ import { t } from "@/lib/i18n";
 
 type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 
-const ALL_NAV_ITEMS: NavItem[] = [
+const BASE_NAV_ITEMS: NavItem[] = [
   { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
-  { id: "analyses", labelKey: "nav.analysesTab", Icon: Stethoscope },
-  { id: "insights", labelKey: "nav.insights", Icon: Sparkles },
-  { id: "patients", labelKey: "nav.myPatients", Icon: UsersRound },
+  { id: "analyses", labelKey: "nav.medcard", Icon: BookMarked },
   { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
+  { id: "doctors", labelKey: "nav.doctors", Icon: Stethoscope },
   { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },
 ];
+
+const PATIENTS_ITEM: NavItem = { id: "patients", labelKey: "nav.myPatients", Icon: UsersRound };
 
 /**
  * Левый сайдбар SaaS-дашборда: подписи, спокойная палитра, крупные зоны клика.
@@ -41,7 +42,7 @@ type SidebarProps = {
 export function SakbolDesktopSidebar({ showPatientsTab = false }: SidebarProps) {
   const { tab, setTab } = useTabApp();
   const { lang } = useLanguage();
-  const items = showPatientsTab ? ALL_NAV_ITEMS : ALL_NAV_ITEMS.filter((i) => i.id !== "patients");
+  const items = showPatientsTab ? [...BASE_NAV_ITEMS, PATIENTS_ITEM] : BASE_NAV_ITEMS;
 
   return (
     <aside

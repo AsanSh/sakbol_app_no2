@@ -93,6 +93,12 @@ const ru: Dict = {
   "home.trendsCtaTitle": "Динамика показателей",
   "home.trendsCtaSubtitle": "Сравнение анализов и графики по истории",
   "home.trendsOpen": "Динамика",
+  "home.addDocumentCta": "+ Добавить документ",
+  "home.healthStatusTitle": "Статус здоровья",
+  "home.healthStatusEmpty":
+    "Загрузите первый анализ, чтобы ИИ составил ваш профиль здоровья.",
+  "home.healthStatusLatest": "Последний анализ",
+  "home.openInsights": "Динамика и ИИ",
   "dashboard.subtitle": "Анализы и члены семьи для активного профиля.",
   "dashboard.hello": "Здравствуйте",
   "dashboard.authRequired": "Требуется вход. Откройте приложение через Telegram.",
@@ -164,6 +170,8 @@ const ru: Dict = {
   "nav.insightsTrends": "Динамика",
   "nav.insightsAi": "ИИ",
   "nav.pharmacy": "Фармпоиск",
+  "nav.medcard": "Медкарта",
+  "nav.doctors": "Врачи",
   "nav.myPatients": "Пациенты",
   "doctorPatients.title": "Мои пациенты",
   "doctorPatients.subtitle":
@@ -460,6 +468,12 @@ const kg: Dict = {
   "home.trendsCtaTitle": "Көрсөткүчтөрдүн динамикасы",
   "home.trendsCtaSubtitle": "Анализдерди салыштыруу жана тарых боюнча графиктер",
   "home.trendsOpen": "Динамика",
+  "home.addDocumentCta": "+ Документ кошуу",
+  "home.healthStatusTitle": "Ден соолук абалы",
+  "home.healthStatusEmpty":
+    "Биринчи анализди жүктөңүз — ИИ ден соолук профилин түзөт.",
+  "home.healthStatusLatest": "Акыркы анализ",
+  "home.openInsights": "Динамика жана ИИ",
   "dashboard.subtitle": "Активдүү профиль боюнча анализдер жана үй-бүлө мүчөлөрү.",
   "dashboard.hello": "Салам",
   "dashboard.authRequired": "Кирүү керек. Telegram аркылуу ачыңыз.",
@@ -531,6 +545,8 @@ const kg: Dict = {
   "nav.insightsTrends": "Динамика",
   "nav.insightsAi": "ИИ",
   "nav.pharmacy": "Дары издөө",
+  "nav.medcard": "Медкарта",
+  "nav.doctors": "Дарыерлер",
   "nav.myPatients": "Пациенттер",
   "doctorPatients.title": "Менин пациенттерим",
   "doctorPatients.subtitle":

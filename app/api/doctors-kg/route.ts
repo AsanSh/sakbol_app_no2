@@ -58,8 +58,21 @@ export async function GET(req: Request) {
       totalPages,
       doctors: merged,
     });
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "error";
-    return NextResponse.json({ error: msg }, { status: 502 });
+  } catch (_e: unknown) {
+    const { searchParams } = new URL(req.url);
+    const perPage = Math.min(100, Math.max(1, Number(searchParams.get("perPage") ?? "24")));
+    return NextResponse.json(
+      {
+        page: 1,
+        perPage,
+        total: 0,
+        totalPages: 0,
+        doctors: [],
+        serviceUnavailable: true,
+        message:
+          "Поиск временно ограничен, но вы можете просмотреть сохранённых врачей и контакты из локального каталога, когда он доступен на сервере.",
+      },
+      { status: 200 },
+    );
   }
 }

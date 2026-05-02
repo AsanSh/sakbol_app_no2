@@ -1,17 +1,23 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { ChevronRight, Plus } from "lucide-react";
 import { FamilyRole } from "@prisma/client";
 import { AddMemberModal } from "@/components/add-member-modal";
 import { FamilySwitcher } from "@/components/family-switcher";
 import { BottomSheet } from "@/components/sakbol/bottom-sheet";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
+import { UploadAnalysisModal } from "@/components/upload-analysis-modal";
+import { useActiveProfile } from "@/context/active-profile-context";
+import { useAnalysesRefresh } from "@/context/analyses-refresh-context";
+import { useTabApp } from "@/context/tab-app-context";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import { useDeviceType } from "@/hooks/use-device-type";
 import type { FamilyWithProfiles } from "@/types/family";
+import type { ParsedBiomarker } from "@/types/biomarker";
 import { ProfileNotificationsContent } from "@/components/profile/profile-settings-sheets";
 import { DoctorDiscoveryHome } from "@/features/home/doctor-discovery-home";
 import { useLanguage } from "@/context/language-context";
@@ -23,6 +29,13 @@ type Props = {
   reloadFamily: () => void;
 };
 
+type AnalysisApiRow = {
+  id: string;
+  title: string | null;
+  data: { biomarkers?: ParsedBiomarker[] };
+  createdAt: string;
+};
+
 export function HomeTab({ family, reloadFamily }: Props) {
   const searchParams = useSearchParams();
   const doctorCat = searchParams.get("doctorCat");
@@ -32,6 +45,39 @@ export function HomeTab({ family, reloadFamily }: Props) {
   const { state, authReady, isAuthenticated } = useTelegramSession();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [latestAnalysis, setLatestAnalysis] = useState<AnalysisApiRow | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+
+  const { activeProfileId } = useActiveProfile();
+  const { bumpAnalyses } = useAnalysesRefresh();
+  const { setTab } = useTabApp();
+
+  const effectiveProfileId =
+    activeProfileId ?? family?.profiles.find((p) => !p.isSharedGuest)?.id ?? null;
+
+  const loadLatestAnalysis = useCallback(() => {
+    if (!effectiveProfileId) {
+      setLatestAnalysis(null);
+      return;
+    }
+    setAnalysisLoading(true);
+    void fetch(`/api/analyses?profileId=${encodeURIComponent(effectiveProfileId)}`, {
+      credentials: "include",
+    })
+      .then(async (r) => {
+        if (!r.ok) return null;
+        const j = (await r.json()) as { analyses?: AnalysisApiRow[] };
+        const first = j.analyses?.[0];
+        setLatestAnalysis(first ?? null);
+      })
+      .catch(() => setLatestAnalysis(null))
+      .finally(() => setAnalysisLoading(false));
+  }, [effectiveProfileId]);
+
+  useEffect(() => {
+    loadLatestAnalysis();
+  }, [loadLatestAnalysis]);
 
   const admin = useMemo(
     () => family?.profiles.find((p) => p.familyRole === FamilyRole.ADMIN),
@@ -83,12 +129,77 @@ export function HomeTab({ family, reloadFamily }: Props) {
     </>
   );
 
+  const dashboardCtaAndWidget = (
+    <div className="space-y-4">
+      <button
+        type="button"
+        disabled={!effectiveProfileId || !isAuthenticated}
+        onClick={() => setUploadOpen(true)}
+        className={cn(
+          "flex w-full items-center justify-center gap-2 rounded-3xl px-5 py-5 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition-[filter] hover:brightness-[1.05] active:brightness-[0.98] disabled:cursor-not-allowed disabled:opacity-45",
+          "bg-gradient-to-br from-health-primary via-teal-700 to-teal-900 ring-2 ring-white/30",
+        )}
+      >
+        <Plus className="h-6 w-6 shrink-0" strokeWidth={2.5} aria-hidden />
+        {t(lang, "home.addDocumentCta")}
+      </button>
+
+      <div className="rounded-3xl border border-health-border/70 bg-white/95 p-4 shadow-health-soft ring-1 ring-teal-900/5">
+        <p className="text-caption font-bold uppercase tracking-wide text-health-text-secondary">
+          {t(lang, "home.healthStatusTitle")}
+        </p>
+        {analysisLoading ? (
+          <p className="mt-3 text-sm text-health-text-secondary">{t(lang, "analyses.loading")}</p>
+        ) : latestAnalysis?.data.biomarkers?.length ? (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs font-medium text-health-text-secondary">
+              {t(lang, "home.healthStatusLatest")}
+              {latestAnalysis.title ? ` · ${latestAnalysis.title}` : ""}
+            </p>
+            <ul className="divide-y divide-health-border/60 rounded-xl bg-teal-50/40 px-3 py-1">
+              {latestAnalysis.data.biomarkers.slice(0, 6).map((b) => (
+                <li
+                  key={`${b.biomarker}-${b.value}`}
+                  className="flex justify-between gap-2 py-2 text-sm"
+                >
+                  <span className="min-w-0 truncate font-medium text-health-text">{b.biomarker}</span>
+                  <span className="shrink-0 font-mono text-health-primary">
+                    {b.value} {b.unit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm leading-relaxed text-health-text-secondary">
+            {t(lang, "home.healthStatusEmpty")}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => setTab("insights")}
+          className="mt-4 flex w-full items-center justify-between rounded-2xl border border-health-border/80 bg-white px-4 py-3 text-left text-sm font-semibold text-health-primary transition-colors hover:bg-teal-50/80"
+        >
+          {t(lang, "home.openInsights")}
+          <ChevronRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+        </button>
+      </div>
+    </div>
+  );
+
   if (isDesktopWeb) {
     return (
       <div className={cn("flex min-h-0 w-full flex-1 flex-col overflow-y-auto")}>
         <div className="mx-auto w-full max-w-6xl space-y-6 px-4 pb-8 pt-2 md:px-6">
           {authBanner}
-          <DoctorDiscoveryHome isDesktop initialCategorySlug={doctorCat} />
+          {isAuthenticated && effectiveProfileId ? (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-start">
+              {dashboardCtaAndWidget}
+              <DoctorDiscoveryHome isDesktop initialCategorySlug={doctorCat} />
+            </div>
+          ) : (
+            <DoctorDiscoveryHome isDesktop initialCategorySlug={doctorCat} />
+          )}
         </div>
         <AddMemberModal
           open={addMemberOpen}
@@ -99,6 +210,17 @@ export function HomeTab({ family, reloadFamily }: Props) {
           }}
           familyProfilesForInvite={(family?.profiles ?? []).filter((p) => !p.isSharedGuest)}
         />
+        {effectiveProfileId ? (
+          <UploadAnalysisModal
+            open={uploadOpen}
+            onClose={() => setUploadOpen(false)}
+            profileId={effectiveProfileId}
+            onSuccess={() => {
+              bumpAnalyses();
+              loadLatestAnalysis();
+            }}
+          />
+        ) : null}
       </div>
     );
   }
@@ -118,7 +240,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
         transition={{ duration: 0.3 }}
       >
         {authBanner}
-        <DoctorDiscoveryHome initialCategorySlug={doctorCat} />
+        {dashboardCtaAndWidget}
         {sharedSheets}
         <AddMemberModal
           open={addMemberOpen}
@@ -129,6 +251,17 @@ export function HomeTab({ family, reloadFamily }: Props) {
           }}
           familyProfilesForInvite={(family?.profiles ?? []).filter((p) => !p.isSharedGuest)}
         />
+        {effectiveProfileId ? (
+          <UploadAnalysisModal
+            open={uploadOpen}
+            onClose={() => setUploadOpen(false)}
+            profileId={effectiveProfileId}
+            onSuccess={() => {
+              bumpAnalyses();
+              loadLatestAnalysis();
+            }}
+          />
+        ) : null}
       </motion.div>
     </div>
   );

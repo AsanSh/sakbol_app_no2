@@ -29,14 +29,15 @@ export async function notifyPharmaciesNewMedicineRequest(input: {
   });
 
   const text =
-    `💊 Новый запрос в SakBol (фармпоиск)\n\n` +
+    `🏥 SakBol · фармпоиск\n` +
+    `💊 Новый запрос от пациента\n\n` +
     `Ищут: «${input.medicineName}»` +
-    (input.note?.trim() ? `\nКомментарий: ${input.note.trim()}` : "") +
-    `\n\nОткройте приложение → вкладка «Фармпоиск», раздел заявок.`;
+    (input.note?.trim() ? `\n📝 ${input.note.trim()}` : "") +
+    `\n\nОткройте кабинет аптеки → открытые заявки и ответьте.`;
 
   const buttons: Array<{ text: string; url: string }> = [];
-  if (mini) buttons.push({ text: "Открыть Mini App", url: mini });
-  buttons.push({ text: "Открыть на сайте", url: appUrl });
+  if (mini) buttons.push({ text: "✅ Ответить в 1 клик", url: mini });
+  buttons.push({ text: "SakBol на сайте", url: appUrl });
 
   await Promise.allSettled(
     pharmacies.map((p) =>

@@ -10,6 +10,7 @@ import { HomeTab } from "@/components/sakbol/tabs/home-tab";
 import { InsightsTab } from "@/components/sakbol/tabs/insights-tab";
 import { ProfileTabSakbol } from "@/components/sakbol/tabs/profile-tab-sakbol";
 import { PharmacyTab } from "@/features/pharmacy/pharmacy-tab";
+import { DoctorDiscoveryHome } from "@/features/home/doctor-discovery-home";
 import { DoctorPatientsSection } from "@/features/doctor/my-patients-tab";
 import { useTabApp } from "@/context/tab-app-context";
 import { useLanguage } from "@/context/language-context";
@@ -72,6 +73,11 @@ function TabPanels({
           <DoctorPatientsSection family={family} loading={loading} variant="page" />
         ) : null}
         {tab === "pharmacy" ? <PharmacyTab /> : null}
+        {tab === "doctors" ? (
+          <Suspense fallback={<div className="min-h-[40vh]" />}>
+            <DoctorDiscoveryHome />
+          </Suspense>
+        ) : null}
         {tab === "profile" ? (
           <ProfileTabSakbol family={family} loading={loading} reload={reload} />
         ) : null}

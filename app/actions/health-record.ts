@@ -9,6 +9,7 @@ import { checkProfileAccess } from "@/lib/profile-access-control";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { extForLabMime, LAB_UPLOAD_ROOT, labUploadDiskPath } from "@/lib/sakbol-lab-upload-path";
+import { extractMetricsWithAI } from "@/lib/extract-metrics-with-ai";
 import { processMedicalDocument } from "@/lib/services/process-medical-document";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
@@ -221,6 +222,12 @@ async function persistLabAnalysisUpload(args: {
   }
 
   const now = new Date().toISOString();
+  const prepared = await extractMetricsWithAI({
+    biomarkers,
+    analysisDate,
+    labName,
+  });
+
   const meta: LabMeta & {
     sourceFileId: string;
     sourceOriginalFileId: string;
@@ -238,13 +245,13 @@ async function persistLabAnalysisUpload(args: {
     parsedAt: now,
     parser,
     ...(sourceBlobUrl ? { sourceBlobUrl } : {}),
-    ...(analysisDate ? { analysisDate } : {}),
-    ...(labName ? { labName } : {}),
+    ...(prepared.analysisDate ? { analysisDate: prepared.analysisDate } : {}),
+    ...(prepared.labName ? { labName: prepared.labName } : {}),
   };
 
-  const metricsPayload: Record<string, unknown> = { biomarkers };
-  if (analysisDate) metricsPayload.analysisDate = analysisDate;
-  if (labName) metricsPayload.labName = labName;
+  const metricsPayload: Record<string, unknown> = { biomarkers: prepared.biomarkers };
+  if (prepared.analysisDate) metricsPayload.analysisDate = prepared.analysisDate;
+  if (prepared.labName) metricsPayload.labName = prepared.labName;
 
   try {
     const record = await prisma.healthRecord.create({
@@ -252,7 +259,11 @@ async function persistLabAnalysisUpload(args: {
         profileId,
         kind: HealthRecordKind.LAB_ANALYSIS,
         isPrivate: true,
-        title: buildLabRecordTitle({ title: titleOverride, labName, analysisDate }),
+        title: buildLabRecordTitle({
+          title: titleOverride,
+          labName: prepared.labName ?? labName,
+          analysisDate: prepared.analysisDate ?? analysisDate,
+        }),
         data: meta as unknown as Prisma.InputJsonValue,
         metrics: {
           create: {
@@ -266,7 +277,7 @@ async function persistLabAnalysisUpload(args: {
     revalidatePath("/");
     revalidatePath("/tests");
     revalidatePath("/profile");
-    return { ok: true, recordId: record.id, biomarkerCount: biomarkers.length };
+    return { ok: true, recordId: record.id, biomarkerCount: prepared.biomarkers.length };
   } catch (e) {
     await unlink(diskPath).catch(() => {});
     if (sourceBlobUrl?.startsWith("https://")) {

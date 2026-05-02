@@ -87,6 +87,9 @@ type ListPayload = {
   totalPages: number;
   page: number;
   perPage: number;
+  /** API doctors.kg недоступен — пустой список, показать дружелюбное сообщение. */
+  serviceUnavailable?: boolean;
+  message?: string;
 };
 
 /**
@@ -681,6 +684,11 @@ export function DoctorDiscoveryHome({
         <>
           {listErr ? (
             <p className="text-sm text-red-700">{listErr}</p>
+          ) : null}
+          {list?.serviceUnavailable && list.message ? (
+            <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950 ring-1 ring-amber-200/90">
+              {list.message}
+            </p>
           ) : null}
 
           {mainTab === "caregivers" ? (
