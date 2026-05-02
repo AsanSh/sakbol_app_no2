@@ -130,60 +130,57 @@ export function HomeTab({ family, reloadFamily }: Props) {
   );
 
   const dashboardCtaAndWidget = (
-    <div className="space-y-4">
+    <div className="rounded-3xl bg-white p-4 shadow-ui-card">
+      <p className="text-caption font-bold uppercase tracking-wide text-health-text-secondary">
+        {t(lang, "home.healthStatusTitle")}
+      </p>
+      {analysisLoading ? (
+        <p className="mt-3 text-sm text-health-text-secondary">{t(lang, "analyses.loading")}</p>
+      ) : latestAnalysis?.data.biomarkers?.length ? (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs font-medium text-health-text-secondary">
+            {t(lang, "home.healthStatusLatest")}
+            {latestAnalysis.title ? ` · ${latestAnalysis.title}` : ""}
+          </p>
+          <ul className="divide-y divide-slate-100 rounded-xl bg-slate-50/80 px-3 py-1">
+            {latestAnalysis.data.biomarkers.slice(0, 6).map((b) => (
+              <li
+                key={`${b.biomarker}-${b.value}`}
+                className="flex justify-between gap-2 py-2 text-sm"
+              >
+                <span className="min-w-0 truncate font-medium text-health-text">{b.biomarker}</span>
+                <span className="shrink-0 font-mono text-health-primary">
+                  {b.value} {b.unit}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="mt-3 text-sm leading-relaxed text-health-text-secondary">
+          {t(lang, "home.healthStatusEmpty")}
+        </p>
+      )}
       <button
         type="button"
         disabled={!effectiveProfileId || !isAuthenticated}
         onClick={() => setUploadOpen(true)}
         className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-3xl px-5 py-5 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition-[filter] hover:brightness-[1.05] active:brightness-[0.98] disabled:cursor-not-allowed disabled:opacity-45",
-          "bg-gradient-to-br from-health-primary via-teal-700 to-teal-900 ring-2 ring-white/30",
+          "mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-4 text-base font-semibold text-white shadow-md shadow-teal-900/15 transition-[filter] hover:brightness-[1.05] active:brightness-[0.98] disabled:cursor-not-allowed disabled:opacity-45",
+          "bg-gradient-to-br from-health-primary via-teal-700 to-teal-900",
         )}
       >
-        <Plus className="h-6 w-6 shrink-0" strokeWidth={2.5} aria-hidden />
+        <Plus className="h-5 w-5 shrink-0" strokeWidth={2.25} aria-hidden />
         {t(lang, "home.addDocumentCta")}
       </button>
-
-      <div className="rounded-3xl border border-health-border/70 bg-white/95 p-4 shadow-health-soft ring-1 ring-teal-900/5">
-        <p className="text-caption font-bold uppercase tracking-wide text-health-text-secondary">
-          {t(lang, "home.healthStatusTitle")}
-        </p>
-        {analysisLoading ? (
-          <p className="mt-3 text-sm text-health-text-secondary">{t(lang, "analyses.loading")}</p>
-        ) : latestAnalysis?.data.biomarkers?.length ? (
-          <div className="mt-3 space-y-2">
-            <p className="text-xs font-medium text-health-text-secondary">
-              {t(lang, "home.healthStatusLatest")}
-              {latestAnalysis.title ? ` · ${latestAnalysis.title}` : ""}
-            </p>
-            <ul className="divide-y divide-health-border/60 rounded-xl bg-teal-50/40 px-3 py-1">
-              {latestAnalysis.data.biomarkers.slice(0, 6).map((b) => (
-                <li
-                  key={`${b.biomarker}-${b.value}`}
-                  className="flex justify-between gap-2 py-2 text-sm"
-                >
-                  <span className="min-w-0 truncate font-medium text-health-text">{b.biomarker}</span>
-                  <span className="shrink-0 font-mono text-health-primary">
-                    {b.value} {b.unit}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <p className="mt-3 text-sm leading-relaxed text-health-text-secondary">
-            {t(lang, "home.healthStatusEmpty")}
-          </p>
-        )}
-        <button
-          type="button"
-          onClick={() => setTab("insights")}
-          className="mt-4 flex w-full items-center justify-between rounded-2xl border border-health-border/80 bg-white px-4 py-3 text-left text-sm font-semibold text-health-primary transition-colors hover:bg-teal-50/80"
-        >
-          {t(lang, "home.openInsights")}
-          <ChevronRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => setTab("insights")}
+        className="mt-3 flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-health-primary transition-colors hover:bg-slate-100/90"
+      >
+        {t(lang, "home.openInsights")}
+        <ChevronRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
+      </button>
     </div>
   );
 

@@ -162,6 +162,18 @@ function groupCategoriesByLetter(
     .map(([letter, items]) => ({ letter, items }));
 }
 
+/** Типовые запросы — поднимаем вверх, чтобы не листать алфавит */
+function pickPopularCategories(categories: MetaCategory[]): MetaCategory[] {
+  if (!categories.length) return [];
+  const patterns = [/терапевт/i, /гинеколог/i, /педиатр/i];
+  const out: MetaCategory[] = [];
+  for (const re of patterns) {
+    const hit = categories.find((c) => re.test(c.label));
+    if (hit && !out.some((x) => x.slug === hit.slug)) out.push(hit);
+  }
+  return out;
+}
+
 type Props = {
   isDesktop?: boolean;
   className?: string;
@@ -300,6 +312,11 @@ export function DoctorDiscoveryHome({
     }
     return groupCategoriesByLetter(cats);
   }, [meta, debouncedSearch]);
+
+  const popularCategories = useMemo(
+    () => (meta?.categories?.length ? pickPopularCategories(meta.categories) : []),
+    [meta?.categories],
+  );
 
   const stripDoctorCatFromUrl = useCallback(() => {
     const q = new URLSearchParams(searchParams.toString());
@@ -531,7 +548,7 @@ export function DoctorDiscoveryHome({
 
       {showSpecialtyBrowser ? (
         <>
-          <div className="rounded-xl bg-white p-3.5 shadow-md ring-1 ring-slate-200/80 sm:p-4">
+          <div className="rounded-2xl bg-white p-3.5 shadow-ui-card sm:p-4">
             <div className="relative min-w-0 flex-1">
               <Search
                 className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
@@ -542,12 +559,35 @@ export function DoctorDiscoveryHome({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={lang === "ru" ? "Найти направление…" : "Багыт табуу…"}
-                className="bg-slate-50 py-2.5 pl-11 pr-4 text-body shadow-inner ring-slate-200/90"
+                className="border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-body shadow-inner ring-1 ring-slate-200/60"
                 aria-label={lang === "ru" ? "Поиск направления" : "Багыт издөө"}
               />
             </div>
           </div>
-          <div className="overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-slate-200/80">
+          {popularCategories.length > 0 && !debouncedSearch.trim() ? (
+            <div className="space-y-2 px-0.5">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                {t(lang, "home.doctors.popular")}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {popularCategories.map((c) => (
+                  <button
+                    key={c.slug}
+                    type="button"
+                    onClick={() => {
+                      setMainTab("doctors");
+                      setCategory(c.slug);
+                      setPage(1);
+                    }}
+                    className="rounded-full bg-white px-3.5 py-2 text-left text-[13px] font-medium text-slate-800 shadow-sm transition hover:bg-slate-50"
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div className="overflow-hidden rounded-2xl bg-white shadow-ui-card">
             {!meta?.categories?.length ? (
               <p className="p-6 text-center text-sm text-slate-500">
                 {lang === "ru" ? "Загрузка направлений…" : "Жүктөлүүдө…"}
@@ -605,7 +645,7 @@ export function DoctorDiscoveryHome({
             </button>
           ) : null}
 
-          <div className="rounded-xl bg-white p-3.5 shadow-md ring-1 ring-slate-200/80 sm:p-4">
+          <div className="rounded-2xl bg-white p-3.5 shadow-ui-card sm:p-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               <div className="relative min-w-0 flex-1">
                 <Search

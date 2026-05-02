@@ -20,7 +20,7 @@ export function LanguageSwitcher({ variant = "default" }: Props) {
   if (variant === "segmented") {
     return (
       <div
-        className="flex h-11 w-full rounded-[10px] bg-slate-100/95 p-1 ring-1 ring-slate-200/80"
+        className="flex h-10 w-full rounded-[11px] bg-black/[0.06] p-[3px]"
         role="tablist"
         aria-label="Язык"
       >
@@ -30,10 +30,10 @@ export function LanguageSwitcher({ variant = "default" }: Props) {
           aria-selected={lang === "ru"}
           onClick={() => pick("ru")}
           className={cn(
-            "flex min-h-[44px] flex-1 items-center justify-center rounded-[8px] text-sm font-semibold transition-colors",
+            "flex min-h-0 flex-1 items-center justify-center rounded-[8px] text-[13px] font-semibold tracking-tight transition-all duration-200",
             lang === "ru"
-              ? "bg-white text-[#0f172a] shadow-sm shadow-slate-900/10"
-              : "text-slate-500 hover:text-slate-700",
+              ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.12)]"
+              : "text-slate-500 hover:text-slate-800",
           )}
         >
           Русский
@@ -44,10 +44,10 @@ export function LanguageSwitcher({ variant = "default" }: Props) {
           aria-selected={lang === "kg"}
           onClick={() => pick("kg")}
           className={cn(
-            "flex min-h-[44px] flex-1 items-center justify-center rounded-[8px] text-sm font-semibold transition-colors",
+            "flex min-h-0 flex-1 items-center justify-center rounded-[8px] text-[13px] font-semibold tracking-tight transition-all duration-200",
             lang === "kg"
-              ? "bg-white text-[#0f172a] shadow-sm shadow-slate-900/10"
-              : "text-slate-500 hover:text-slate-700",
+              ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.12)]"
+              : "text-slate-500 hover:text-slate-800",
           )}
         >
           Кыргызча

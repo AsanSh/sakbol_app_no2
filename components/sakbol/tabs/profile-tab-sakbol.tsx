@@ -199,10 +199,8 @@ function FamilyMemberEditableCard({
   return (
     <li
       className={cn(
-        "rounded-2xl border text-sm shadow-sm",
-        profile.familyRole === "ADMIN"
-          ? "border-amber-400/70 bg-gradient-to-br from-amber-100/90 via-amber-50/80 to-orange-50/90"
-          : "border-sky-400/70 bg-gradient-to-br from-sky-100/90 via-sky-50/80 to-indigo-50/90",
+        "rounded-2xl text-sm shadow-ui-card",
+        profile.familyRole === "ADMIN" ? "bg-amber-50/50" : "bg-white",
       )}
     >
       <button
@@ -226,11 +224,11 @@ function FamilyMemberEditableCard({
         </div>
         <ChevronDown
           className={cn(
-            "h-5 w-5 shrink-0 text-[#40484c] transition-transform duration-200",
+            "h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200",
             expanded && "rotate-180",
           )}
           aria-hidden
-          strokeWidth={2}
+          strokeWidth={1.5}
         />
       </button>
 
@@ -332,7 +330,7 @@ function FamilyMemberEditableCard({
             </label>
           ) : null}
           {profile.id !== viewerId && (profile.medCardIsDoctor || profile.medCardIsCaregiver) ? (
-            <div className="rounded-2xl border-2 border-[#7eb8c8] bg-gradient-to-br from-sky-50 via-[#eef8fb] to-cyan-50 px-4 py-4 shadow-[0_6px_22px_-8px_rgba(0,66,83,0.35)]">
+            <div className="rounded-2xl bg-sky-50/80 px-4 py-4 shadow-sm ring-1 ring-sky-100/80">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#004253] text-white">
                   <Stethoscope className="h-5 w-5" strokeWidth={2.25} />
@@ -752,7 +750,7 @@ function IssuedSharesList({
         return (
           <li
             key={a.id}
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px]"
+            className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-[11px] shadow-sm"
           >
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-slate-900">
@@ -827,7 +825,7 @@ function ShareProfileSection({
   familyProfiles,
   onReload,
 }: {
-  lang: string;
+  lang: Lang;
   familyProfiles: ProfileSummary[];
   onReload: () => void;
 }) {
@@ -928,14 +926,12 @@ function ShareProfileSection({
   if (!familyProfiles.length) return null;
 
   return (
-    <section className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <Share2 className="h-4 w-4 text-[#004253]" />
-        <h2 className="text-sm font-bold text-[#191c1d]">Совместный доступ</h2>
+    <section className="space-y-4 scroll-mt-4">
+      <div className="flex items-center gap-2 px-0.5">
+        <Share2 className="h-4 w-4 text-[#004253]" aria-hidden />
+        <h2 className="text-sm font-bold text-[#191c1d]">{t(lang, "profile.shareAccessTitle")}</h2>
       </div>
-      <p className="mt-1 text-xs text-[#70787d]">
-        Поделитесь профилем родственника с другим пользователем — он сможет видеть и добавлять документы только для этого профиля.
-      </p>
+      <p className="text-xs leading-snug text-slate-600">{t(lang, "profile.shareAccessLead")}</p>
 
       <div className="mt-3 space-y-1.5">
         <div className="flex items-center justify-between">
@@ -962,17 +958,24 @@ function ShareProfileSection({
       {!invite ? (
         <div className="mt-3 space-y-2">
           {familyProfiles.length > 1 && (
-            <select
-              value={selectedProfileId}
-              onChange={(e) => setSelectedProfileId(e.target.value)}
-              className="w-full rounded-xl border border-[#e7e8e9] bg-[#f8f9fa] px-3 py-2 text-sm"
-            >
-              {familyProfiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.displayName}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedProfileId}
+                onChange={(e) => setSelectedProfileId(e.target.value)}
+                className="w-full appearance-none rounded-xl bg-white py-2.5 pl-3 pr-10 text-sm shadow-sm ring-1 ring-slate-200/70"
+              >
+                {familyProfiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.displayName}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                aria-hidden
+                strokeWidth={1.5}
+              />
+            </div>
           )}
           {err && <p className="text-xs text-red-700">{err}</p>}
           <button
@@ -991,12 +994,14 @@ function ShareProfileSection({
               {joinCode}
             </p>
           ) : null}
-          <p className="text-[11px] text-slate-600">
-            {joinCode
-              ? "Получатель вводит 9 цифр на сайте или сканирует QR — откроется Telegram-бот с кодом join_. После входа в Mini App (и ПИН при регистрации) профиль появится в переключателе."
-              : "QR откроет Telegram-бот у получателя. Бот сохранит приглашение и пришлёт кнопку «Открыть Mini App» — после регистрации (ПИН) совместный профиль появится в переключателе. Если Telegram нет — есть веб-ссылка ниже."}
-          </p>
-          <div className="flex justify-center rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+          <p className="text-[11px] leading-snug text-slate-600">{t(lang, "profile.shareAccessInviteHint")}</p>
+          <details className="rounded-xl bg-slate-50/90 px-3 py-2 text-[11px] text-slate-600">
+            <summary className="cursor-pointer font-medium text-slate-700">
+              {t(lang, "profile.shareAccessDetailsSummary")}
+            </summary>
+            <p className="mt-2 leading-snug">{t(lang, "profile.shareAccessDetailsBody")}</p>
+          </details>
+          <div className="flex justify-center rounded-2xl bg-slate-50/80 p-4 shadow-sm">
             {qrValue && <QRCodeSVG value={qrValue} size={160} level="M" includeMargin />}
           </div>
           {telegramJoinStartUrl ? (
@@ -1106,15 +1111,10 @@ function ShareProfileSection({
               setInvite(null);
               setCopied(false);
             }}
-            className="w-full rounded-xl border border-dashed border-slate-300 bg-white py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+            className="w-full rounded-xl border border-dashed border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
             Создать ещё одно приглашение
           </button>
-          <p className="text-[10px] text-slate-500">
-            Что произойдёт у получателя: камера откроет Telegram → бот сохранит приглашение → его
-            кнопка «Открыть Mini App» приведёт в SakBol → после ввода ПИН (если регистрируется
-            впервые) профиль появится в переключателе сверху.
-          </p>
         </div>
       )}
     </section>
@@ -1635,11 +1635,8 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
             {profileSegment === "family" ? (
               <>
-                <section
-                  id="profile-family-section"
-                  className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm scroll-mt-20"
-                >
-                  <div className="flex items-center justify-between gap-2">
+                <section id="profile-family-section" className="scroll-mt-20 space-y-4">
+                  <div className="flex items-center justify-between gap-2 px-0.5">
                     <h2 className="font-manrope text-sm font-bold text-[#191c1d]">
                       {t(lang, "profile.family")}
                     </h2>
@@ -1654,9 +1651,9 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                     ) : null}
                   </div>
                   {loading ? (
-                    <p className="mt-3 text-sm text-[#70787d]">{t(lang, "analyses.loading")}</p>
+                    <p className="mt-1 text-sm text-[#70787d]">{t(lang, "analyses.loading")}</p>
                   ) : family?.profiles?.length ? (
-                    <ul className="mt-3 space-y-2">
+                    <ul className="mt-4 space-y-3">
                       {family.profiles.map((p) => (
                         <FamilyMemberEditableCard
                           key={p.id}

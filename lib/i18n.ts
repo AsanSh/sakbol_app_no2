@@ -339,6 +339,15 @@ const ru: Dict = {
   "profile.sharedProfilesSectionHint":
     "Чтобы отметить себя как врача, раскройте свою карточку в блоке «Семья» ниже и включите «Я работаю как врач».",
   "profile.medicalReportPdf": "Медицинский отчёт для врача (PDF)",
+  "profile.shareAccessTitle": "Совместный доступ",
+  "profile.shareAccessLead":
+    "Родственник сможет видеть и добавлять документы в этот профиль.",
+  "profile.shareAccessDetailsSummary": "Подробнее",
+  "profile.shareAccessDetailsBody":
+    "Получатель вводит код на сайте или сканирует QR → Telegram → Mini App. После входа профиль появится в переключателе сверху.",
+  "profile.shareAccessInviteHint":
+    "Код или QR — вход через Telegram или сайт; профиль появится у получателя после принятия приглашения.",
+  "home.doctors.popular": "Популярные",
   "footer.disclaimer":
     "Информационный сервис. Не является диагнозом. Обратитесь к врачу в КР.",
   "hub.healthScore": "Индекс здоровья",
@@ -757,6 +766,15 @@ const kg: Dict = {
   "profile.sharedProfilesSectionHint":
     "Өзүңүздү дарыер катары белгилөө үчүн ылдыйкы «Үй-бүлө» бөлүмүндө өз карточкаңызды ачып, «Дарыермин / мед. консультация берем» коюңуз.",
   "profile.medicalReportPdf": "Дарыер үчүн медициналык отчёт (PDF)",
+  "profile.shareAccessTitle": "Орток кирүү",
+  "profile.shareAccessLead":
+    "Туугандар бул профилди көрүп, документ кошо алышат.",
+  "profile.shareAccessDetailsSummary": "Кенирирек",
+  "profile.shareAccessDetailsBody":
+    "Код же QR — сайт же Telegram аркылуу кирүү; кабыл алгандан кийин профиль жогорку которгучта көрүнөт.",
+  "profile.shareAccessInviteHint":
+    "Код же QR — Telegram же сайт аркылуу; кабыл алгандан кийин профиль көрүнөт.",
+  "home.doctors.popular": "Популярдуу",
   "footer.disclaimer":
     "Маалыматтык кызмат. Диагноз эмес. КРдагы дарыерге кайрылыңыз.",
   "hub.healthScore": "Ден соолук индекси",

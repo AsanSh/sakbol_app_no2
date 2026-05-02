@@ -53,53 +53,58 @@ export function PharmacyRegistrationCard({ className }: { className?: string }) 
   }
 
   return (
-    <div className={cn("rounded-2xl border border-amber-200/90 bg-amber-50/80 p-4", className)}>
+    <div
+      className={cn(
+        "rounded-2xl bg-slate-50/90 p-4 shadow-ui-card ring-1 ring-slate-200/50",
+        className,
+      )}
+    >
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm">
-          <Building2 className="h-5 w-5" strokeWidth={2} aria-hidden />
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#004253] text-white shadow-sm">
+          <Building2 className="h-5 w-5" strokeWidth={1.75} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-amber-950">{t(lang, "pharmacy.registerPharmacy")}</p>
-          <p className="mt-1 text-[11px] leading-snug text-amber-900/85">{t(lang, "profile.b2bPharmacyLead")}</p>
+          <p className="font-semibold text-slate-900">{t(lang, "pharmacy.registerPharmacy")}</p>
+          <p className="mt-1 text-[11px] leading-snug text-slate-600">{t(lang, "profile.b2bPharmacyLead")}</p>
         </div>
       </div>
       <input
         value={regName}
         onChange={(e) => setRegName(e.target.value)}
         placeholder={t(lang, "pharmacy.phName")}
-        className="mt-3 w-full rounded-xl border border-amber-200/80 bg-white px-3 py-2.5 text-sm shadow-sm"
+        className="mt-3 w-full rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm shadow-sm"
       />
       <input
         value={regAddress}
         onChange={(e) => setRegAddress(e.target.value)}
         placeholder={t(lang, "pharmacy.phAddress")}
-        className="mt-2 w-full rounded-xl border border-amber-200/80 bg-white px-3 py-2.5 text-sm shadow-sm"
+        className="mt-2 w-full rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm shadow-sm"
       />
       <input
         value={regCity}
         onChange={(e) => setRegCity(e.target.value)}
         placeholder={t(lang, "pharmacy.phCity")}
-        className="mt-2 w-full rounded-xl border border-amber-200/80 bg-white px-3 py-2.5 text-sm shadow-sm"
+        className="mt-2 w-full rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm shadow-sm"
       />
       <input
         value={regPhone}
         onChange={(e) => setRegPhone(e.target.value)}
         placeholder={t(lang, "pharmacy.phPhone")}
-        className="mt-2 w-full rounded-xl border border-amber-200/80 bg-white px-3 py-2.5 text-sm shadow-sm"
+        className="mt-2 w-full rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 text-sm shadow-sm"
       />
-      <p className="mt-3 text-[11px] font-semibold text-amber-950">{t(lang, "pharmacy.hoursSection")}</p>
-      <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-xl border border-amber-200/60 bg-white/90 px-3 py-2.5 text-sm font-medium text-amber-950">
+      <p className="mt-3 text-[11px] font-semibold text-slate-800">{t(lang, "pharmacy.hoursSection")}</p>
+      <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200/70 bg-white px-3 py-2.5 text-sm font-medium text-slate-800">
         <input
           type="checkbox"
           checked={regHours24}
           onChange={(e) => setRegHours24(e.target.checked)}
-          className="h-4 w-4 rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+          className="h-4 w-4 rounded border-slate-300 text-[#004253] focus:ring-[#004253]/30"
         />
         {t(lang, "pharmacy.hours247")}
       </label>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-initial">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-900/70">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
             {t(lang, "pharmacy.hoursFrom")}
           </span>
           <input
@@ -107,14 +112,14 @@ export function PharmacyRegistrationCard({ className }: { className?: string }) 
             value={regTimeFrom}
             disabled={regHours24}
             onChange={(e) => setRegTimeFrom(e.target.value)}
-            className="w-full min-w-[7.5rem] rounded-xl border border-amber-200/80 bg-white px-2 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="w-full min-w-[7.5rem] rounded-xl border border-slate-200/90 bg-white px-2 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           />
         </div>
-        <span className="hidden pt-5 text-amber-800 sm:inline" aria-hidden>
+        <span className="hidden pt-5 text-slate-400 sm:inline" aria-hidden>
           —
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-initial">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-900/70">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
             {t(lang, "pharmacy.hoursTo")}
           </span>
           <input
@@ -122,7 +127,7 @@ export function PharmacyRegistrationCard({ className }: { className?: string }) 
             value={regTimeTo}
             disabled={regHours24}
             onChange={(e) => setRegTimeTo(e.target.value)}
-            className="w-full min-w-[7.5rem] rounded-xl border border-amber-200/80 bg-white px-2 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            className="w-full min-w-[7.5rem] rounded-xl border border-slate-200/90 bg-white px-2 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           />
         </div>
       </div>
@@ -161,7 +166,7 @@ export function PharmacyRegistrationCard({ className }: { className?: string }) 
             })
             .finally(() => setRegBusy(false));
         }}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 py-3 text-sm font-bold text-white shadow-md shadow-amber-900/25 disabled:opacity-50"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#004253] py-3 text-sm font-semibold text-white shadow-sm transition-[filter] hover:brightness-[1.04] disabled:opacity-50"
       >
         {regBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
         {regBusy ? "…" : t(lang, "pharmacy.registerFree")}
