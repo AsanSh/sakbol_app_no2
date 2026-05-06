@@ -8,7 +8,11 @@ import {
   type ConverseCommandOutput,
 } from "@aws-sdk/client-bedrock-runtime";
 
-/** Единый переключатель: Claude через Amazon Bedrock (IAM или Bearer), без прямого api.anthropic.com. */
+/**
+ * Единый переключатель: ИИ через Amazon Bedrock (IAM или Bearer), без прямых OpenAI/Gemini/Anthropic.
+ * Имя сохранено для обратной совместимости env: ANTHROPIC_PROVIDER=bedrock.
+ * По умолчанию используется Amazon Nova (доступен без гео-блокировок Anthropic).
+ */
 export function anthropicProviderIsBedrock(): boolean {
   return process.env.ANTHROPIC_PROVIDER?.trim().toLowerCase() === "bedrock";
 }
@@ -22,19 +26,20 @@ export function bedrockRuntimeRegion(): string {
   );
 }
 
+/** Модель для текстового чата (вкладка «ИИ»). По умолчанию Amazon Nova Lite. */
 export function bedrockLabModelId(): string {
   return (
     process.env.BEDROCK_LAB_MODEL_ID?.trim() ||
-    "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+    "us.amazon.nova-lite-v1:0"
   );
 }
 
-/** Модель для OCR бланков (PDF/фото); при необходимости Sonnet с лучшим vision. */
+/** Модель для OCR бланков (PDF/фото). По умолчанию Amazon Nova Pro (multimodal). */
 export function bedrockLabOcrModelId(): string {
   return (
     process.env.BEDROCK_LAB_OCR_MODEL_ID?.trim() ||
     process.env.BEDROCK_LAB_MODEL_ID?.trim() ||
-    "us.anthropic.claude-3-5-haiku-20241022-v1:0"
+    "us.amazon.nova-pro-v1:0"
   );
 }
 
