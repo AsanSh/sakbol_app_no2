@@ -11,7 +11,10 @@ import { getSession } from "@/lib/session";
 import { extForLabMime, LAB_UPLOAD_ROOT, labUploadDiskPath } from "@/lib/sakbol-lab-upload-path";
 import { extractMetricsWithAI } from "@/lib/extract-metrics-with-ai";
 import { executePreviewLabOcr } from "@/lib/lab-ocr-preview-execute";
-import { processMedicalDocument } from "@/lib/services/process-medical-document";
+import {
+  NonLabDocumentError,
+  processMedicalDocument,
+} from "@/lib/services/process-medical-document";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -441,6 +444,9 @@ export async function uploadHealthRecord(formData: FormData) {
   try {
     parsed = await processMedicalDocument(buf, mime);
   } catch (e) {
+    if (e instanceof NonLabDocumentError) {
+      return { ok: false as const, error: e.message };
+    }
     return {
       ok: false as const,
       error: e instanceof Error ? e.message : "Не удалось разобрать документ.",

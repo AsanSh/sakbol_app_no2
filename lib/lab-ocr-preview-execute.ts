@@ -2,7 +2,10 @@ import "server-only";
 
 import { checkProfileAccess } from "@/lib/profile-access-control";
 import { getSession } from "@/lib/session";
-import { processMedicalDocument } from "@/lib/services/process-medical-document";
+import {
+  NonLabDocumentError,
+  processMedicalDocument,
+} from "@/lib/services/process-medical-document";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const MAX_BYTES = 12 * 1024 * 1024;
@@ -74,6 +77,9 @@ export async function executePreviewLabOcr(formData: FormData): Promise<PreviewL
       },
     };
   } catch (e) {
+    if (e instanceof NonLabDocumentError) {
+      return { ok: false as const, error: e.message };
+    }
     return {
       ok: false as const,
       error: e instanceof Error ? e.message : "Не удалось разобрать документ.",

@@ -21,14 +21,44 @@ export type LabOcrDraft = {
   /** ISO date (YYYY-MM-DD) */
   analysisDate?: string;
   labName?: string;
+  /** Тип документа по версии LLM. "lab" — лабораторный анализ; иное — протокол/выписка/прочее. */
+  documentType?: string;
 };
 
-export const LLM_BIOMARKER_SYSTEM = `Сен лабораториялык баяндамаларды структуралаган жардамчысың. Берилген текст же сүрөт боюнча кан анализинин маалыматтарын чыгар.
-Кайтаруу: гана жарактуу JSON объект, башка текст жок.
-Формат: {"analysisDate": "YYYY-MM-DD" (бланктагы дата; табылбаса бош строка), "labName": "лаборатория же клиниканын аталышы (табылбаса бош)", "biomarkers": [{"biomarker": string, "value": number, "unit": string, "reference": string}, ...]}.
-Эреже: оорулуунун аты-жөнү, дареги, ИНН, паспорт, телефон сыяктуу жеке маалыматтарды эч качан кошпо.
-Эгер сан чекит менен болсо, value үчүн JSON number колдон (мисалы 5.8).
-Эски формат (бир гана массив) да колдоого алынат — анда analysisDate жана labName бош деп эсептелет.`;
+/** Подсказка для пользователя: загруженный файл — не лабораторный бланк. */
+export class NonLabDocumentError extends Error {
+  readonly detectedType: string;
+  constructor(detectedType: string) {
+    super(
+      "Файл не похож на лабораторный анализ (вероятно протокол врача, выписка, назначение или иной документ). Для таких файлов используйте загрузку в раздел «Документы», там OCR не пытается извлекать таблицу показателей.",
+    );
+    this.name = "NonLabDocumentError";
+    this.detectedType = detectedType;
+  }
+}
+
+export const LLM_BIOMARKER_SYSTEM = `Ты — экстрактор лабораторных биомаркеров. Твоя задача — извлекать показатели ИСКЛЮЧИТЕЛЬНО из лабораторных бланков (ОАК, ОАМ, биохимия, гормоны, коагулограмма и т.п.), где есть таблица с числовыми значениями.
+
+ВЕРНИ ТОЛЬКО JSON без markdown-обёртки и без текста вокруг. Схема:
+{
+  "documentType": "lab" | "non-lab",
+  "analysisDate": "YYYY-MM-DD" | "",
+  "labName": string | "",
+  "biomarkers": [
+    { "biomarker": string, "value": number, "unit": string, "reference": string }
+  ]
+}
+
+ЖЁСТКИЕ ПРАВИЛА (нарушать запрещено):
+1. Если документ — НЕ лабораторный анализ (протокол приёма врача, выписка, назначение/рецепт, направление, справка, договор, снимок без таблицы), верни ровно:
+   {"documentType":"non-lab","analysisDate":"","labName":"","biomarkers":[]}
+   Никогда не придумывай таблицу показателей в таком случае.
+2. Если документ лабораторный, но числовых значений в таблице не видно — biomarkers: []. НЕ выдумывай числа, единицы и референсы.
+3. Извлекай только те строки, где в самом документе явно есть числовое value и единица unit. Не достраивай «типичные» биомаркеры по памяти.
+4. value — JSON number (не строка). Десятичный разделитель — точка (5.8, не 5,8).
+5. Никогда не включай ФИО, ИНН/ПИН, паспортные данные, телефон, адрес.
+6. Сохраняй язык бланка (русский / кыргызский / казахский) — не переводи названия показателей и единицы.
+7. Никаких пояснений, дисклеймеров, текста вокруг JSON.`;
 
 function allowMockLabParser(): boolean {
   const v = process.env.ALLOW_MOCK_LAB_PARSER?.trim().toLowerCase();
@@ -136,23 +166,66 @@ function biomarkersFromRows(rows: unknown[]): ParsedBiomarker[] {
       reference: String(r.reference ?? "").trim(),
     });
   }
-  if (out.length === 0) throw new Error("No biomarkers in LLM output");
   return out;
 }
 
-/** Парсит JSON модели: объект Smart Upload же legacy-массив. */
+const NON_LAB_TYPE_VALUES = new Set([
+  "non-lab",
+  "non_lab",
+  "nonlab",
+  "protocol",
+  "discharge",
+  "discharge_summary",
+  "prescription",
+  "referral",
+  "report",
+  "note",
+  "other",
+]);
+
+function normalizeDocType(raw: unknown): "lab" | "non-lab" | undefined {
+  if (typeof raw !== "string") return undefined;
+  const v = raw.trim().toLowerCase();
+  if (!v) return undefined;
+  if (v === "lab" || v === "laboratory" || v === "analysis") return "lab";
+  if (NON_LAB_TYPE_VALUES.has(v)) return "non-lab";
+  return undefined;
+}
+
+/**
+ * Парсит JSON модели: объект Smart Upload или legacy-массив.
+ * Если LLM явно классифицировал документ как НЕ лабораторный (documentType !== "lab")
+ * — бросаем NonLabDocumentError, чтобы не подставлять выдуманную таблицу.
+ */
 export function labDraftFromLlmJsonText(text: string): LabOcrDraft {
   const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
   const parsed = JSON.parse(cleaned) as unknown;
+
   if (Array.isArray(parsed)) {
-    return { biomarkers: biomarkersFromRows(parsed) };
+    const biomarkers = biomarkersFromRows(parsed);
+    if (biomarkers.length === 0) throw new Error("No biomarkers in LLM output");
+    return { biomarkers };
   }
+
   if (parsed && typeof parsed === "object") {
     const o = parsed as Record<string, unknown>;
+    const docType = normalizeDocType(o.documentType ?? o.docType ?? o.type);
+
+    if (docType === "non-lab") {
+      const raw = String(o.documentType ?? o.docType ?? o.type ?? "non-lab");
+      throw new NonLabDocumentError(raw);
+    }
+
     let rows: unknown[] | null = null;
     if (Array.isArray(o.biomarkers)) rows = o.biomarkers;
     else if (Array.isArray(o.items)) rows = o.items;
     if (!rows) throw new Error("LLM JSON must be an array or { biomarkers: [...] }");
+
+    const biomarkers = biomarkersFromRows(rows);
+    if (biomarkers.length === 0) {
+      throw new Error("No biomarkers in LLM output");
+    }
+
     const analysisDate =
       normalizeOptionalIsoDate(o.analysisDate) ??
       normalizeOptionalIsoDate(o.date) ??
@@ -161,9 +234,10 @@ export function labDraftFromLlmJsonText(text: string): LabOcrDraft {
     const labName =
       typeof labNameRaw === "string" && labNameRaw.trim() ? labNameRaw.trim() : undefined;
     return {
-      biomarkers: biomarkersFromRows(rows),
+      biomarkers,
       ...(analysisDate ? { analysisDate } : {}),
       ...(labName ? { labName } : {}),
+      ...(docType ? { documentType: docType } : {}),
     };
   }
   throw new Error("LLM returned invalid JSON");
@@ -317,6 +391,9 @@ async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<LabOcr
   );
 }
 
+const LAB_OCR_USER_PROMPT =
+  "Классифицируй документ. Если это лабораторный анализ — извлеки реальные показатели. Если это протокол приёма врача, выписка, назначение, рецепт, направление, справка или иной не-лабораторный документ — верни documentType=\"non-lab\" и пустой массив biomarkers. Никогда не выдумывай показатели. Верни только JSON по схеме из системного промпта.";
+
 /** OpenRouter fallback: image → vision-модель; PDF → pdf-parse + текстовый prompt. */
 async function parseWithOpenRouter(buffer: Buffer, mimeType: string): Promise<{
   biomarkers: ParsedBiomarker[];
@@ -324,8 +401,7 @@ async function parseWithOpenRouter(buffer: Buffer, mimeType: string): Promise<{
   labName?: string;
   parser: "bedrock";
 }> {
-  const userPrompt =
-    "Чыгарып бер: гана JSON — объект { analysisDate, labName, biomarkers } (көрсөткүчтөрдүн тизмеси), башка текст жок.";
+  const userPrompt = LAB_OCR_USER_PROMPT;
   let result: { ok: true; text: string } | { ok: false; userMessage: string };
   if (mimeType.startsWith("image/")) {
     result = await openRouterVisionExtract(LLM_BIOMARKER_SYSTEM, userPrompt, buffer, mimeType);
@@ -364,8 +440,7 @@ async function parseWithBedrock(buffer: Buffer, mimeType: string): Promise<LabOc
   if (!bedrockAuthConfigured()) {
     throw new Error("Bedrock: не задан Bearer или IAM для AWS.");
   }
-  const userPrompt =
-    "Чыгарып бер: гана JSON — объект { analysisDate, labName, biomarkers } (көрсөткүчтөрдүн тизмеси), башка текст жок.";
+  const userPrompt = LAB_OCR_USER_PROMPT;
 
   const modelId = bedrockLabOcrModelId();
   let content: ContentBlock[];
@@ -582,6 +657,9 @@ export async function processMedicalDocument(
           parser: "bedrock",
         };
       } catch (e) {
+        if (e instanceof NonLabDocumentError) {
+          throw e;
+        }
         const msg = e instanceof Error ? e.message : String(e);
         console.error("[processMedicalDocument] Bedrock OCR failed:", msg);
         if (!openRouterFallbackEnabled()) {
