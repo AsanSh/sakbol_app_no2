@@ -9,6 +9,7 @@ import { generateClaudeLabChatAnswer } from "@/lib/anthropic-lab-chat";
 import { generateGeminiLabChatAnswer } from "@/lib/gemini-lab-chat";
 import { generateOpenAILabChatAnswer } from "@/lib/openai-lab-chat";
 import { generateBedrockLabChatAnswer } from "@/lib/bedrock-lab-chat";
+import { anthropicProviderIsBedrock } from "@/lib/bedrock-converse";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const DISCLAIMER =
@@ -78,7 +79,8 @@ function fallbackWithoutGemini(question: string, block: string | null, reason: s
 
 /**
  * Ответ вкладки «ИИ» («Что это значит»): приоритет по env.
- * - По умолчанию: OPENAI → Bedrock (AWS_BEARER_TOKEN_BEDROCK) → Gemini → ANTHROPIC (прямой Claude API), первый успешный ответ.
+ * - ANTHROPIC_PROVIDER=bedrock и без LAB_ASSISTANT_PROVIDER: только Amazon Bedrock (Bearer или IAM).
+ * - Иначе по умолчанию: OPENAI → Bedrock → Gemini → ANTHROPIC (прямой api.anthropic.com), первый успешный ответ.
  * - LAB_ASSISTANT_PROVIDER=openai | bedrock | gemini | anthropic — только один провайдер (без фолбэка).
  */
 export async function askLabAssistantFromBook(
@@ -137,6 +139,8 @@ export async function askLabAssistantFromBook(
     llm = await tryGemini();
   } else if (provider === "anthropic") {
     llm = await tryClaude();
+  } else if (anthropicProviderIsBedrock()) {
+    llm = await tryBedrock();
   } else {
     const chain: Array<() => Promise<LlmTry>> = [tryOpenAI, tryBedrock, tryGemini, tryClaude];
     for (const fn of chain) {
@@ -163,13 +167,13 @@ export async function askLabAssistantFromBook(
     const hint =
       provider === "openai"
         ? "На сервере не задан OPENAI_API_KEY."
-        : provider === "bedrock"
-          ? "На сервере не задан AWS_BEARER_TOKEN_BEDROCK."
+        : provider === "bedrock" || anthropicProviderIsBedrock()
+          ? "На сервере не настроен Bedrock: задайте AWS_BEARER_TOKEN_BEDROCK или IAM (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / роль) и AWS_REGION."
           : provider === "gemini"
             ? "На сервере не задан GEMINI_API_KEY."
             : provider === "anthropic"
               ? "На сервере не задан ANTHROPIC_API_KEY."
-              : "На сервере не задан ни один из ключей: OPENAI_API_KEY, AWS_BEARER_TOKEN_BEDROCK, GEMINI_API_KEY, ANTHROPIC_API_KEY.";
+              : "На сервере не задан ни один из ключей: OPENAI_API_KEY, Bedrock (Bearer или IAM), GEMINI_API_KEY, ANTHROPIC_API_KEY.";
     return {
       ok: true,
       hasBook: false,

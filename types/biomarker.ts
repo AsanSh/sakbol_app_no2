@@ -13,7 +13,7 @@ export type HealthRecordAnalysisPayload = {
   mimeType: string;
   anonymizedAt: string;
   parsedAt: string;
-  parser: "gemini" | "openai" | "mock" | "seed";
+  parser: "gemini" | "openai" | "bedrock" | "mock" | "seed";
   /** ISO: дата из бланка (после OCR), иначе сортировка по uploadedAt */
   analysisDate?: string;
   labDate?: string;

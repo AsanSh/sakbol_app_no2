@@ -1,5 +1,13 @@
 import "server-only";
 
+import type { ContentBlock } from "@aws-sdk/client-bedrock-runtime";
+import {
+  anthropicProviderIsBedrock,
+  bedrockAuthConfigured,
+  bedrockConverse,
+  bedrockLabOcrModelId,
+  mimeToBedrockImageFormat,
+} from "@/lib/bedrock-converse";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 /** Расширенный ответ для Smart Upload: дата бланка, лаборатория, строки таблицы. */
@@ -304,6 +312,57 @@ async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<LabOcr
   );
 }
 
+/** Amazon Bedrock Converse: PDF (document) или изображение — извлечение JSON бланка. */
+async function parseWithBedrock(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
+  if (!bedrockAuthConfigured()) {
+    throw new Error("Bedrock: не задан Bearer или IAM для AWS.");
+  }
+  const userPrompt =
+    "Чыгарып бер: гана JSON — объект { analysisDate, labName, biomarkers } (көрсөткүчтөрдүн тизмеси), башка текст жок.";
+
+  const modelId = bedrockLabOcrModelId();
+  let content: ContentBlock[];
+
+  if (mimeType === "application/pdf") {
+    content = [
+      { text: userPrompt },
+      {
+        document: {
+          format: "pdf",
+          name: "analysis",
+          source: { bytes: new Uint8Array(buffer) },
+        },
+      },
+    ];
+  } else if (mimeType.startsWith("image/")) {
+    const format = mimeToBedrockImageFormat(mimeType);
+    content = [
+      { text: userPrompt },
+      {
+        image: {
+          format,
+          source: { bytes: new Uint8Array(buffer) },
+        },
+      },
+    ];
+  } else {
+    throw new Error("Bedrock OCR поддерживает только PDF или изображение.");
+  }
+
+  const res = await bedrockConverse({
+    modelId,
+    system: LLM_BIOMARKER_SYSTEM,
+    messages: [{ role: "user", content }],
+    maxTokens: 8192,
+    temperature: 0.1,
+  });
+
+  if (!res.ok) {
+    throw new Error(res.userMessage);
+  }
+  return labDraftFromLlmJsonText(res.text);
+}
+
 function openaiLabOcrModel(): string {
   return process.env.OPENAI_LAB_OCR_MODEL?.trim() || "gpt-4o-mini";
 }
@@ -441,6 +500,7 @@ async function parseWithOpenAIVision(
  * - Фото: по умолчанию OpenAI Vision (`OPENAI_LAB_OCR_MODEL`), при ошибке — Gemini.
  * - `LAB_OCR_PREFER_GEMINI_FIRST=1` — сначала Gemini, потом OpenAI.
  * - `LAB_OCR_PREFER_OPENAI=1` — явно предпочесть OpenAI (по умолчанию и так, если не задан prefer Gemini first).
+ * - `ANTHROPIC_PROVIDER=bedrock` — только Amazon Bedrock (IAM или AWS_BEARER_TOKEN_BEDROCK), без OpenAI/Gemini.
  * Мок только при ALLOW_MOCK_LAB_PARSER=1.
  */
 export async function processMedicalDocument(
@@ -450,12 +510,31 @@ export async function processMedicalDocument(
   biomarkers: ParsedBiomarker[];
   analysisDate?: string;
   labName?: string;
-  parser: "gemini" | "openai" | "mock";
+  parser: "gemini" | "openai" | "bedrock" | "mock";
 }> {
-  const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
-  const hasOpenAI = !!process.env.OPENAI_API_KEY?.trim();
   const isImage = mimeType.startsWith("image/");
   const isPdf = mimeType === "application/pdf";
+
+  if (anthropicProviderIsBedrock()) {
+    if (!bedrockAuthConfigured()) {
+      throw new Error(
+        "ANTHROPIC_PROVIDER=bedrock: задайте AWS_BEARER_TOKEN_BEDROCK или IAM (AWS_ACCESS_KEY_ID и AWS_SECRET_ACCESS_KEY / роль) и регион AWS_REGION или BEDROCK_REGION.",
+      );
+    }
+    if (!isImage && !isPdf) {
+      throw new Error("Поддерживаются только PDF или изображение (PNG, JPG, WEBP).");
+    }
+    const draft = await parseWithBedrock(buffer, mimeType);
+    return {
+      biomarkers: draft.biomarkers,
+      analysisDate: draft.analysisDate,
+      labName: draft.labName,
+      parser: "bedrock",
+    };
+  }
+
+  const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
+  const hasOpenAI = !!process.env.OPENAI_API_KEY?.trim();
   const canGemini = hasGemini && (isImage || isPdf);
   const canOpenAIVision = isImage && hasOpenAI;
   const canOpenAIPdf = isPdf && hasOpenAI;
@@ -476,12 +555,12 @@ export async function processMedicalDocument(
 
   const fromDraft = (
     draft: LabOcrDraft,
-    parser: "gemini" | "openai",
+    parser: "gemini" | "openai" | "bedrock",
   ): {
     biomarkers: ParsedBiomarker[];
     analysisDate?: string;
     labName?: string;
-    parser: "gemini" | "openai";
+    parser: "gemini" | "openai" | "bedrock";
   } => ({
     biomarkers: draft.biomarkers,
     analysisDate: draft.analysisDate,

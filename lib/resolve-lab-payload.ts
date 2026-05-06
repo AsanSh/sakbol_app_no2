@@ -22,6 +22,7 @@ export function resolveLabAnalysisPayload(
   const parser: HealthRecordAnalysisPayload["parser"] =
     parserRaw === "gemini" ||
     parserRaw === "openai" ||
+    parserRaw === "bedrock" ||
     parserRaw === "mock" ||
     parserRaw === "seed"
       ? parserRaw

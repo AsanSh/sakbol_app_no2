@@ -29,7 +29,7 @@ type OcrDraft = {
   biomarkers: ParsedBiomarker[];
   analysisDate?: string;
   labName?: string;
-  ocrParser: "gemini" | "openai" | "mock";
+  ocrParser: "gemini" | "openai" | "bedrock" | "mock";
 };
 
 type Props = {
