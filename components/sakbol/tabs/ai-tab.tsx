@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { MaterialIcon } from "@/components/sakbol/material-icon";
 import { SakbolTopBar } from "@/components/sakbol/top-bar";
 import { askLabAssistantFromBook } from "@/app/actions/lab-assistant";
+import { MedicalHistoryAnalysisCard } from "@/components/sakbol/ai/medical-history-card";
 import { useActiveProfile } from "@/context/active-profile-context";
 import { useTelegramSession } from "@/context/telegram-session-context";
 import type { FamilyWithProfiles } from "@/types/family";
@@ -106,6 +107,9 @@ export function AiTab({ family, reloadFamily }: Props) {
           className="flex min-h-0 flex-1 flex-col overflow-y-auto"
         >
           <div className="flex min-h-full flex-col justify-end gap-2 py-1">
+          <div className="pt-1">
+            <MedicalHistoryAnalysisCard profileId={activeProfileId} />
+          </div>
           {messages.map((m) => (
             <div
               key={m.id}
