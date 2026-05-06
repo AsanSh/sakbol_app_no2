@@ -23,7 +23,10 @@ services:
       retries: 10
 
   web:
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:-}
     restart: unless-stopped
     depends_on:
       db:

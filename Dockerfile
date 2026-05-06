@@ -18,6 +18,12 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SKIP_PRISMA_MIGRATE_ON_BUILD=1
 
+# Стабильный ключ для шифрования Server Actions: должен быть и при build, и в runtime,
+# иначе после каждой пересборки уже открытые Mini App сессии получают
+# "Server Action ... was not found".
+ARG NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=""
+ENV NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+
 RUN npx prisma generate && npm run build
 
 # --- runtime ---
