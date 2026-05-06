@@ -10,6 +10,7 @@ import { generateGeminiLabChatAnswer } from "@/lib/gemini-lab-chat";
 import { generateOpenAILabChatAnswer } from "@/lib/openai-lab-chat";
 import { generateBedrockLabChatAnswer } from "@/lib/bedrock-lab-chat";
 import { anthropicProviderIsBedrock } from "@/lib/bedrock-converse";
+import { openRouterChatText, openRouterFallbackEnabled } from "@/lib/openrouter";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const DISCLAIMER =
@@ -127,6 +128,9 @@ export async function askLabAssistantFromBook(
   async function tryBedrock() {
     return generateBedrockLabChatAnswer(LAB_ASSISTANT_SYSTEM, userPrompt);
   }
+  async function tryOpenRouter() {
+    return openRouterChatText(LAB_ASSISTANT_SYSTEM, userPrompt);
+  }
 
   type LlmTry = Awaited<ReturnType<typeof tryOpenAI>>;
   let llm: LlmTry | null = null;
@@ -139,8 +143,14 @@ export async function askLabAssistantFromBook(
     llm = await tryGemini();
   } else if (provider === "anthropic") {
     llm = await tryClaude();
+  } else if (provider === "openrouter") {
+    llm = await tryOpenRouter();
   } else if (anthropicProviderIsBedrock()) {
     llm = await tryBedrock();
+    if (!llm.ok && openRouterFallbackEnabled()) {
+      console.warn("[lab-assistant] Bedrock failed, falling back to OpenRouter:", llm.userMessage);
+      llm = await tryOpenRouter();
+    }
   } else {
     const chain: Array<() => Promise<LlmTry>> = [tryOpenAI, tryBedrock, tryGemini, tryClaude];
     for (const fn of chain) {
@@ -150,6 +160,10 @@ export async function askLabAssistantFromBook(
         break;
       }
       llm = r;
+    }
+    if (llm && !llm.ok && openRouterFallbackEnabled()) {
+      console.warn("[lab-assistant] All providers failed, falling back to OpenRouter:", llm.userMessage);
+      llm = await tryOpenRouter();
     }
   }
 

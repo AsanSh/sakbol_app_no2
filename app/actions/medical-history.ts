@@ -9,6 +9,11 @@ import {
   bedrockConverse,
   bedrockLabOcrModelId,
 } from "@/lib/bedrock-converse";
+import {
+  openRouterFallbackEnabled,
+  openRouterReasoningJson,
+  openRouterReasoningModel,
+} from "@/lib/openrouter";
 
 const DISCLAIMER =
   "Это автоматическая интерпретация на основе ваших загруженных данных. Не диагноз и не назначение, статусы зависят от референсов с бланков и возраста. Любые решения о лечении принимает только лечащий врач.";
@@ -295,15 +300,28 @@ export async function analyzeMedicalHistoryForProfile(
     "Верни ТОЛЬКО JSON по схеме из системного промпта (без префиксов, без ```).",
   ].join("\n");
 
-  const modelId = bedrockLabOcrModelId();
+  const bedrockModelId = bedrockLabOcrModelId();
+  let usedModelId = bedrockModelId;
 
-  const res = await bedrockConverse({
-    modelId,
+  let res = await bedrockConverse({
+    modelId: bedrockModelId,
     system: ANALYSIS_SYSTEM_PROMPT,
     messages: [{ role: "user", content: [{ text: userText }] }],
     maxTokens: 2048,
     temperature: 0.2,
   });
+
+  if (!res.ok && openRouterFallbackEnabled()) {
+    console.warn(
+      "[medical-history] Bedrock failed, falling back to OpenRouter:",
+      res.userMessage,
+    );
+    const fb = await openRouterReasoningJson(ANALYSIS_SYSTEM_PROMPT, userText);
+    if (fb.ok) {
+      res = fb;
+      usedModelId = openRouterReasoningModel();
+    }
+  }
 
   if (!res.ok) {
     return {
@@ -341,7 +359,7 @@ export async function analyzeMedicalHistoryForProfile(
       analysesUsed: analyses.length,
       documentsUsed: documents.length,
       medicationsUsed: medications.length,
-      modelId,
+      modelId: usedModelId,
     },
     disclaimer: DISCLAIMER,
   };

@@ -8,6 +8,11 @@ import {
   bedrockLabOcrModelId,
   mimeToBedrockImageFormat,
 } from "@/lib/bedrock-converse";
+import {
+  openRouterFallbackEnabled,
+  openRouterPdfTextExtract,
+  openRouterVisionExtract,
+} from "@/lib/openrouter";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 /** Расширенный ответ для Smart Upload: дата бланка, лаборатория, строки таблицы. */
@@ -312,6 +317,48 @@ async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<LabOcr
   );
 }
 
+/** OpenRouter fallback: image → vision-модель; PDF → pdf-parse + текстовый prompt. */
+async function parseWithOpenRouter(buffer: Buffer, mimeType: string): Promise<{
+  biomarkers: ParsedBiomarker[];
+  analysisDate?: string;
+  labName?: string;
+  parser: "bedrock";
+}> {
+  const userPrompt =
+    "Чыгарып бер: гана JSON — объект { analysisDate, labName, biomarkers } (көрсөткүчтөрдүн тизмеси), башка текст жок.";
+  let result: { ok: true; text: string } | { ok: false; userMessage: string };
+  if (mimeType.startsWith("image/")) {
+    result = await openRouterVisionExtract(LLM_BIOMARKER_SYSTEM, userPrompt, buffer, mimeType);
+  } else if (mimeType === "application/pdf") {
+    let pdfText = "";
+    try {
+      const mod = await import("pdf-parse");
+      const pdfParse = (mod as unknown as { default: (b: Buffer) => Promise<{ text?: string }> })
+        .default;
+      const data = await pdfParse(buffer);
+      pdfText = String(data?.text ?? "").trim();
+    } catch (e) {
+      throw new Error(
+        `OpenRouter fallback: не удалось извлечь текст из PDF (${(e as Error).message.slice(0, 160)}).`,
+      );
+    }
+    result = await openRouterPdfTextExtract(LLM_BIOMARKER_SYSTEM, userPrompt, pdfText);
+  } else {
+    throw new Error("OpenRouter fallback поддерживает только PDF или изображение.");
+  }
+
+  if (!result.ok) {
+    throw new Error(`OpenRouter OCR: ${result.userMessage}`);
+  }
+  const draft = labDraftFromLlmJsonText(result.text);
+  return {
+    biomarkers: draft.biomarkers,
+    analysisDate: draft.analysisDate,
+    labName: draft.labName,
+    parser: "bedrock",
+  };
+}
+
 /** Amazon Bedrock Converse: PDF (document) или изображение — извлечение JSON бланка. */
 async function parseWithBedrock(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
   if (!bedrockAuthConfigured()) {
@@ -516,7 +563,7 @@ export async function processMedicalDocument(
   const isPdf = mimeType === "application/pdf";
 
   if (anthropicProviderIsBedrock()) {
-    if (!bedrockAuthConfigured()) {
+    if (!bedrockAuthConfigured() && !openRouterFallbackEnabled()) {
       throw new Error(
         "ANTHROPIC_PROVIDER=bedrock: задайте AWS_BEARER_TOKEN_BEDROCK или IAM (AWS_ACCESS_KEY_ID и AWS_SECRET_ACCESS_KEY / роль) и регион AWS_REGION или BEDROCK_REGION.",
       );
@@ -524,13 +571,27 @@ export async function processMedicalDocument(
     if (!isImage && !isPdf) {
       throw new Error("Поддерживаются только PDF или изображение (PNG, JPG, WEBP).");
     }
-    const draft = await parseWithBedrock(buffer, mimeType);
-    return {
-      biomarkers: draft.biomarkers,
-      analysisDate: draft.analysisDate,
-      labName: draft.labName,
-      parser: "bedrock",
-    };
+
+    if (bedrockAuthConfigured()) {
+      try {
+        const draft = await parseWithBedrock(buffer, mimeType);
+        return {
+          biomarkers: draft.biomarkers,
+          analysisDate: draft.analysisDate,
+          labName: draft.labName,
+          parser: "bedrock",
+        };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[processMedicalDocument] Bedrock OCR failed:", msg);
+        if (!openRouterFallbackEnabled()) {
+          throw e;
+        }
+        console.warn("[processMedicalDocument] falling back to OpenRouter…");
+      }
+    }
+
+    return parseWithOpenRouter(buffer, mimeType);
   }
 
   const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
