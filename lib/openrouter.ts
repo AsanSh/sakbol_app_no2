@@ -48,6 +48,12 @@ function dataCollectionMode(): "deny" | "allow" {
   return v === "allow" ? "allow" : "deny";
 }
 
+function openRouterTimeoutMs(): number {
+  const env = process.env.OPENROUTER_TIMEOUT_MS?.trim();
+  if (env && /^\d+$/.test(env)) return Math.max(2000, Number(env));
+  return 60_000;
+}
+
 function commonHeaders(): Record<string, string> {
   const referer =
     process.env.OPENROUTER_HTTP_REFERER?.trim() ||
@@ -92,11 +98,13 @@ export async function openRouterChatCompletion(params: {
     body.response_format = { type: "json_object" };
   }
 
+  const timeoutMs = openRouterTimeoutMs();
   try {
     const res = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
       method: "POST",
       headers: commonHeaders(),
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const bodyText = await res.text();
     if (!res.ok) {
@@ -125,6 +133,9 @@ export async function openRouterChatCompletion(params: {
     if (!text) return { ok: false, userMessage: "OpenRouter: пустой ответ." };
     return { ok: true, text };
   } catch (e) {
+    if (e instanceof Error && (e.name === "AbortError" || e.name === "TimeoutError")) {
+      return { ok: false, userMessage: `OpenRouter timeout (${timeoutMs} ms)` };
+    }
     return {
       ok: false,
       userMessage: e instanceof Error ? e.message : String(e),

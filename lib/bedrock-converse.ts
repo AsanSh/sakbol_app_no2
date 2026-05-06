@@ -47,6 +47,14 @@ function hasBedrockBearer(): boolean {
   return !!process.env.AWS_BEARER_TOKEN_BEDROCK?.trim();
 }
 
+/** Таймаут для одного вызова Bedrock (мс). По умолчанию 25 сек чат / 60 сек OCR. */
+function bedrockTimeoutMs(modelId: string): number {
+  const env = process.env.BEDROCK_TIMEOUT_MS?.trim();
+  if (env && /^\d+$/.test(env)) return Math.max(2000, Number(env));
+  if (modelId === bedrockLabOcrModelId()) return 60_000;
+  return 25_000;
+}
+
 /** Bearer из консоли Bedrock или IAM / instance role / ECS task role и т.д. */
 export function bedrockAuthConfigured(): boolean {
   if (hasBedrockBearer()) return true;
@@ -124,6 +132,7 @@ async function converseViaBearer(
   }
   const region = bedrockRuntimeRegion();
   const url = `https://bedrock-runtime.${region}.amazonaws.com/model/${encodeURIComponent(modelId)}/converse`;
+  const timeoutMs = bedrockTimeoutMs(modelId);
 
   try {
     const res = await fetch(url, {
@@ -133,6 +142,7 @@ async function converseViaBearer(
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const bodyText = await res.text();
     if (!res.ok) {
@@ -149,6 +159,9 @@ async function converseViaBearer(
     return { ok: true, text };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (e instanceof Error && (e.name === "AbortError" || e.name === "TimeoutError")) {
+      return { ok: false, userMessage: `Bedrock timeout (${timeoutMs} ms)` };
+    }
     return { ok: false, userMessage: msg };
   }
 }
@@ -160,6 +173,9 @@ async function converseViaIam(
   maxTokens: number,
   temperature: number,
 ): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
+  const timeoutMs = bedrockTimeoutMs(modelId);
+  const abort = new AbortController();
+  const t = setTimeout(() => abort.abort(), timeoutMs);
   try {
     const client = new BedrockRuntimeClient({ region: bedrockRuntimeRegion() });
     const out = await client.send(
@@ -172,6 +188,7 @@ async function converseViaIam(
         })),
         inferenceConfig: { maxTokens, temperature },
       }),
+      { abortSignal: abort.signal },
     );
     const text = extractConverseText(out);
     if (!text) {
@@ -180,10 +197,15 @@ async function converseViaIam(
     return { ok: true, text };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    if (e instanceof Error && (e.name === "AbortError" || msg.includes("aborted"))) {
+      return { ok: false, userMessage: `Bedrock timeout (${timeoutMs} ms)` };
+    }
     if (/credentials|Credential|Unauthorized|ExpiredToken|InvalidAccessKeyId/i.test(msg)) {
       return { ok: false, userMessage: `NO_KEY: ${msg.slice(0, 200)}` };
     }
     return { ok: false, userMessage: msg };
+  } finally {
+    clearTimeout(t);
   }
 }
 
