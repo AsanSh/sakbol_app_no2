@@ -80,9 +80,10 @@ function fallbackWithoutGemini(question: string, block: string | null, reason: s
 
 /**
  * Ответ вкладки «ИИ» («Что это значит»): приоритет по env.
- * - ANTHROPIC_PROVIDER=bedrock и без LAB_ASSISTANT_PROVIDER: только Amazon Bedrock (Bearer или IAM).
- * - Иначе по умолчанию: OPENAI → Bedrock → Gemini → ANTHROPIC (прямой api.anthropic.com), первый успешный ответ.
- * - LAB_ASSISTANT_PROVIDER=openai | bedrock | gemini | anthropic — только один провайдер (без фолбэка).
+ * - ANTHROPIC_PROVIDER=bedrock и без LAB_ASSISTANT_PROVIDER: только Amazon Bedrock (Bearer или IAM),
+ *   при ошибке — OpenRouter только если OPENROUTER_FALLBACK_ENABLED=1 и задан ключ.
+ * - Иначе по умолчанию: Bedrock → OpenAI → Gemini → Anthropic (первый успешный ответ).
+ * - LAB_ASSISTANT_PROVIDER=openai | bedrock | gemini | anthropic — один провайдер (без цепочки).
  */
 export async function askLabAssistantFromBook(
   question: string,
@@ -143,8 +144,6 @@ export async function askLabAssistantFromBook(
     llm = await tryGemini();
   } else if (provider === "anthropic") {
     llm = await tryClaude();
-  } else if (provider === "openrouter") {
-    llm = await tryOpenRouter();
   } else if (anthropicProviderIsBedrock()) {
     llm = await tryBedrock();
     if (!llm.ok && openRouterFallbackEnabled()) {
@@ -152,7 +151,7 @@ export async function askLabAssistantFromBook(
       llm = await tryOpenRouter();
     }
   } else {
-    const chain: Array<() => Promise<LlmTry>> = [tryOpenAI, tryBedrock, tryGemini, tryClaude];
+    const chain: Array<() => Promise<LlmTry>> = [tryBedrock, tryOpenAI, tryGemini, tryClaude];
     for (const fn of chain) {
       const r = await fn();
       if (r.ok) {
@@ -187,7 +186,7 @@ export async function askLabAssistantFromBook(
             ? "На сервере не задан GEMINI_API_KEY."
             : provider === "anthropic"
               ? "На сервере не задан ANTHROPIC_API_KEY."
-              : "На сервере не задан ни один из ключей: OPENAI_API_KEY, Bedrock (Bearer или IAM), GEMINI_API_KEY, ANTHROPIC_API_KEY.";
+              : "На сервере не задан ни один из ключей: Bedrock (Bearer или IAM), OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY.";
     return {
       ok: true,
       hasBook: false,

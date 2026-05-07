@@ -1,12 +1,9 @@
 import "server-only";
 
 /**
- * OpenRouter (https://openrouter.ai) — fallback провайдер ИИ для случаев,
- * когда Bedrock возвращает ошибку (геоблок, недоступность модели и т.п.).
- *
- * По умолчанию включается ТОЛЬКО при наличии OPENROUTER_API_KEY и явного
- * OPENROUTER_FALLBACK_ENABLED=1. Если ключ есть, но переключатель не задан —
- * fallback автоматически активен, чтобы прод не падал из-за единичной ошибки Bedrock.
+ * OpenRouter (https://openrouter.ai) — опциональный fallback, когда Bedrock недоступен.
+ * Включите явно: OPENROUTER_API_KEY и OPENROUTER_FALLBACK_ENABLED=1 (или true/yes).
+ * Наличия ключа без флага недостаточно — чтобы OpenRouter по умолчанию не участвовал.
  *
  * Для медицинских данных принудительно ставим data_collection: "deny" в provider hints
  * (это отсекает free-провайдеров с обязательным логированием/обучением).
@@ -17,8 +14,7 @@ export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 export function openRouterFallbackEnabled(): boolean {
   if (!process.env.OPENROUTER_API_KEY?.trim()) return false;
   const flag = process.env.OPENROUTER_FALLBACK_ENABLED?.trim().toLowerCase();
-  if (flag === "0" || flag === "false" || flag === "no") return false;
-  return true;
+  return flag === "1" || flag === "true" || flag === "yes";
 }
 
 export function openRouterChatModel(): string {
