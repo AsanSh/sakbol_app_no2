@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -69,7 +70,9 @@ export function DocumentAiAnalysisModal({
 
   if (!open) return null;
 
-  return (
+  if (typeof window === "undefined") return null;
+
+  const modal = (
     <div
       className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 sm:items-center"
       onClick={onClose}
@@ -136,6 +139,8 @@ export function DocumentAiAnalysisModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
 
 function LoadingBlock() {

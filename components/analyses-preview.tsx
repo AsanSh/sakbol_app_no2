@@ -44,7 +44,6 @@ import {
 import type { ParsedBiomarker } from "@/types/biomarker";
 import { categoryForBiomarkerKey } from "@/constants/biomarker-categories";
 import { downloadLabPdfClient } from "@/lib/download-lab-pdf";
-import { downloadHealthDocumentClient } from "@/lib/download-health-document";
 import { AnalysisComparePanel } from "@/components/analysis-compare-panel";
 import { archivePrimaryDateLabel, ARCHIVE_CATEGORY_RU } from "@/lib/archive-display-dates";
 import { effectiveAnalysisTimeMs } from "@/lib/lab-analysis-dates";
@@ -186,7 +185,6 @@ export function AnalysesPreview({
   const [refreshing, setRefreshing] = useState(false);
   const [autoRefreshTick, setAutoRefreshTick] = useState(0);
   const [manualSyncTick, setManualSyncTick] = useState(0);
-  const [downloadDocBusyId, setDownloadDocBusyId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [aiDocModal, setAiDocModal] = useState<{ id: string; title: string } | null>(null);
   /** В Telegram Mini App нельзя открыть blob в новой вкладке — показываем файл внутри приложения с кнопкой «Назад». */
@@ -814,43 +812,6 @@ export function AnalysesPreview({
                       </span>
                     </button>
                     <div className="flex shrink-0 flex-col gap-1.5">
-                      <button
-                        type="button"
-                        disabled={downloadDocBusyId === d.id || Boolean(openDocBusyId)}
-                        className="inline-flex items-center justify-center rounded-lg bg-teal-50 px-2 py-1 text-[11px] font-semibold text-health-primary ring-1 ring-teal-100 hover:bg-teal-100/80 disabled:opacity-50"
-                        title={t(lang, "analyses.downloadFile")}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const isExternal =
-                            d.fileUrl.startsWith("https://") || d.fileUrl.startsWith("http://");
-                          if (isExternal) {
-                            type TgWebApp = {
-                              openLink?: (u: string, o?: { try_instant_view?: boolean }) => void;
-                            };
-                            const tg = (window as unknown as { Telegram?: { WebApp?: TgWebApp } })
-                              .Telegram?.WebApp;
-                            if (typeof tg?.openLink === "function") {
-                              tg.openLink(d.fileUrl, { try_instant_view: false });
-                            } else {
-                              window.open(d.fileUrl, "_blank", "noopener,noreferrer");
-                            }
-                            return;
-                          }
-                          setDownloadDocBusyId(d.id);
-                          setError(null);
-                          void downloadHealthDocumentClient(d.id, d.title)
-                            .then((r) => {
-                              if (!r.ok) setError(r.error);
-                            })
-                            .finally(() => setDownloadDocBusyId(null));
-                        }}
-                      >
-                        {downloadDocBusyId === d.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                        ) : (
-                          <FileDown className="h-3.5 w-3.5" aria-hidden />
-                        )}
-                      </button>
                       <button
                         type="button"
                         className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#004253] to-[#005b71] px-2 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:opacity-90"
