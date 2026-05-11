@@ -15,23 +15,14 @@ import {
   openRouterVisionExtract,
 } from "@/lib/openrouter";
 import { deepseekEnabled, deepseekModel, deepseekReasoningJson } from "@/lib/deepseek";
+import { extractPlainTextFromHealthDocumentBuffer } from "@/lib/health-document-text-extract";
 
-/** Минимум символов из pdf-parse, чтобы считать PDF «текстовым» и слать в DeepSeek. Сканы без слоя текста — сразу в Bedrock/OpenRouter (multimodal). */
+/** Минимум символов, чтобы слать PDF в DeepSeek (после pdf-parse + опционально Poppler+Tesseract). */
 const PDF_TEXT_MIN_CHARS_FOR_DEEPSEEK = 48;
 
 async function extractPdfPlainText(buffer: Buffer): Promise<string> {
-  try {
-    const mod = await import("pdf-parse");
-    const pdfParse = (mod as unknown as { default: (b: Buffer) => Promise<{ text?: string }> })
-      .default;
-    const data = await pdfParse(buffer);
-    return String(data?.text ?? "")
-      .replace(/\u0000/g, "")
-      .trim()
-      .slice(0, 60_000);
-  } catch {
-    return "";
-  }
+  const t = await extractPlainTextFromHealthDocumentBuffer(buffer, "application/pdf");
+  return t.replace(/\u0000/g, "").trim().slice(0, 60_000);
 }
 
 /**
@@ -231,11 +222,7 @@ async function callOpenRouterOnDocument(
   if (mimeType === "application/pdf") {
     let pdfText = "";
     try {
-      const mod = await import("pdf-parse");
-      const pdfParse = (mod as unknown as { default: (b: Buffer) => Promise<{ text?: string }> })
-        .default;
-      const data = await pdfParse(buffer);
-      pdfText = String(data?.text ?? "").trim();
+      pdfText = await extractPdfPlainText(buffer);
     } catch (e) {
       return {
         ok: false,
@@ -265,34 +252,6 @@ async function callOpenRouterOnText(text: string): Promise<
   return openRouterReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
 }
 
-/**
- * DeepSeek fallback (текст-only): PDF → pdf-parse → DeepSeek JSON.
- * Изображения не поддерживаются — DeepSeek работает только с текстом.
- */
-async function callDeepSeekOnDocument(
-  buffer: Buffer,
-  mimeType: string,
-): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
-  if (!deepseekEnabled()) {
-    return { ok: false, userMessage: "NO_KEY" };
-  }
-  if (mimeType === "application/pdf") {
-    const pdfText = await extractPdfPlainText(buffer);
-    if (!pdfText) {
-      return { ok: false, userMessage: "DeepSeek: PDF без текстового слоя (вероятно скан). Используйте multimodal-провайдер." };
-    }
-    if (pdfText.length < PDF_TEXT_MIN_CHARS_FOR_DEEPSEEK) {
-      return { ok: false, userMessage: "DeepSeek: слишком мало текста в PDF для надёжного разбора." };
-    }
-    const enriched = `${DOCUMENT_USER_PROMPT}\n\n--- ТЕКСТ PDF ---\n${pdfText}`;
-    return deepseekReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
-  }
-  return {
-    ok: false,
-    userMessage: "DeepSeek: поддерживается только PDF (текстовый режим). Для изображений используйте Bedrock или OpenRouter.",
-  };
-}
-
 export type AnalyzeMedicalDocumentResult =
   | {
       ok: true;
@@ -306,8 +265,7 @@ export type AnalyzeMedicalDocumentResult =
  * Главная точка: PDF / изображение → структурированный JSON разбора.
  *
  * Порядок провайдеров:
- *   PDF с текстовым слоем: DeepSeek (pdf-parse) → Bedrock → OpenRouter
- *   PDF-скан (мало/нет текста): Bedrock → OpenRouter (multimodal / vision)
+ *   PDF: pdf-parse + при необходимости Poppler+Tesseract (см. health-document-text-extract) → DeepSeek (текст) → Bedrock → OpenRouter
  *   Изображение: Bedrock → OpenRouter
  */
 export async function analyzeMedicalDocumentBuffer(

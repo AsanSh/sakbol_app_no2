@@ -14,6 +14,7 @@ import {
   openRouterVisionExtract,
 } from "@/lib/openrouter";
 import { deepseekEnabled, deepseekReasoningJson } from "@/lib/deepseek";
+import { extractPlainTextFromHealthDocumentBuffer } from "@/lib/health-document-text-extract";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 /** Расширенный ответ для Smart Upload: дата бланка, лаборатория, строки таблицы. */
@@ -409,11 +410,7 @@ async function parseWithOpenRouter(buffer: Buffer, mimeType: string): Promise<{
   } else if (mimeType === "application/pdf") {
     let pdfText = "";
     try {
-      const mod = await import("pdf-parse");
-      const pdfParse = (mod as unknown as { default: (b: Buffer) => Promise<{ text?: string }> })
-        .default;
-      const data = await pdfParse(buffer);
-      pdfText = String(data?.text ?? "").trim();
+      pdfText = await extractPlainTextFromHealthDocumentBuffer(buffer, "application/pdf");
     } catch (e) {
       throw new Error(
         `OpenRouter fallback: не удалось извлечь текст из PDF (${(e as Error).message.slice(0, 160)}).`,
@@ -449,11 +446,10 @@ async function parseWithDeepSeek(buffer: Buffer, mimeType: string): Promise<LabO
   }
   let pdfText = "";
   try {
-    const mod = await import("pdf-parse");
-    const pdfParse = (mod as unknown as { default: (b: Buffer) => Promise<{ text?: string }> })
-      .default;
-    const data = await pdfParse(buffer);
-    pdfText = String(data?.text ?? "").replace(/\u0000/g, "").trim().slice(0, 60_000);
+    pdfText = (await extractPlainTextFromHealthDocumentBuffer(buffer, "application/pdf"))
+      .replace(/\u0000/g, "")
+      .trim()
+      .slice(0, 60_000);
   } catch (e) {
     throw new Error(
       `DeepSeek OCR: не удалось извлечь текст из PDF (${(e as Error).message.slice(0, 160)}).`,

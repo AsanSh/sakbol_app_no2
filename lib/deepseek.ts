@@ -3,8 +3,8 @@ import "server-only";
 /**
  * DeepSeek (https://platform.deepseek.com) — OpenAI-совместимый провайдер.
  * Включается автоматически при наличии DEEPSEEK_API_KEY.
- * Только текстовые модели: изображения и PDF-байты не поддерживаются.
- * Для документов — использовать после извлечения текста (pdf-parse / Tesseract).
+ * Только текстовые модели (`deepseek-chat`): PDF/картинки в API не шлём напрямую.
+ * Для PDF после `pdf-parse` при сканах подставляется текст из Poppler+Tesseract (`health-document-text-extract`).
  *
  * Переменные:
  *   DEEPSEEK_API_KEY   — обязательный
