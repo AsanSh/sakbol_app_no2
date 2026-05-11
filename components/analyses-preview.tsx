@@ -194,6 +194,55 @@ export function AnalysesPreview({
     mimeType: string;
   } | null>(null);
 
+  const [docSheetPct, setDocSheetPct] = useState<number>(100);
+  const [docPinching, setDocPinching] = useState(false);
+  const docPinchRef = useRef<{ active: boolean; startDist: number; startPct: number }>({
+    active: false,
+    startDist: 0,
+    startPct: 100,
+  });
+
+  useEffect(() => {
+    // При открытии документа возвращаем просмотр на максимум.
+    if (documentPreview) setDocSheetPct(100);
+  }, [documentPreview]);
+
+  function dist2(t1: Touch, t2: Touch): number {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.hypot(dx, dy);
+  }
+
+  const onDocumentPinchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 2) return;
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    const d = dist2(t1, t2);
+    if (!Number.isFinite(d) || d <= 0) return;
+    docPinchRef.current = { active: true, startDist: d, startPct: docSheetPct };
+    setDocPinching(true);
+  };
+
+  const onDocumentPinchMove = (e: React.TouchEvent) => {
+    if (!docPinchRef.current.active) return;
+    if (e.touches.length !== 2) return;
+    // Не даём жесту уйти в Telegram (свертывание/скролл) и управляем высотой сами.
+    e.preventDefault();
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    const d = dist2(t1, t2);
+    const { startDist, startPct } = docPinchRef.current;
+    if (!Number.isFinite(d) || startDist <= 0) return;
+    const ratio = d / startDist;
+    const nextPct = Math.max(45, Math.min(100, startPct * ratio));
+    setDocSheetPct(nextPct);
+  };
+
+  const onDocumentPinchEnd = () => {
+    docPinchRef.current.active = false;
+    setDocPinching(false);
+  };
+
   const closeDocumentPreview = useCallback(() => {
     setDocumentPreview((prev) => {
       if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl);
@@ -1398,10 +1447,18 @@ export function AnalysesPreview({
 
       {documentPreview ? (
         <div
-          className="fixed inset-0 z-[195] flex flex-col bg-[#0f1419]"
+          className={cn(
+            "fixed inset-x-0 bottom-0 z-[195] flex flex-col bg-[#0f1419] overflow-hidden",
+            docSheetPct < 100 ? "rounded-t-3xl" : "",
+          )}
           role="dialog"
           aria-modal="true"
           aria-label={documentPreview.title}
+          style={{ height: `${docSheetPct}%`, touchAction: docPinching ? "none" : "pan-y" }}
+          onTouchStart={onDocumentPinchStart}
+          onTouchMove={onDocumentPinchMove}
+          onTouchEnd={onDocumentPinchEnd}
+          onTouchCancel={onDocumentPinchEnd}
         >
           <header
             className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#004253] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white"
@@ -1416,7 +1473,7 @@ export function AnalysesPreview({
             </button>
             <p className="min-w-0 flex-1 truncate text-sm font-medium">{documentPreview.title}</p>
           </header>
-          <div className="relative min-h-0 flex-1 bg-black">
+          <div className="relative min-h-0 flex-1 bg-black overflow-auto">
             {documentPreview.mimeType.startsWith("image/") ? (
               <div className="flex h-full items-center justify-center overflow-auto p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                 <img
