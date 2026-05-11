@@ -1,9 +1,10 @@
 "use client";
 
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import useSWRInfinite from "swr/infinite";
 import {
+  ArrowLeft,
   ChevronDown,
   ChevronUp,
   FileDown,
@@ -11,6 +12,7 @@ import {
   Loader2,
   PlusCircle,
   RefreshCw,
+  Sparkles,
   Stethoscope,
   Trash2,
 } from "lucide-react";
@@ -46,6 +48,7 @@ import { downloadHealthDocumentClient } from "@/lib/download-health-document";
 import { AnalysisComparePanel } from "@/components/analysis-compare-panel";
 import { archivePrimaryDateLabel, ARCHIVE_CATEGORY_RU } from "@/lib/archive-display-dates";
 import { effectiveAnalysisTimeMs } from "@/lib/lab-analysis-dates";
+import { DocumentAiAnalysisModal } from "@/components/sakbol/ai/document-analysis-modal";
 
 type HealthDocRow = {
   id: string;
@@ -79,6 +82,11 @@ const documentsFetcher = async (url: string): Promise<DocumentsPage> => {
   if (!r.ok) throw new Error("documents_fetch_failed");
   return (await r.json()) as DocumentsPage;
 };
+
+function isTelegramMiniApp(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean((window as unknown as { Telegram?: { WebApp?: unknown } }).Telegram?.WebApp);
+}
 
 const DocumentSkeleton = () => (
   <div className="flex items-center gap-3 rounded-xl bg-white p-3 animate-pulse">
@@ -180,6 +188,33 @@ export function AnalysesPreview({
   const [manualSyncTick, setManualSyncTick] = useState(0);
   const [downloadDocBusyId, setDownloadDocBusyId] = useState<string | null>(null);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  const [aiDocModal, setAiDocModal] = useState<{ id: string; title: string } | null>(null);
+  /** В Telegram Mini App нельзя открыть blob в новой вкладке — показываем файл внутри приложения с кнопкой «Назад». */
+  const [documentPreview, setDocumentPreview] = useState<{
+    title: string;
+    blobUrl: string;
+    mimeType: string;
+  } | null>(null);
+
+  const closeDocumentPreview = useCallback(() => {
+    setDocumentPreview((prev) => {
+      if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl);
+      return null;
+    });
+  }, []);
+
+  useEffect(() => {
+    closeDocumentPreview();
+  }, [activeProfileId, closeDocumentPreview]);
+
+  useEffect(() => {
+    if (!documentPreview) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeDocumentPreview();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [documentPreview, closeDocumentPreview]);
 
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
@@ -464,20 +499,20 @@ export function AnalysesPreview({
       }
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-      type TgWebApp2 = { openLink?: (u: string, o?: { try_instant_view?: boolean }) => void };
-      const tg2 = (window as unknown as { Telegram?: { WebApp?: TgWebApp2 } }).Telegram?.WebApp;
-      if (typeof tg2?.openLink === "function") {
-        // Can't open blob: via Telegram — fall back to anchor click
-        const a = document.createElement("a");
-        a.href = blobUrl;
-        a.download = doc.title || "document";
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      } else {
-        window.open(blobUrl, "_blank", "noopener,noreferrer");
+      const mimeFromHeader = res.headers.get("content-type")?.split(";")[0]?.trim();
+      const mimeType =
+        mimeFromHeader || doc.mimeType?.trim() || blob.type || "application/pdf";
+
+      if (isTelegramMiniApp()) {
+        setDocumentPreview({
+          title: doc.title?.trim() || "Документ",
+          blobUrl,
+          mimeType,
+        });
+        return;
       }
+
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch {
       setError("Ошибка сети при открытии документа.");
@@ -815,6 +850,19 @@ export function AnalysesPreview({
                         ) : (
                           <FileDown className="h-3.5 w-3.5" aria-hidden />
                         )}
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#004253] to-[#005b71] px-2 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:opacity-90"
+                        title="ИИ-разбор документа"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          closeDocumentPreview();
+                          setAiDocModal({ id: d.id, title: d.title });
+                        }}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                        <span className="hidden sm:inline">Разбор ИИ</span>
                       </button>
                       {activeProfileCanWrite ? (
                         <>
@@ -1386,6 +1434,53 @@ export function AnalysesPreview({
       {!compact ? (
         <p className="mt-4 text-[10px] leading-tight text-health-text-secondary">{t(lang, "analyses.disclaimer")}</p>
       ) : null}
+
+      {documentPreview ? (
+        <div
+          className="fixed inset-0 z-[195] flex flex-col bg-[#0f1419]"
+          role="dialog"
+          aria-modal="true"
+          aria-label={documentPreview.title}
+        >
+          <header
+            className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#004253] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white"
+          >
+            <button
+              type="button"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold transition hover:bg-white/25 active:scale-[0.98]"
+              onClick={closeDocumentPreview}
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+              Назад
+            </button>
+            <p className="min-w-0 flex-1 truncate text-sm font-medium">{documentPreview.title}</p>
+          </header>
+          <div className="relative min-h-0 flex-1 bg-black">
+            {documentPreview.mimeType.startsWith("image/") ? (
+              <div className="flex h-full items-center justify-center overflow-auto p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                <img
+                  src={documentPreview.blobUrl}
+                  alt=""
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+            ) : (
+              <iframe
+                title={documentPreview.title}
+                src={documentPreview.blobUrl}
+                className="h-full w-full border-0 bg-white"
+              />
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      <DocumentAiAnalysisModal
+        open={aiDocModal !== null}
+        onClose={() => setAiDocModal(null)}
+        documentId={aiDocModal?.id ?? null}
+        documentTitle={aiDocModal?.title}
+      />
     </section>
   );
 }

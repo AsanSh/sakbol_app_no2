@@ -14,7 +14,25 @@ import {
   openRouterReasoningModel,
   openRouterVisionExtract,
 } from "@/lib/openrouter";
-import { deepseekEnabled, deepseekReasoningJson } from "@/lib/deepseek";
+import { deepseekEnabled, deepseekModel, deepseekReasoningJson } from "@/lib/deepseek";
+
+/** Минимум символов из pdf-parse, чтобы считать PDF «текстовым» и слать в DeepSeek. Сканы без слоя текста — сразу в Bedrock/OpenRouter (multimodal). */
+const PDF_TEXT_MIN_CHARS_FOR_DEEPSEEK = 48;
+
+async function extractPdfPlainText(buffer: Buffer): Promise<string> {
+  try {
+    const mod = await import("pdf-parse");
+    const pdfParse = (mod as unknown as { default: (b: Buffer) => Promise<{ text?: string }> })
+      .default;
+    const data = await pdfParse(buffer);
+    return String(data?.text ?? "")
+      .replace(/\u0000/g, "")
+      .trim()
+      .slice(0, 60_000);
+  } catch {
+    return "";
+  }
+}
 
 /**
  * Расшифровка немедицинских (с т.з. лаборатории) документов: протоколов приёма
@@ -259,21 +277,12 @@ async function callDeepSeekOnDocument(
     return { ok: false, userMessage: "NO_KEY" };
   }
   if (mimeType === "application/pdf") {
-    let pdfText = "";
-    try {
-      const mod = await import("pdf-parse");
-      const pdfParse = (mod as unknown as { default: (b: Buffer) => Promise<{ text?: string }> })
-        .default;
-      const data = await pdfParse(buffer);
-      pdfText = String(data?.text ?? "").replace(/\u0000/g, "").trim().slice(0, 60_000);
-    } catch (e) {
-      return {
-        ok: false,
-        userMessage: `DeepSeek fallback: не удалось извлечь текст из PDF (${(e as Error).message.slice(0, 160)}).`,
-      };
-    }
+    const pdfText = await extractPdfPlainText(buffer);
     if (!pdfText) {
-      return { ok: false, userMessage: "DeepSeek fallback: PDF не содержит извлекаемого текста." };
+      return { ok: false, userMessage: "DeepSeek: PDF без текстового слоя (вероятно скан). Используйте multimodal-провайдер." };
+    }
+    if (pdfText.length < PDF_TEXT_MIN_CHARS_FOR_DEEPSEEK) {
+      return { ok: false, userMessage: "DeepSeek: слишком мало текста в PDF для надёжного разбора." };
     }
     const enriched = `${DOCUMENT_USER_PROMPT}\n\n--- ТЕКСТ PDF ---\n${pdfText}`;
     return deepseekReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
@@ -297,8 +306,9 @@ export type AnalyzeMedicalDocumentResult =
  * Главная точка: PDF / изображение → структурированный JSON разбора.
  *
  * Порядок провайдеров:
- *   PDF:        DeepSeek (pdf-parse+текст) → Bedrock (multimodal) → OpenRouter
- *   Изображение: Bedrock (multimodal) → OpenRouter → DeepSeek (не поддерживается, пропускается)
+ *   PDF с текстовым слоем: DeepSeek (pdf-parse) → Bedrock → OpenRouter
+ *   PDF-скан (мало/нет текста): Bedrock → OpenRouter (multimodal / vision)
+ *   Изображение: Bedrock → OpenRouter
  */
 export async function analyzeMedicalDocumentBuffer(
   buffer: Buffer,
@@ -317,18 +327,29 @@ export async function analyzeMedicalDocumentBuffer(
   }
 
   let usedModelId = bedrockLabOcrModelId();
-  let res: { ok: true; text: string } | { ok: false; userMessage: string };
+  let res: { ok: true; text: string } | { ok: false; userMessage: string } | undefined;
 
   if (isPdf && deepseekEnabled()) {
-    res = await callDeepSeekOnDocument(buffer, mimeType);
-    if (res.ok) {
-      usedModelId = "deepseek-chat";
+    const pdfPlain = await extractPdfPlainText(buffer);
+    if (pdfPlain.length >= PDF_TEXT_MIN_CHARS_FOR_DEEPSEEK) {
+      const enriched = `${DOCUMENT_USER_PROMPT}\n\n--- ТЕКСТ PDF ---\n${pdfPlain}`;
+      const ds = await deepseekReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
+      res = ds;
+      if (ds.ok) {
+        usedModelId = deepseekModel();
+      } else {
+        console.warn("[analyzeMedicalDocument] DeepSeek failed, falling back to Bedrock:", ds.userMessage);
+      }
     } else {
-      console.warn("[analyzeMedicalDocument] DeepSeek failed, falling back to Bedrock:", res.userMessage);
-      res = await callBedrockOnDocument(buffer, mimeType);
+      console.warn(
+        "[analyzeMedicalDocument] PDF без достаточного текстового слоя (скан?) — пропускаем DeepSeek, Bedrock/OpenRouter.",
+      );
     }
-  } else {
+  }
+
+  if (!res?.ok) {
     res = await callBedrockOnDocument(buffer, mimeType);
+    if (res.ok) usedModelId = bedrockLabOcrModelId();
   }
 
   if (!res.ok && openRouterFallbackEnabled()) {
@@ -338,15 +359,6 @@ export async function analyzeMedicalDocumentBuffer(
     );
     res = await callOpenRouterOnDocument(buffer, mimeType);
     usedModelId = openRouterReasoningModel();
-  }
-
-  if (!res.ok && isImage === false && deepseekEnabled()) {
-    console.warn(
-      "[analyzeMedicalDocument] OpenRouter failed, falling back to DeepSeek:",
-      res.userMessage,
-    );
-    res = await callDeepSeekOnDocument(buffer, mimeType);
-    usedModelId = "deepseek-chat";
   }
 
   if (!res.ok) {

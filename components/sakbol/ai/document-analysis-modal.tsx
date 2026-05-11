@@ -78,8 +78,17 @@ export function DocumentAiAnalysisModal({
         className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-2">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-3 sm:px-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200"
+              aria-label="Назад"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Назад
+            </button>
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#004253] to-[#005b71] text-white">
               <Sparkles className="h-4 w-4" />
             </div>
@@ -95,7 +104,7 @@ export function DocumentAiAnalysisModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
             aria-label="Закрыть"
           >
             <X className="h-4 w-4" />
