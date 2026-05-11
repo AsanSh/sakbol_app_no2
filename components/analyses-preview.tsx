@@ -199,56 +199,50 @@ export function AnalysesPreview({
     mimeType: string;
   } | null>(null);
 
-  const [docSheetPct, setDocSheetPct] = useState<number>(100);
-  const [docPinching, setDocPinching] = useState(false);
-  const docPinchRef = useRef<{ active: boolean; startDist: number; startPct: number }>({
-    active: false,
-    startDist: 0,
-    startPct: 100,
-  });
+  /** Увеличение контента двойным тапом (pinch на листе конфликтует с Telegram и закрывает мини-приложение). */
+  const [docPreviewMagnified, setDocPreviewMagnified] = useState(false);
+  const docPreviewTapRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const docPreviewLastTapEndRef = useRef(0);
 
   useEffect(() => {
-    // При открытии документа возвращаем просмотр на максимум.
-    if (documentPreview) setDocSheetPct(100);
+    if (documentPreview) {
+      setDocPreviewMagnified(false);
+      docPreviewTapRef.current = null;
+      docPreviewLastTapEndRef.current = 0;
+    }
   }, [documentPreview]);
 
-  function dist2(
-    t1: { clientX: number; clientY: number },
-    t2: { clientX: number; clientY: number },
-  ): number {
-    const dx = t1.clientX - t2.clientX;
-    const dy = t1.clientY - t2.clientY;
-    return Math.hypot(dx, dy);
-  }
-
-  const onDocumentPinchStart = (e: React.TouchEvent) => {
-    if (e.touches.length !== 2) return;
-    const t1 = e.touches[0];
-    const t2 = e.touches[1];
-    const d = dist2(t1, t2);
-    if (!Number.isFinite(d) || d <= 0) return;
-    docPinchRef.current = { active: true, startDist: d, startPct: docSheetPct };
-    setDocPinching(true);
+  const registerDocPreviewTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) {
+      docPreviewTapRef.current = null;
+      return;
+    }
+    const t = e.touches[0];
+    docPreviewTapRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
   };
 
-  const onDocumentPinchMove = (e: React.TouchEvent) => {
-    if (!docPinchRef.current.active) return;
-    if (e.touches.length !== 2) return;
-    // Не даём жесту уйти в Telegram (свертывание/скролл) и управляем высотой сами.
+  const onDocPreviewContentTouchEnd = (e: React.TouchEvent) => {
+    if (e.changedTouches.length !== 1) return;
+    const t = e.changedTouches[0];
+    const st = docPreviewTapRef.current;
+    docPreviewTapRef.current = null;
+    if (!st) return;
+    if (Date.now() - st.t > 550) return;
+    if (Math.hypot(t.clientX - st.x, t.clientY - st.y) > 22) return;
+
+    const now = Date.now();
+    const prev = docPreviewLastTapEndRef.current;
+    if (prev > 0 && now - prev < 340) {
+      setDocPreviewMagnified((m) => !m);
+      docPreviewLastTapEndRef.current = 0;
+    } else {
+      docPreviewLastTapEndRef.current = now;
+    }
+  };
+
+  const onDocPreviewContentDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const t1 = e.touches[0];
-    const t2 = e.touches[1];
-    const d = dist2(t1, t2);
-    const { startDist, startPct } = docPinchRef.current;
-    if (!Number.isFinite(d) || startDist <= 0) return;
-    const ratio = d / startDist;
-    const nextPct = Math.max(45, Math.min(100, startPct * ratio));
-    setDocSheetPct(nextPct);
-  };
-
-  const onDocumentPinchEnd = () => {
-    docPinchRef.current.active = false;
-    setDocPinching(false);
+    setDocPreviewMagnified((m) => !m);
   };
 
   const closeDocumentPreview = useCallback(() => {
@@ -1484,18 +1478,10 @@ export function AnalysesPreview({
 
       {documentPreview ? (
         <div
-          className={cn(
-            "fixed inset-x-0 bottom-0 z-[195] flex flex-col bg-[#0f1419] overflow-hidden",
-            docSheetPct < 100 ? "rounded-t-3xl" : "",
-          )}
+          className="fixed inset-0 z-[195] flex flex-col bg-[#0f1419] overflow-hidden"
           role="dialog"
           aria-modal="true"
           aria-label={documentPreview.title}
-          style={{ height: `${docSheetPct}%`, touchAction: docPinching ? "none" : "pan-y" }}
-          onTouchStart={onDocumentPinchStart}
-          onTouchMove={onDocumentPinchMove}
-          onTouchEnd={onDocumentPinchEnd}
-          onTouchCancel={onDocumentPinchEnd}
         >
           <header
             className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#004253] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white"
@@ -1510,20 +1496,39 @@ export function AnalysesPreview({
             </button>
             <p className="min-w-0 flex-1 truncate text-sm font-medium">{documentPreview.title}</p>
           </header>
-          <div className="relative min-h-0 flex-1 bg-black overflow-auto">
+          <p className="shrink-0 bg-[#0f1419] px-3 py-1.5 text-center text-[11px] text-white/55">
+            Двойной тап по документу — увеличить; ещё раз — по размеру экрана
+          </p>
+          <div
+            className="relative min-h-0 flex-1 overflow-auto overscroll-contain bg-black pb-[max(0.5rem,env(safe-area-inset-bottom))] selection:bg-teal-500/30"
+            style={{ touchAction: "manipulation" }}
+            onTouchStart={registerDocPreviewTouchStart}
+            onTouchEnd={onDocPreviewContentTouchEnd}
+            onDoubleClick={onDocPreviewContentDoubleClick}
+          >
             {documentPreview.mimeType.startsWith("image/") ? (
-              <div className="flex h-full items-center justify-center overflow-auto p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <div className="flex min-h-full min-w-full items-center justify-center p-2">
                 <img
                   src={documentPreview.blobUrl}
                   alt=""
-                  className="max-h-full max-w-full object-contain"
+                  className={cn(
+                    docPreviewMagnified
+                      ? "h-auto max-h-none w-auto min-w-full max-w-[220%] object-contain"
+                      : "max-h-full max-w-full object-contain",
+                  )}
+                  draggable={false}
                 />
               </div>
             ) : (
               <iframe
                 title={documentPreview.title}
                 src={documentPreview.blobUrl}
-                className="h-full w-full border-0 bg-white"
+                className="box-border border-0 bg-white"
+                style={
+                  docPreviewMagnified
+                    ? { width: "160%", height: "160%", minHeight: "100%" }
+                    : { width: "100%", height: "100%", minHeight: "100%" }
+                }
               />
             )}
           </div>
