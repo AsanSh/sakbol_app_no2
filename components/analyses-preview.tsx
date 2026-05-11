@@ -194,12 +194,29 @@ export function AnalysesPreview({
     mimeType: string;
   } | null>(null);
 
+  const setTelegramVerticalSwipes = useCallback((enabled: boolean) => {
+    if (typeof window === "undefined") return;
+    try {
+      const w = (window as unknown as { Telegram?: { WebApp?: unknown } }).Telegram?.WebApp as
+        | { enableVerticalSwipes?: () => void; disableVerticalSwipes?: () => void }
+        | undefined;
+      if (!w) return;
+      if (enabled) w.enableVerticalSwipes?.();
+      else w.disableVerticalSwipes?.();
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const closeDocumentPreview = useCallback(() => {
+    // Когда оверлей документа закрыт — снова отключаем вертикальные свайпы,
+    // чтобы Mini App меньше «случайно сворачивалась» при скролле/жестах.
+    setTelegramVerticalSwipes(false);
     setDocumentPreview((prev) => {
       if (prev?.blobUrl) URL.revokeObjectURL(prev.blobUrl);
       return null;
     });
-  }, []);
+  }, [setTelegramVerticalSwipes]);
 
   useEffect(() => {
     closeDocumentPreview();
@@ -502,6 +519,9 @@ export function AnalysesPreview({
         mimeFromHeader || doc.mimeType?.trim() || blob.type || "application/pdf";
 
       if (isTelegramMiniApp()) {
+        // Чтобы пользователь мог «жестом уменьшить» мини-приложение при просмотре,
+        // временно включаем vertical swipes.
+        setTelegramVerticalSwipes(true);
         setDocumentPreview({
           title: doc.title?.trim() || "Документ",
           blobUrl,
