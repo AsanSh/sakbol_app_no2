@@ -48,6 +48,7 @@ import { AnalysisComparePanel } from "@/components/analysis-compare-panel";
 import { archivePrimaryDateLabel, ARCHIVE_CATEGORY_RU } from "@/lib/archive-display-dates";
 import { effectiveAnalysisTimeMs } from "@/lib/lab-analysis-dates";
 import { DocumentAiAnalysisModal } from "@/components/sakbol/ai/document-analysis-modal";
+import { downloadDoctorReportPdf } from "@/lib/client/download-doctor-report-pdf";
 
 type HealthDocRow = {
   id: string;
@@ -151,6 +152,8 @@ type Props = {
   hideHeader?: boolean;
   /** Архив: без фильтров по «норма/критично» и без цветовых статусов в списке. */
   archiveNeutral?: boolean;
+  /** Кнопка «Медицинский отчёт для врача (PDF)» (напр. дашборд «Обследования»). */
+  showDoctorReportPdf?: boolean;
 };
 
 export function AnalysesPreview({
@@ -162,9 +165,11 @@ export function AnalysesPreview({
   mode = "default",
   hideHeader = false,
   archiveNeutral = false,
+  showDoctorReportPdf = false,
 }: Props) {
   const { lang } = useLanguage();
   const { activeProfileId } = useActiveProfile();
+  const [doctorReportBusy, setDoctorReportBusy] = useState(false);
   const isTrends = mode === "trends";
   const [rows, setRows] = useState<LabAnalysisRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -620,19 +625,48 @@ export function AnalysesPreview({
         </>
       ) : null}
 
-      {!isTrends ? (
+      {!isTrends || (showDoctorReportPdf && activeProfileId) ? (
         <div className={cn("flex flex-wrap items-center gap-2", hideHeader ? "mt-0.5" : "mt-1")}>
-          {syncedLabel ? (
-            <p className="text-[10px] text-health-text-secondary">{syncedLabel}</p>
+          {!isTrends ? (
+            <>
+              {syncedLabel ? (
+                <p className="text-[10px] text-health-text-secondary">{syncedLabel}</p>
+              ) : null}
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 rounded-lg bg-slate-100/90 px-2 py-1 text-[10px] font-semibold text-health-primary ring-1 ring-health-border/70 hover:bg-slate-50"
+                onClick={() => setManualSyncTick((n) => n + 1)}
+              >
+                <RefreshCw className="h-3 w-3" aria-hidden />
+                {t(lang, "analyses.refreshSync")}
+              </button>
+            </>
           ) : null}
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 rounded-lg bg-slate-100/90 px-2 py-1 text-[10px] font-semibold text-health-primary ring-1 ring-health-border/70 hover:bg-slate-50"
-            onClick={() => setManualSyncTick((n) => n + 1)}
-          >
-            <RefreshCw className="h-3 w-3" aria-hidden />
-            {t(lang, "analyses.refreshSync")}
-          </button>
+          {showDoctorReportPdf && activeProfileId ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-lg bg-teal-50/90 px-2 py-1 text-[10px] font-semibold text-teal-800 ring-1 ring-teal-200/80 hover:bg-teal-50 disabled:opacity-60"
+              disabled={doctorReportBusy}
+              onClick={() => {
+                if (doctorReportBusy) return;
+                void (async () => {
+                  setDoctorReportBusy(true);
+                  try {
+                    await downloadDoctorReportPdf(activeProfileId);
+                  } finally {
+                    setDoctorReportBusy(false);
+                  }
+                })();
+              }}
+            >
+              {doctorReportBusy ? (
+                <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden />
+              ) : (
+                <FileDown className="h-3 w-3 shrink-0" aria-hidden />
+              )}
+              {t(lang, "profile.medicalReportPdf")}
+            </button>
+          ) : null}
         </div>
       ) : null}
       {!isTrends && !activeProfileCanWrite ? (

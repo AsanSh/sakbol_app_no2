@@ -77,15 +77,31 @@ export async function GET(
             metrics: { select: { payload: true } },
           },
         },
-        healthDocuments: {
-          select: { category: true },
-        },
       },
     });
 
     if (!profile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
+
+    const [docGroups, recentHealthDocs] = await Promise.all([
+      prisma.healthDocument.groupBy({
+        by: ["category"],
+        where: { profileId: pid },
+        _count: { _all: true },
+      }),
+      prisma.healthDocument.findMany({
+        where: { profileId: pid },
+        orderBy: [{ createdAt: "desc" }],
+        take: 28,
+        select: {
+          title: true,
+          category: true,
+          documentDate: true,
+          createdAt: true,
+        },
+      }),
+    ]);
 
     const anonymId = formatClinicalAnonymId(profile.id);
     const age =
@@ -107,9 +123,20 @@ export async function GET(
     for (const c of Object.keys(DOC_CAT_RU) as HealthDocumentCategory[]) {
       docCounts.set(c, 0);
     }
-    for (const d of profile.healthDocuments) {
-      docCounts.set(d.category, (docCounts.get(d.category) ?? 0) + 1);
+    for (const g of docGroups) {
+      docCounts.set(g.category, g._count._all);
     }
+
+    const totalDocCount = Array.from(docCounts.values()).reduce((a, b) => a + b, 0);
+
+    const fmtRuDate = (d: Date) =>
+      d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+    const truncateLine = (s: string, max = 92) => {
+      const t = s.replace(/\s+/g, " ").trim();
+      if (t.length <= max) return t;
+      return `${t.slice(0, max - 1)}…`;
+    };
 
     const pdf = await PDFDocument.create();
     pdf.registerFontkit(fontkit);
@@ -189,8 +216,22 @@ export async function GET(
       const n = docCounts.get(cat) ?? 0;
       if (n > 0) draw(`• ${DOC_CAT_RU[cat]}: ${n}`);
     }
-    if (profile.healthDocuments.length === 0) {
+    if (totalDocCount === 0) {
       draw("Документов в архиве нет.");
+    }
+    y -= 4;
+    draw("4.1. Недавно загруженные документы (название и дата; файлы не включаются)", 11, true);
+    if (!recentHealthDocs.length) {
+      draw("Нет записей.");
+    } else {
+      for (const d of recentHealthDocs) {
+        const when = d.documentDate ?? d.createdAt;
+        const catLabel = DOC_CAT_RU[d.category] ?? DOC_CAT_RU.OTHER;
+        draw(
+          `• ${truncateLine(d.title)} — ${catLabel}, ${fmtRuDate(when)}`,
+          9,
+        );
+      }
     }
     y -= 6;
 
@@ -204,6 +245,14 @@ export async function GET(
           rec.title?.trim() ||
           `Анализ от ${rec.createdAt.toISOString().slice(0, 10)}`;
         draw(title, 11, true);
+        const meta: string[] = [];
+        if (payload.labName?.trim()) meta.push(payload.labName.trim());
+        if (payload.analysisDate?.trim()) {
+          meta.push(`дата по документу: ${payload.analysisDate.trim()}`);
+        } else {
+          meta.push(`дата загрузки: ${fmtRuDate(rec.createdAt)}`);
+        }
+        if (meta.length) draw(`  ${meta.join(" · ")}`, 9);
         if (!payload.biomarkers.length) {
           draw("  (показатели не извлечены)");
         } else {

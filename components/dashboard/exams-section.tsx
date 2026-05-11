@@ -109,6 +109,7 @@ export function ExamsSection({
             onOpenAnalyses={onOpenAnalyses}
             mode={isDynamics ? "trends" : "default"}
             hideHeader
+            showDoctorReportPdf
           />
         ) : (
           <div className="flex h-full min-h-[12rem] items-center justify-center rounded-xl bg-health-surface/80 p-6 text-center text-body text-health-text-secondary shadow-inner ring-1 ring-health-border/60">
