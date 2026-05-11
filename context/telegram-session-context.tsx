@@ -206,6 +206,15 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         const mod = await import("@twa-dev/sdk");
         WebApp = mod.default;
         WebApp.ready();
+        // Telegram Bot API 7.7+: уменьшает «схлопывание» мини-приложения при свайпе вниз по контенту.
+        // Полностью отключить нельзя — жест по системной шапке Mini App остаётся у клиента Telegram.
+        try {
+          WebApp.expand?.();
+          const w = WebApp as { disableVerticalSwipes?: () => void };
+          w.disableVerticalSwipes?.();
+        } catch {
+          /* старые клиенты без метода */
+        }
       } catch {
         return { WebApp: null, initData: "", inMiniApp: false };
       }
