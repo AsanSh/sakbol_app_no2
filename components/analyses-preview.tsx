@@ -783,9 +783,18 @@ export function AnalysesPreview({
                   )}
                 >
                   <div className="flex items-stretch gap-2">
-                    <div className="flex min-h-[3rem] min-w-0 flex-1 items-start gap-3 text-left">
+                    <button
+                      type="button"
+                      className="flex min-h-[3rem] min-w-0 flex-1 items-start gap-3 text-left"
+                      onClick={() => void openDocumentWithSession(d)}
+                      disabled={openDocBusyId === d.id}
+                    >
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-health-primary">
-                        <FileText className="h-5 w-5" aria-hidden />
+                        {openDocBusyId === d.id ? (
+                          <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                        ) : (
+                          <FileText className="h-5 w-5" aria-hidden />
+                        )}
                       </span>
                       <span className="min-w-0">
                         <span className="block text-[10px] font-semibold uppercase tracking-wide text-health-text-secondary">
@@ -801,7 +810,7 @@ export function AnalysesPreview({
                           ) : null}
                         </span>
                       </span>
-                    </div>
+                    </button>
                     <div className="flex shrink-0 flex-col gap-1.5">
                       <button
                         type="button"
