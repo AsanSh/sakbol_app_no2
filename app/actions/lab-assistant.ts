@@ -11,6 +11,7 @@ import { generateOpenAILabChatAnswer } from "@/lib/openai-lab-chat";
 import { generateBedrockLabChatAnswer } from "@/lib/bedrock-lab-chat";
 import { anthropicProviderIsBedrock } from "@/lib/bedrock-converse";
 import { openRouterChatText, openRouterFallbackEnabled } from "@/lib/openrouter";
+import { deepseekChatText, deepseekEnabled } from "@/lib/deepseek";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const DISCLAIMER =
@@ -132,6 +133,9 @@ export async function askLabAssistantFromBook(
   async function tryOpenRouter() {
     return openRouterChatText(LAB_ASSISTANT_SYSTEM, userPrompt);
   }
+  async function tryDeepSeek() {
+    return deepseekChatText(LAB_ASSISTANT_SYSTEM, userPrompt);
+  }
 
   type LlmTry = Awaited<ReturnType<typeof tryOpenAI>>;
   let llm: LlmTry | null = null;
@@ -144,11 +148,17 @@ export async function askLabAssistantFromBook(
     llm = await tryGemini();
   } else if (provider === "anthropic") {
     llm = await tryClaude();
+  } else if (provider === "deepseek") {
+    llm = await tryDeepSeek();
   } else if (anthropicProviderIsBedrock()) {
     llm = await tryBedrock();
     if (!llm.ok && openRouterFallbackEnabled()) {
       console.warn("[lab-assistant] Bedrock failed, falling back to OpenRouter:", llm.userMessage);
       llm = await tryOpenRouter();
+    }
+    if (llm && !llm.ok && deepseekEnabled()) {
+      console.warn("[lab-assistant] OpenRouter failed, falling back to DeepSeek:", llm.userMessage);
+      llm = await tryDeepSeek();
     }
   } else {
     const chain: Array<() => Promise<LlmTry>> = [tryBedrock, tryOpenAI, tryGemini, tryClaude];
@@ -163,6 +173,10 @@ export async function askLabAssistantFromBook(
     if (llm && !llm.ok && openRouterFallbackEnabled()) {
       console.warn("[lab-assistant] All providers failed, falling back to OpenRouter:", llm.userMessage);
       llm = await tryOpenRouter();
+    }
+    if (llm && !llm.ok && deepseekEnabled()) {
+      console.warn("[lab-assistant] OpenRouter failed, falling back to DeepSeek:", llm.userMessage);
+      llm = await tryDeepSeek();
     }
   }
 
@@ -186,7 +200,9 @@ export async function askLabAssistantFromBook(
             ? "На сервере не задан GEMINI_API_KEY."
             : provider === "anthropic"
               ? "На сервере не задан ANTHROPIC_API_KEY."
-              : "На сервере не задан ни один из ключей: Bedrock (Bearer или IAM), OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY.";
+              : provider === "deepseek"
+            ? "На сервере не задан DEEPSEEK_API_KEY."
+            : "На сервере не задан ни один из ключей: Bedrock (Bearer или IAM), OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY.";
     return {
       ok: true,
       hasBook: false,
