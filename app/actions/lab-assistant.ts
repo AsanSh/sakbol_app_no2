@@ -161,7 +161,9 @@ export async function askLabAssistantFromBook(
       llm = await tryDeepSeek();
     }
   } else {
-    const chain: Array<() => Promise<LlmTry>> = [tryBedrock, tryOpenAI, tryGemini, tryClaude];
+    const chain: Array<() => Promise<LlmTry>> = deepseekEnabled()
+      ? [tryDeepSeek, tryBedrock, tryOpenAI, tryGemini, tryClaude]
+      : [tryBedrock, tryOpenAI, tryGemini, tryClaude];
     for (const fn of chain) {
       const r = await fn();
       if (r.ok) {
@@ -173,10 +175,6 @@ export async function askLabAssistantFromBook(
     if (llm && !llm.ok && openRouterFallbackEnabled()) {
       console.warn("[lab-assistant] All providers failed, falling back to OpenRouter:", llm.userMessage);
       llm = await tryOpenRouter();
-    }
-    if (llm && !llm.ok && deepseekEnabled()) {
-      console.warn("[lab-assistant] OpenRouter failed, falling back to DeepSeek:", llm.userMessage);
-      llm = await tryDeepSeek();
     }
   }
 

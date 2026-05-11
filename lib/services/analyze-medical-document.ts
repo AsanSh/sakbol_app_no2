@@ -295,8 +295,10 @@ export type AnalyzeMedicalDocumentResult =
 
 /**
  * Главная точка: PDF / изображение → структурированный JSON разбора.
- * Сначала пробуем Bedrock Nova Pro (multimodal). При ошибке — OpenRouter (Vision для картинок,
- * pdf-parse + текстовый prompt для PDF).
+ *
+ * Порядок провайдеров:
+ *   PDF:        DeepSeek (pdf-parse+текст) → Bedrock (multimodal) → OpenRouter
+ *   Изображение: Bedrock (multimodal) → OpenRouter → DeepSeek (не поддерживается, пропускается)
  */
 export async function analyzeMedicalDocumentBuffer(
   buffer: Buffer,
@@ -315,7 +317,19 @@ export async function analyzeMedicalDocumentBuffer(
   }
 
   let usedModelId = bedrockLabOcrModelId();
-  let res = await callBedrockOnDocument(buffer, mimeType);
+  let res: { ok: true; text: string } | { ok: false; userMessage: string };
+
+  if (isPdf && deepseekEnabled()) {
+    res = await callDeepSeekOnDocument(buffer, mimeType);
+    if (res.ok) {
+      usedModelId = "deepseek-chat";
+    } else {
+      console.warn("[analyzeMedicalDocument] DeepSeek failed, falling back to Bedrock:", res.userMessage);
+      res = await callBedrockOnDocument(buffer, mimeType);
+    }
+  } else {
+    res = await callBedrockOnDocument(buffer, mimeType);
+  }
 
   if (!res.ok && openRouterFallbackEnabled()) {
     console.warn(
@@ -326,7 +340,7 @@ export async function analyzeMedicalDocumentBuffer(
     usedModelId = openRouterReasoningModel();
   }
 
-  if (!res.ok && deepseekEnabled()) {
+  if (!res.ok && isImage === false && deepseekEnabled()) {
     console.warn(
       "[analyzeMedicalDocument] OpenRouter failed, falling back to DeepSeek:",
       res.userMessage,

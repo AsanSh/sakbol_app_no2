@@ -14,6 +14,7 @@ import {
   openRouterReasoningJson,
   openRouterReasoningModel,
 } from "@/lib/openrouter";
+import { deepseekEnabled, deepseekReasoningJson } from "@/lib/deepseek";
 
 const DISCLAIMER =
   "Это автоматическая интерпретация на основе ваших загруженных данных. Не диагноз и не назначение, статусы зависят от референсов с бланков и возраста. Любые решения о лечении принимает только лечащий врач.";
@@ -301,15 +302,28 @@ export async function analyzeMedicalHistoryForProfile(
   ].join("\n");
 
   const bedrockModelId = bedrockLabOcrModelId();
-  let usedModelId = bedrockModelId;
+  let usedModelId = "deepseek-chat";
+  let res: { ok: true; text: string } | { ok: false; userMessage: string };
 
-  let res = await bedrockConverse({
-    modelId: bedrockModelId,
-    system: ANALYSIS_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: [{ text: userText }] }],
-    maxTokens: 2048,
-    temperature: 0.2,
-  });
+  if (deepseekEnabled()) {
+    res = await deepseekReasoningJson(ANALYSIS_SYSTEM_PROMPT, userText);
+    if (!res.ok) {
+      console.warn("[medical-history] DeepSeek failed, falling back to Bedrock:", res.userMessage);
+    }
+  } else {
+    res = { ok: false, userMessage: "NO_KEY" };
+  }
+
+  if (!res.ok) {
+    usedModelId = bedrockModelId;
+    res = await bedrockConverse({
+      modelId: bedrockModelId,
+      system: ANALYSIS_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: [{ text: userText }] }],
+      maxTokens: 2048,
+      temperature: 0.2,
+    });
+  }
 
   if (!res.ok && openRouterFallbackEnabled()) {
     console.warn(
@@ -328,7 +342,7 @@ export async function analyzeMedicalHistoryForProfile(
       ok: false,
       error:
         res.userMessage === "NO_KEY"
-          ? "Bedrock не настроен на сервере. Задайте AWS-доступы и ANTHROPIC_PROVIDER=bedrock."
+          ? "ИИ-провайдер не настроен. Задайте DEEPSEEK_API_KEY, Bedrock (AWS) или OPENROUTER_API_KEY."
           : `Не удалось получить разбор: ${res.userMessage}`,
     };
   }

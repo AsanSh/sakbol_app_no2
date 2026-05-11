@@ -13,6 +13,7 @@ import {
   openRouterPdfTextExtract,
   openRouterVisionExtract,
 } from "@/lib/openrouter";
+import { deepseekEnabled, deepseekReasoningJson } from "@/lib/deepseek";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 /** Расширенный ответ для Smart Upload: дата бланка, лаборатория, строки таблицы. */
@@ -30,7 +31,7 @@ export class NonLabDocumentError extends Error {
   readonly detectedType: string;
   constructor(detectedType: string) {
     super(
-      "Файл не похож на лабораторный анализ (вероятно протокол врача, выписка, назначение или иной документ). Для таких файлов используйте загрузку в раздел «Документы», там OCR не пытается извлекать таблицу показателей.",
+      "Файл не похож на лабораторный анализ (это протокол врача, выписка, направление, рецепт или иной документ). Загрузите его в раздел «Документы» — там по нажатию кнопки «Разбор ИИ» нейросеть прочитает документ и кратко расскажет, что назначил врач, к каким специалистам стоит сходить и какие вопросы задать.",
     );
     this.name = "NonLabDocumentError";
     this.detectedType = detectedType;
@@ -435,6 +436,40 @@ async function parseWithOpenRouter(buffer: Buffer, mimeType: string): Promise<{
   };
 }
 
+/**
+ * DeepSeek (текст-only): PDF → pdf-parse → deepseek-chat JSON.
+ * Изображения не поддерживаются.
+ */
+async function parseWithDeepSeek(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
+  if (!deepseekEnabled()) {
+    throw new Error("DEEPSEEK_API_KEY не задан.");
+  }
+  if (mimeType !== "application/pdf") {
+    throw new Error("DeepSeek OCR: поддерживается только PDF (текстовый режим).");
+  }
+  let pdfText = "";
+  try {
+    const mod = await import("pdf-parse");
+    const pdfParse = (mod as unknown as { default: (b: Buffer) => Promise<{ text?: string }> })
+      .default;
+    const data = await pdfParse(buffer);
+    pdfText = String(data?.text ?? "").replace(/\u0000/g, "").trim().slice(0, 60_000);
+  } catch (e) {
+    throw new Error(
+      `DeepSeek OCR: не удалось извлечь текст из PDF (${(e as Error).message.slice(0, 160)}).`,
+    );
+  }
+  if (!pdfText) {
+    throw new Error("DeepSeek OCR: PDF не содержит извлекаемого текста.");
+  }
+  const enriched = `${LAB_OCR_USER_PROMPT}\n\n--- ТЕКСТ PDF ---\n${pdfText}`;
+  const result = await deepseekReasoningJson(LLM_BIOMARKER_SYSTEM, enriched);
+  if (!result.ok) {
+    throw new Error(`DeepSeek OCR: ${result.userMessage}`);
+  }
+  return labDraftFromLlmJsonText(result.text);
+}
+
 /** Amazon Bedrock Converse: PDF (document) или изображение — извлечение JSON бланка. */
 async function parseWithBedrock(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
   if (!bedrockAuthConfigured()) {
@@ -638,13 +673,30 @@ export async function processMedicalDocument(
   const isPdf = mimeType === "application/pdf";
 
   if (anthropicProviderIsBedrock()) {
-    if (!bedrockAuthConfigured() && !openRouterFallbackEnabled()) {
+    if (!bedrockAuthConfigured() && !openRouterFallbackEnabled() && !deepseekEnabled()) {
       throw new Error(
-        "ANTHROPIC_PROVIDER=bedrock: задайте AWS_BEARER_TOKEN_BEDROCK или IAM (AWS_ACCESS_KEY_ID и AWS_SECRET_ACCESS_KEY / роль) и регион AWS_REGION или BEDROCK_REGION.",
+        "ANTHROPIC_PROVIDER=bedrock: задайте DEEPSEEK_API_KEY, AWS_BEARER_TOKEN_BEDROCK или IAM (AWS_ACCESS_KEY_ID и AWS_SECRET_ACCESS_KEY / роль) и регион AWS_REGION или BEDROCK_REGION.",
       );
     }
     if (!isImage && !isPdf) {
       throw new Error("Поддерживаются только PDF или изображение (PNG, JPG, WEBP).");
+    }
+
+    // DeepSeek первым — только для PDF (текстовый режим)
+    if (isPdf && deepseekEnabled()) {
+      try {
+        const draft = await parseWithDeepSeek(buffer, mimeType);
+        return {
+          biomarkers: draft.biomarkers,
+          analysisDate: draft.analysisDate,
+          labName: draft.labName,
+          parser: "bedrock",
+        };
+      } catch (e) {
+        if (e instanceof NonLabDocumentError) throw e;
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn("[processMedicalDocument] DeepSeek OCR failed, falling back to Bedrock:", msg);
+      }
     }
 
     if (bedrockAuthConfigured()) {
@@ -767,6 +819,23 @@ export async function processMedicalDocument(
     }
   }
 
+  /** PDF: сначала пробуем DeepSeek (текст), потом OpenAI / Gemini (multimodal). */
+  if (isPdf && deepseekEnabled()) {
+    try {
+      const draft = await parseWithDeepSeek(buffer, mimeType);
+      return {
+        biomarkers: draft.biomarkers,
+        analysisDate: draft.analysisDate,
+        labName: draft.labName,
+        parser: "openai",
+      };
+    } catch (e) {
+      if (e instanceof NonLabDocumentError) throw e;
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn("[processMedicalDocument] DeepSeek PDF failed, continuing to OpenAI/Gemini:", msg);
+    }
+  }
+
   /** PDF — OpenAI Responses по умолчанию, иначе Gemini (порядок как у фото). */
   if (isPdf && (canOpenAIPdf || canGemini)) {
     if (preferOpenAI && canOpenAIPdf) {
@@ -829,9 +898,9 @@ export async function processMedicalDocument(
     };
   }
 
-  if (!hasGemini && !hasOpenAI) {
+  if (!hasGemini && !hasOpenAI && !deepseekEnabled()) {
     throw new Error(
-      "Не задан OPENAI_API_KEY или GEMINI_API_KEY. Добавьте ключ в .env на сервере и перезапустите.",
+      "Не задан DEEPSEEK_API_KEY, OPENAI_API_KEY или GEMINI_API_KEY. Добавьте ключ в .env на сервере и перезапустите.",
     );
   }
 
