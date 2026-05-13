@@ -59,7 +59,7 @@ nano .env.production
 | `PIN_ANCHOR_PEPPER` | ≥16 символов |
 | `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` | Имя бота без `@` |
 | `CRON_SECRET` | Случайная строка для cron-эндпоинта |
-| `DEEPSEEK_API_KEY` | ИИ: разбор анализов, документов, чат, перевод (модель `deepseek-v4-pro`) |
+| `DEEPSEEK_API_KEY` | ИИ: разбор анализов, документов, OCR-JSON — модель **accurate** (по умолчанию `deepseek-v4-pro`); чат и перевод — **fast** (по умолчанию `deepseek-v4-flash`). См. `DEEPSEEK_MODEL_*` в `.env.example`. |
 
 **Важно:** при переносе **существующих** пользователей с Vercel значения `SESSION_SECRET` и `PIN_ANCHOR_PEPPER` должны совпадать с продом, иначе всем придётся войти заново и перепривязать ПИН.
 

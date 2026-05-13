@@ -3,6 +3,7 @@ import "server-only";
 import {
   deepseekChatCompletion,
   deepseekEnabled,
+  deepseekModelFast,
   deepseekTranslateTimeoutMs,
 } from "@/lib/deepseek";
 
@@ -43,7 +44,7 @@ function splitForTranslation(text: string): string[] {
 
 /**
  * Перевод распознанного текста медицинского документа; сохраняем абзацы и списки.
- * Только DeepSeek (`deepseek-v4-pro`).
+ * DeepSeek «быстрая» модель (`deepseek-v4-flash` по умолчанию, см. DEEPSEEK_MODEL_FAST).
  */
 export async function translateHealthDocumentPlainText(
   plainText: string,
@@ -79,6 +80,7 @@ Rules:
     const userContent = `${header}${chunk}`;
 
     const res = await deepseekChatCompletion({
+      model: deepseekModelFast(),
       messages: [
         { role: "system", content: system },
         { role: "user", content: userContent },

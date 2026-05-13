@@ -239,7 +239,7 @@ const LAB_OCR_USER_PROMPT =
 const LAB_TEXT_MIN_CHARS = 48;
 
 /**
- * PDF и изображения: локальный текст → DeepSeek `deepseek-v4-pro` (JSON).
+ * PDF и изображения: локальный текст → DeepSeek accurate (JSON, по умолчанию `deepseek-v4-pro`).
  */
 async function parseWithDeepSeek(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
   if (!deepseekEnabled()) {
@@ -266,7 +266,7 @@ async function parseWithDeepSeek(buffer: Buffer, mimeType: string): Promise<LabO
 }
 
 /**
- * OCR/LLM извлечения показателей: только DeepSeek (`deepseek-v4-pro`) по тексту,
+ * OCR/LLM извлечения показателей: только DeepSeek accurate (по умолчанию `deepseek-v4-pro`) по тексту,
  * извлечённому из PDF (pdf-parse, при необходимости Poppler+Tesseract) или с фото (Tesseract).
  * Мок только при ALLOW_MOCK_LAB_PARSER=1.
  */

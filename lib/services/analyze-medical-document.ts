@@ -1,6 +1,6 @@
 import "server-only";
 
-import { deepseekEnabled, deepseekModel, deepseekReasoningJson } from "@/lib/deepseek";
+import { deepseekEnabled, deepseekModelAccurate, deepseekReasoningJson } from "@/lib/deepseek";
 import { extractPlainTextFromHealthDocumentBuffer } from "@/lib/health-document-text-extract";
 
 /** Минимум символов извлечённого текста перед вызовом DeepSeek. */
@@ -167,7 +167,7 @@ export type AnalyzeMedicalDocumentResult =
   | { ok: false; error: string };
 
 /**
- * PDF / изображение → извлечение текста (локально) → DeepSeek `deepseek-v4-pro` (JSON).
+ * PDF / изображение → извлечение текста (локально) → DeepSeek accurate (JSON, по умолчанию `deepseek-v4-pro`).
  */
 export async function analyzeMedicalDocumentBuffer(
   buffer: Buffer,
@@ -235,7 +235,7 @@ export async function analyzeMedicalDocumentBuffer(
   return {
     ok: true,
     analysis,
-    modelId: deepseekModel(),
+    modelId: deepseekModelAccurate(),
     disclaimer: DOCUMENT_DISCLAIMER,
   };
 }
@@ -269,7 +269,7 @@ export async function analyzeMedicalDocumentFromText(
   return {
     ok: true,
     analysis,
-    modelId: deepseekModel(),
+    modelId: deepseekModelAccurate(),
     disclaimer: DOCUMENT_DISCLAIMER,
   };
 }

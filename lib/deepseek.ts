@@ -3,26 +3,48 @@ import "server-only";
 /**
  * DeepSeek (https://platform.deepseek.com) — OpenAI-совместимый провайдер.
  * Включается автоматически при наличии DEEPSEEK_API_KEY.
- * Только текстовые модели (по умолчанию DeepSeek-V4-Pro): PDF/картинки в API не шлём напрямую.
- * Для PDF после `pdf-parse` при сканах подставляется текст из Poppler+Tesseract (`health-document-text-extract`).
+ * Только текстовые запросы: PDF/картинки в API не шлём — текст извлекается локально (pdf-parse, Tesseract).
  *
- * Переменные:
- *   DEEPSEEK_API_KEY   — обязательный
- *   DEEPSEEK_MODEL     — игнорируется: всегда используется deepseek-v4-pro
+ * Две модели по умолчанию (скорость vs точность структурированного вывода):
+ *   DEEPSEEK_MODEL_ACCURATE — JSON/OCR-разбор, анализ документов, мед. история (по умолчанию `deepseek-v4-pro`)
+ *   DEEPSEEK_MODEL_FAST     — лаб-чат, перевод документов по чанкам (по умолчанию `deepseek-v4-flash`)
+ *   DEEPSEEK_MODEL          — legacy: как accurate, если не задан DEEPSEEK_MODEL_ACCURATE
+ *
  *   DEEPSEEK_TIMEOUT_MS — таймаут в мс (по умолчанию 60000)
- *   DEEPSEEK_TRANSLATE_TIMEOUT_MS — отдельный таймаут для перевода документов (по умолчанию 120000)
+ *   DEEPSEEK_TRANSLATE_TIMEOUT_MS — отдельный таймаут для перевода (по умолчанию 120000)
  */
 
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
-/** Всегда `deepseek-v4-pro` (см. api-docs.deepseek.com). */
-export const DEEPSEEK_DEFAULT_MODEL = "deepseek-v4-pro";
+
+const DEEPSEEK_ACCURATE_FALLBACK = "deepseek-v4-pro";
+const DEEPSEEK_FAST_FALLBACK = "deepseek-v4-flash";
+
+/** Основная «точная» модель (для обратной совместимости с кодом, ожидающим константу). */
+export const DEEPSEEK_DEFAULT_MODEL = DEEPSEEK_ACCURATE_FALLBACK;
 
 export function deepseekEnabled(): boolean {
   return !!process.env.DEEPSEEK_API_KEY?.trim();
 }
 
+/** Лабораторный JSON, разбор PDF, динамика / мед. история — максимум точности. */
+export function deepseekModelAccurate(): string {
+  const a = process.env.DEEPSEEK_MODEL_ACCURATE?.trim();
+  if (a) return a;
+  const legacy = process.env.DEEPSEEK_MODEL?.trim();
+  if (legacy) return legacy;
+  return DEEPSEEK_ACCURATE_FALLBACK;
+}
+
+/** Чат и перевод по чанкам — ниже задержка и стоимость при хорошем качестве. */
+export function deepseekModelFast(): string {
+  const f = process.env.DEEPSEEK_MODEL_FAST?.trim();
+  if (f) return f;
+  return DEEPSEEK_FAST_FALLBACK;
+}
+
+/** @deprecated Используйте deepseekModelAccurate() или deepseekModelFast(). */
 export function deepseekModel(): string {
-  return DEEPSEEK_DEFAULT_MODEL;
+  return deepseekModelAccurate();
 }
 
 function deepseekTimeoutMs(): number {
@@ -57,7 +79,7 @@ export async function deepseekChatCompletion(params: {
     return { ok: false, userMessage: "NO_KEY" };
   }
 
-  const model = params.model ?? deepseekModel();
+  const model = params.model ?? deepseekModelAccurate();
   const body: Record<string, unknown> = {
     model,
     messages: params.messages,
@@ -113,6 +135,7 @@ export async function deepseekChatText(
   userText: string,
 ): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
   return deepseekChatCompletion({
+    model: deepseekModelFast(),
     messages: [
       { role: "system", content: system },
       { role: "user", content: userText },
@@ -128,6 +151,7 @@ export async function deepseekReasoningJson(
   userText: string,
 ): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
   return deepseekChatCompletion({
+    model: deepseekModelAccurate(),
     messages: [
       { role: "system", content: system },
       { role: "user", content: userText },
