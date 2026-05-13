@@ -10,7 +10,7 @@ import { generateGeminiLabChatAnswer } from "@/lib/gemini-lab-chat";
 import { generateOpenAILabChatAnswer } from "@/lib/openai-lab-chat";
 import { generateBedrockLabChatAnswer } from "@/lib/bedrock-lab-chat";
 import { anthropicProviderIsBedrock } from "@/lib/bedrock-converse";
-import { openRouterChatText, openRouterFallbackEnabled } from "@/lib/openrouter";
+import { openRouterChatText, openRouterEnabled } from "@/lib/openrouter";
 import { deepseekChatText, deepseekEnabled } from "@/lib/deepseek";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
@@ -82,8 +82,9 @@ function fallbackWithoutGemini(question: string, block: string | null, reason: s
 /**
  * Ответ вкладки «ИИ» («Что это значит»): приоритет по env.
  * - ANTHROPIC_PROVIDER=bedrock и без LAB_ASSISTANT_PROVIDER: только Amazon Bedrock (Bearer или IAM),
- *   при ошибке — OpenRouter только если OPENROUTER_FALLBACK_ENABLED=1 и задан ключ.
- * - Иначе по умолчанию: Bedrock → OpenAI → Gemini → Anthropic (первый успешный ответ).
+ *   при ошибке — OpenRouter если OPENROUTER_ENABLED=1 (или legacy OPENROUTER_FALLBACK_ENABLED) и ключ.
+ * - Иначе по умолчанию: при OPENROUTER_ENABLED — сначала OpenRouter (Gemma), затем Bedrock → OpenAI → Gemini → Anthropic;
+ *   DeepSeek — последний резерв, если задан DEEPSEEK_API_KEY.
  * - LAB_ASSISTANT_PROVIDER=openai | bedrock | gemini | anthropic — один провайдер (без цепочки).
  */
 export async function askLabAssistantFromBook(
@@ -152,7 +153,7 @@ export async function askLabAssistantFromBook(
     llm = await tryDeepSeek();
   } else if (anthropicProviderIsBedrock()) {
     llm = await tryBedrock();
-    if (!llm.ok && openRouterFallbackEnabled()) {
+    if (!llm.ok && openRouterEnabled()) {
       console.warn("[lab-assistant] Bedrock failed, falling back to OpenRouter:", llm.userMessage);
       llm = await tryOpenRouter();
     }
@@ -161,9 +162,10 @@ export async function askLabAssistantFromBook(
       llm = await tryDeepSeek();
     }
   } else {
-    const chain: Array<() => Promise<LlmTry>> = deepseekEnabled()
-      ? [tryDeepSeek, tryBedrock, tryOpenAI, tryGemini, tryClaude]
-      : [tryBedrock, tryOpenAI, tryGemini, tryClaude];
+    const chain: Array<() => Promise<LlmTry>> = [];
+    if (openRouterEnabled()) chain.push(tryOpenRouter);
+    chain.push(tryBedrock, tryOpenAI, tryGemini, tryClaude);
+    if (deepseekEnabled()) chain.push(tryDeepSeek);
     for (const fn of chain) {
       const r = await fn();
       if (r.ok) {
@@ -171,10 +173,6 @@ export async function askLabAssistantFromBook(
         break;
       }
       llm = r;
-    }
-    if (llm && !llm.ok && openRouterFallbackEnabled()) {
-      console.warn("[lab-assistant] All providers failed, falling back to OpenRouter:", llm.userMessage);
-      llm = await tryOpenRouter();
     }
   }
 
@@ -200,7 +198,7 @@ export async function askLabAssistantFromBook(
               ? "На сервере не задан ANTHROPIC_API_KEY."
               : provider === "deepseek"
             ? "На сервере не задан DEEPSEEK_API_KEY."
-            : "На сервере не задан ни один из ключей: Bedrock (Bearer или IAM), OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY.";
+            : "На сервере не задан ни один из ключей: OPENROUTER_API_KEY + OPENROUTER_ENABLED=1, Bedrock (Bearer или IAM), OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY.";
     return {
       ok: true,
       hasBook: false,

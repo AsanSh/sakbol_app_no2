@@ -1,9 +1,11 @@
 import "server-only";
 
 /**
- * OpenRouter (https://openrouter.ai) — опциональный fallback, когда Bedrock недоступен.
- * Включите явно: OPENROUTER_API_KEY и OPENROUTER_FALLBACK_ENABLED=1 (или true/yes).
- * Наличия ключа без флага недостаточно — чтобы OpenRouter по умолчанию не участвовал.
+ * OpenRouter (https://openrouter.ai) — чат/перевод (Gemma), OCR и разбор фото бланков (Nemotron Omni),
+ * резерв когда Bedrock недоступен.
+ *
+ * Включение: OPENROUTER_API_KEY и OPENROUTER_ENABLED=1 (или legacy OPENROUTER_FALLBACK_ENABLED=1).
+ * Отключить явно: OPENROUTER_DISABLED=1.
  *
  * Для медицинских данных принудительно ставим data_collection: "deny" в provider hints
  * (это отсекает free-провайдеров с обязательным логированием/обучением).
@@ -11,31 +13,52 @@ import "server-only";
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
-export function openRouterFallbackEnabled(): boolean {
+/** Явный доступ к OpenRouter (чат, перевод, vision/OCR, reasoning fallback). */
+export function openRouterEnabled(): boolean {
   if (!process.env.OPENROUTER_API_KEY?.trim()) return false;
-  const flag = process.env.OPENROUTER_FALLBACK_ENABLED?.trim().toLowerCase();
-  return flag === "1" || flag === "true" || flag === "yes";
+  const disabled = process.env.OPENROUTER_DISABLED?.trim().toLowerCase();
+  if (disabled === "1" || disabled === "true" || disabled === "yes") return false;
+  const enabled = process.env.OPENROUTER_ENABLED?.trim().toLowerCase();
+  if (enabled === "1" || enabled === "true" || enabled === "yes") return true;
+  const fallback = process.env.OPENROUTER_FALLBACK_ENABLED?.trim().toLowerCase();
+  return fallback === "1" || fallback === "true" || fallback === "yes";
+}
+
+/** @deprecated Используйте openRouterEnabled — то же поведение (ключ + ENABLED или FALLBACK). */
+export function openRouterFallbackEnabled(): boolean {
+  return openRouterEnabled();
 }
 
 export function openRouterChatModel(): string {
   return (
     process.env.OPENROUTER_CHAT_MODEL?.trim() ||
-    "nvidia/nemotron-3-super-120b-a12b:free"
+    "google/gemma-4-31b:free"
   );
 }
 
+/** JSON-reasoning (расшифровка документов, fallback после Bedrock): Gemma 31B по умолчанию. */
 export function openRouterReasoningModel(): string {
   return (
     process.env.OPENROUTER_REASONING_MODEL?.trim() ||
     process.env.OPENROUTER_CHAT_MODEL?.trim() ||
-    "nvidia/nemotron-3-super-120b-a12b:free"
+    "google/gemma-4-31b:free"
   );
 }
 
+/** PDF и текстовый OCR-пайплайн после pdf-parse (структурированный JSON). */
 export function openRouterOcrModel(): string {
   return (
     process.env.OPENROUTER_OCR_MODEL?.trim() ||
-    "google/gemma-4-31b-it:free"
+    "nvidia/nemotron-3-nano-omni:free"
+  );
+}
+
+/** Фото бланков / сканы как изображение (vision + JSON). Разумное рассуждение для таблиц показателей. */
+export function openRouterVisionModel(): string {
+  return (
+    process.env.OPENROUTER_VISION_MODEL?.trim() ||
+    process.env.OPENROUTER_OCR_MODEL?.trim() ||
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
   );
 }
 
@@ -47,14 +70,14 @@ function dataCollectionMode(): "deny" | "allow" {
 function openRouterTimeoutMs(): number {
   const env = process.env.OPENROUTER_TIMEOUT_MS?.trim();
   if (env && /^\d+$/.test(env)) return Math.max(2000, Number(env));
-  return 60_000;
+  return 120_000;
 }
 
 function commonHeaders(): Record<string, string> {
   const referer =
     process.env.OPENROUTER_HTTP_REFERER?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    "https://adventory.store";
+    "https://adventroy.store";
   const title = process.env.OPENROUTER_APP_TITLE?.trim() || "SakBol";
   return {
     Authorization: `Bearer ${process.env.OPENROUTER_API_KEY!.trim()}`,
@@ -80,7 +103,7 @@ export async function openRouterChatCompletion(params: {
   temperature?: number;
   responseFormatJson?: boolean;
 }): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
-  if (!openRouterFallbackEnabled()) {
+  if (!openRouterEnabled()) {
     return { ok: false, userMessage: "OPENROUTER_DISABLED" };
   }
   const body: Record<string, unknown> = {
@@ -172,13 +195,13 @@ export async function openRouterReasoningJson(
   });
 }
 
-/** OCR изображения через OpenRouter (Gemma multimodal): Vision-через-image_url с base64. */
+/** OCR / разбор фото бланков через OpenRouter (Nemotron Omni vision): image_url с base64. */
 export async function openRouterVisionExtract(
   system: string,
   userText: string,
   buffer: Buffer,
   mimeType: string,
-  model = openRouterOcrModel(),
+  model = openRouterVisionModel(),
 ): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
   if (!mimeType.startsWith("image/")) {
     return {

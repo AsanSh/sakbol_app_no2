@@ -342,7 +342,7 @@ export async function analyzeMedicalHistoryForProfile(
       ok: false,
       error:
         res.userMessage === "NO_KEY"
-          ? "ИИ-провайдер не настроен. Задайте DEEPSEEK_API_KEY, Bedrock (AWS) или OPENROUTER_API_KEY."
+          ? "ИИ-провайдер не настроен. Задайте DEEPSEEK_API_KEY, Bedrock (AWS) или OPENROUTER_API_KEY + OPENROUTER_ENABLED=1."
           : `Не удалось получить разбор: ${res.userMessage}`,
     };
   }

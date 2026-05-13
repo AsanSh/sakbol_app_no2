@@ -324,7 +324,7 @@ export async function analyzeMedicalDocumentBuffer(
       ok: false,
       error:
         res.userMessage === "NO_KEY"
-          ? "ИИ-провайдер не настроен. Задайте Bedrock (AWS), OPENROUTER_API_KEY или DEEPSEEK_API_KEY."
+          ? "ИИ-провайдер не настроен. Задайте Bedrock (AWS), OPENROUTER_API_KEY + OPENROUTER_ENABLED=1 или DEEPSEEK_API_KEY."
           : `Не удалось получить разбор документа: ${res.userMessage}`,
     };
   }
