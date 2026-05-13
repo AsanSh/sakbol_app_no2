@@ -95,14 +95,14 @@ export function BiomarkerChart({ title, unit, data, normMin, normMax }: Props) {
     getStatusColorHex(status ?? "normal");
 
   return (
-    <div className="w-full max-w-full overflow-hidden rounded-xl border border-emerald-900/15 bg-white/90 p-3 shadow-sm">
-      <p className="mb-1 text-center text-xs font-semibold text-emerald-950">
+    <div className="w-full max-w-full overflow-hidden rounded-xl border border-ui-border bg-ui-surface p-3 shadow-sm">
+      <p className="mb-1 text-center text-xs font-semibold text-ui-foreground">
         {title}
         {unit ? (
-          <span className="font-normal text-emerald-600/70"> ({unit})</span>
+          <span className="font-normal text-ui-muted"> ({unit})</span>
         ) : null}
       </p>
-      <div className="h-[220px] w-full min-w-0 rounded-lg bg-gradient-to-b from-emerald-100/80 via-emerald-50/25 to-transparent">
+      <div className="h-[220px] w-full min-w-0 rounded-lg bg-ui-border-subtle/30">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
@@ -118,16 +118,16 @@ export function BiomarkerChart({ title, unit, data, normMin, normMax }: Props) {
             <CartesianGrid strokeDasharray="3 3" stroke="#B2DFDB" opacity={0.5} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10, fill: "#004d40" }}
+              tick={{ fontSize: 10, fill: "var(--ui-color-muted)" }}
               interval="preserveStartEnd"
             />
             <YAxis
               domain={[yMin, yMax]}
-              tick={{ fontSize: 10, fill: "#004d40" }}
+              tick={{ fontSize: 10, fill: "var(--ui-color-muted)" }}
               width={36}
             />
             <Tooltip
-              cursor={{ stroke: "#00695C", strokeWidth: 1, strokeDasharray: "4 4" }}
+              cursor={{ stroke: "var(--ui-color-accent)", strokeWidth: 1, strokeDasharray: "4 4" }}
               content={({ active, payload }) =>
                 renderBiomarkerTooltip(active, payload, title, unit, lang)
               }
@@ -151,8 +151,9 @@ export function BiomarkerChart({ title, unit, data, normMin, normMax }: Props) {
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#00695C"
-              strokeWidth={2.5}
+              stroke="var(--ui-color-accent)"
+              strokeWidth={3}
+              animationDuration={1200}
               dot={(props) => {
                 const { cx, cy, payload } = props;
                 if (cx == null || cy == null) return <g />;
@@ -162,14 +163,21 @@ export function BiomarkerChart({ title, unit, data, normMin, normMax }: Props) {
                   <circle
                     cx={cx}
                     cy={cy}
-                    r={4}
+                    r={5}
                     fill={fill}
-                    stroke="#fff"
-                    strokeWidth={1}
+                    stroke="var(--ui-color-surface)"
+                    strokeWidth={2}
+                    className="drop-shadow-sm transition-all hover:r-7"
                   />
                 );
               }}
-              activeDot={{ r: 6, stroke: "#fff", strokeWidth: 1 }}
+              activeDot={{
+                r: 8,
+                fill: "var(--ui-color-accent)",
+                stroke: "var(--ui-color-surface)",
+                strokeWidth: 2,
+                className: "drop-shadow-md"
+              }}
             />
           </LineChart>
         </ResponsiveContainer>

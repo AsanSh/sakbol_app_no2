@@ -34,7 +34,7 @@ export function SakbolTopBar({
     <header
       className={cn(
         "sticky top-0 z-40 flex items-center gap-2",
-        "border-b border-health-border/80 bg-health-surface/90 backdrop-blur-md",
+        "border-b border-ui-border/50 bg-ui-surface/80 backdrop-blur-md",
         dense ? "shrink-0 px-3 py-2" : "px-4 py-3",
       )}
     >
@@ -44,7 +44,7 @@ export function SakbolTopBar({
             type="button"
             onClick={onBack}
             className={cn(
-              "flex shrink-0 items-center justify-center rounded-full bg-slate-100 text-health-text-secondary transition-colors hover:bg-slate-200/80",
+              "flex shrink-0 items-center justify-center rounded-full bg-ui-border-subtle text-ui-muted transition-colors hover:bg-ui-border",
               dense ? "h-8 w-8" : "h-10 w-10",
             )}
             aria-label="Назад"
@@ -56,7 +56,7 @@ export function SakbolTopBar({
         )}
         <span
           className={cn(
-            "truncate font-manrope font-bold text-health-text",
+            "truncate font-manrope font-bold text-ui-foreground",
             dense ? "text-base" : "text-lg",
           )}
         >
@@ -75,7 +75,7 @@ export function SakbolTopBar({
             type="button"
             onClick={onBell}
             className={cn(
-              "relative flex items-center justify-center rounded-full bg-slate-100 text-health-text-secondary transition-colors hover:bg-slate-200/80",
+              "relative flex items-center justify-center rounded-full bg-ui-border-subtle text-ui-muted transition-colors hover:bg-ui-border",
               dense ? "h-8 w-8" : "h-10 w-10",
             )}
             aria-label="Уведомления"

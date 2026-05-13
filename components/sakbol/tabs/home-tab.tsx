@@ -130,8 +130,8 @@ export function HomeTab({ family, reloadFamily }: Props) {
   );
 
   const dashboardCtaAndWidget = (
-    <div className="rounded-3xl bg-white p-4 shadow-ui-card">
-      <p className="text-caption font-bold uppercase tracking-wide text-health-text-secondary">
+    <div className="rounded-3xl bg-ui-surface p-4 shadow-ui-card border border-ui-border">
+      <p className="text-caption font-bold uppercase tracking-wide text-ui-muted">
         {t(lang, "home.healthStatusTitle")}
       </p>
       {analysisLoading ? (
@@ -142,14 +142,14 @@ export function HomeTab({ family, reloadFamily }: Props) {
             {t(lang, "home.healthStatusLatest")}
             {latestAnalysis.title ? ` · ${latestAnalysis.title}` : ""}
           </p>
-          <ul className="divide-y divide-slate-100 rounded-xl bg-slate-50/80 px-3 py-1">
+          <ul className="divide-y divide-ui-border rounded-xl bg-ui-border-subtle px-3 py-1">
             {latestAnalysis.data.biomarkers.slice(0, 6).map((b) => (
               <li
                 key={`${b.biomarker}-${b.value}`}
                 className="flex justify-between gap-2 py-2 text-sm"
               >
-                <span className="min-w-0 truncate font-medium text-health-text">{b.biomarker}</span>
-                <span className="shrink-0 font-mono text-health-primary">
+                <span className="min-w-0 truncate font-medium text-ui-foreground">{b.biomarker}</span>
+                <span className="shrink-0 font-mono text-ui-accent">
                   {b.value} {b.unit}
                 </span>
               </li>
@@ -176,7 +176,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
       <button
         type="button"
         onClick={() => setTab("insights")}
-        className="mt-3 flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-health-primary transition-colors hover:bg-slate-100/90"
+        className="mt-3 flex w-full items-center justify-between rounded-2xl bg-ui-border-subtle px-4 py-3 text-left text-sm font-semibold text-ui-accent transition-colors hover:bg-ui-border"
       >
         {t(lang, "home.openInsights")}
         <ChevronRight className="h-4 w-4 shrink-0 opacity-70" aria-hidden />

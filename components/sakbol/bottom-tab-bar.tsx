@@ -46,8 +46,8 @@ export function BottomTabBar({ dock = "fixed", showPatientsTab = false }: TabBar
   return (
     <nav
       className={cn(
-        "z-50 border-t border-health-border/80",
-        "bg-gradient-to-t from-health-surface/98 via-teal-50/40 to-health-surface/95 shadow-[0_-12px_40px_-8px_rgba(15,118,110,0.12)] backdrop-blur-xl",
+        "z-50 border-t border-ui-border/50",
+        "bg-ui-surface/90 shadow-[0_-12px_40px_-8px_rgba(0,0,0,0.1)] backdrop-blur-xl",
         "rounded-t-[1.5rem]",
         "[padding-bottom:max(0.5rem,env(safe-area-inset-bottom,0px))]",
         dock === "fixed"
@@ -70,8 +70,8 @@ export function BottomTabBar({ dock = "fixed", showPatientsTab = false }: TabBar
                 className={cn(
                   "flex w-full min-h-[48px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 text-[11px] font-semibold transition-all duration-300",
                   active
-                    ? "bg-teal-50 text-health-primary shadow-sm"
-                    : "text-health-text-secondary hover:bg-slate-50/90",
+                    ? "bg-ui-accent/10 text-ui-accent shadow-sm"
+                    : "text-ui-muted hover:bg-ui-border-subtle",
                 )}
               >
                 <Icon

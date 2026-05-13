@@ -54,6 +54,7 @@ import type { ParsedBiomarker } from "@/types/biomarker";
 import { categoryForBiomarkerKey } from "@/constants/biomarker-categories";
 import { downloadLabPdfClient } from "@/lib/download-lab-pdf";
 import { AnalysisComparePanel } from "@/components/analysis-compare-panel";
+import { ArchiveExportButton } from "@/components/sakbol/archive-export-button";
 import { archivePrimaryDateLabel, ARCHIVE_CATEGORY_RU } from "@/lib/archive-display-dates";
 import { effectiveAnalysisTimeMs } from "@/lib/lab-analysis-dates";
 import { DocumentAiAnalysisModal } from "@/components/sakbol/ai/document-analysis-modal";
@@ -779,21 +780,26 @@ export function AnalysesPreview({
     >
       {!hideHeader ? (
         <>
-          <div className="flex items-center gap-2">
-            <h2
-              className={cn(
-                "font-manrope font-semibold text-health-text",
-                compact ? "text-xs" : "text-h3",
-              )}
-            >
-              {isTrends ? t(lang, "trends.pageTitle") : t(lang, "analyses.title")}
-            </h2>
-            {refreshing ? (
-              <Loader2
-                className={cn("shrink-0 animate-spin text-health-primary", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
-                aria-hidden
-              />
-            ) : null}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <h2
+                className={cn(
+                  "font-manrope font-semibold text-ui-foreground",
+                  compact ? "text-xs" : "text-h3",
+                )}
+              >
+                {isTrends ? t(lang, "trends.pageTitle") : t(lang, "analyses.title")}
+              </h2>
+              {refreshing ? (
+                <Loader2
+                  className={cn("shrink-0 animate-spin text-ui-accent", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+                  aria-hidden
+                />
+              ) : null}
+            </div>
+            {!compact && !isTrends && rows && rows.length > 0 && (
+              <ArchiveExportButton analyses={rows} displayName={profiles.find(p => p.id === activeProfileId)?.displayName} />
+            )}
           </div>
           {!compact ? (
             isTrends ? (

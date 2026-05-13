@@ -13,6 +13,7 @@
   --ui-color-surface: #ffffff;
   --ui-color-accent: #00bfa5;
   --ui-color-accent-hover: #00a693;
+  --ui-color-accent-foreground: #ffffff;
   --ui-color-foreground: #0f172a;
   --ui-color-muted: #475569;
   --ui-color-subtle: #64748b;
@@ -21,4 +22,22 @@
 
   --ui-shadow-card: 0 1px 3px 0 rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.04);
   --ui-shadow-float: 0 12px 40px -16px rgb(15 23 42 / 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ui-color-canvas: #0f172a;
+    --ui-color-surface: #1e293b;
+    --ui-color-accent: #00bfa5;
+    --ui-color-accent-hover: #14b8a6;
+    --ui-color-accent-foreground: #ffffff;
+    --ui-color-foreground: #f8fafc;
+    --ui-color-muted: #94a3b8;
+    --ui-color-subtle: #64748b;
+    --ui-color-border: #334155;
+    --ui-color-border-subtle: #1e293b;
+
+    --ui-shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+    --ui-shadow-float: 0 12px 40px -16px rgb(0 0 0 / 0.4);
+  }
 }
