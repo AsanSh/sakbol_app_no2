@@ -14,7 +14,7 @@ import {
   openRouterReasoningJson,
   openRouterReasoningModel,
 } from "@/lib/openrouter";
-import { deepseekEnabled, deepseekReasoningJson } from "@/lib/deepseek";
+import { deepseekEnabled, deepseekModel, deepseekReasoningJson } from "@/lib/deepseek";
 
 const DISCLAIMER =
   "Это автоматическая интерпретация на основе ваших загруженных данных. Не диагноз и не назначение, статусы зависят от референсов с бланков и возраста. Любые решения о лечении принимает только лечащий врач.";
@@ -302,7 +302,7 @@ export async function analyzeMedicalHistoryForProfile(
   ].join("\n");
 
   const bedrockModelId = bedrockLabOcrModelId();
-  let usedModelId = "deepseek-chat";
+  let usedModelId = deepseekModel();
   let res: { ok: true; text: string } | { ok: false; userMessage: string };
 
   if (deepseekEnabled()) {
