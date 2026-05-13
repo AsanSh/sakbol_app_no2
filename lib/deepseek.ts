@@ -3,19 +3,19 @@ import "server-only";
 /**
  * DeepSeek (https://platform.deepseek.com) — OpenAI-совместимый провайдер.
  * Включается автоматически при наличии DEEPSEEK_API_KEY.
- * Только текстовые модели (по умолчанию DeepSeek-V4-Flash): PDF/картинки в API не шлём напрямую.
+ * Только текстовые модели (по умолчанию DeepSeek-V4-Pro): PDF/картинки в API не шлём напрямую.
  * Для PDF после `pdf-parse` при сканах подставляется текст из Poppler+Tesseract (`health-document-text-extract`).
  *
  * Переменные:
  *   DEEPSEEK_API_KEY   — обязательный
- *   DEEPSEEK_MODEL     — модель API (по умолчанию deepseek-v4-flash; для Pro: deepseek-v4-pro)
+ *   DEEPSEEK_MODEL     — модель API (по умолчанию deepseek-v4-pro; для Flash: deepseek-v4-flash)
  *   DEEPSEEK_TIMEOUT_MS — таймаут в мс (по умолчанию 60000)
  *   DEEPSEEK_TRANSLATE_TIMEOUT_MS — отдельный таймаут для перевода документов (по умолчанию 120000)
  */
 
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
-/** См. https://api-docs.deepseek.com/ — V4 Flash наследует роль бывшего deepseek-chat. */
-export const DEEPSEEK_DEFAULT_MODEL = "deepseek-v4-flash";
+/** См. https://api-docs.deepseek.com/ — V4 Pro (флагман); Flash: deepseek-v4-flash при экономии. */
+export const DEEPSEEK_DEFAULT_MODEL = "deepseek-v4-pro";
 
 export function deepseekEnabled(): boolean {
   return !!process.env.DEEPSEEK_API_KEY?.trim();

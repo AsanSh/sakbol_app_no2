@@ -434,7 +434,7 @@ async function parseWithOpenRouter(buffer: Buffer, mimeType: string): Promise<{
 }
 
 /**
- * DeepSeek (текст-only): PDF → pdf-parse → DeepSeek V4 (deepseek-v4-flash по умолчанию) JSON.
+ * DeepSeek (текст-only): PDF → pdf-parse → DeepSeek V4 Pro (deepseek-v4-pro по умолчанию) JSON.
  * Изображения не поддерживаются.
  */
 async function parseWithDeepSeek(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
