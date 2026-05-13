@@ -11,6 +11,7 @@ import {
 import { telegramMiniAppStartUrlFromEnv } from "@/lib/telegram-public-urls";
 import {
   telegramDownloadFile,
+  type TelegramInlineButton,
   telegramSendMessageWithUrlButtons,
   telegramSendPlainMessage,
 } from "@/lib/telegram-bot-api";
@@ -119,9 +120,9 @@ export async function POST(req: NextRequest) {
         });
         const webAcceptUrl = `${getServerAppOrigin()}/share-profile/${encodeURIComponent(shareToken)}`;
         const miniAppUrl = telegramMiniAppStartUrlFromEnv(`share_${shareToken}`);
-        const buttons: Array<{ text: string; url: string }> = [];
+        const buttons: TelegramInlineButton[] = [];
         if (miniAppUrl) {
-          buttons.push({ text: "Открыть Mini App", url: miniAppUrl });
+          buttons.push({ text: "Открыть Mini App", miniAppUrl: miniAppUrl });
         }
         buttons.push({ text: "Открыть на сайте", url: webAcceptUrl });
         const nameFor = (n: string) => `«${n}»`;
@@ -194,8 +195,8 @@ export async function POST(req: NextRequest) {
         });
         const webAcceptUrl = `${getServerAppOrigin()}/join-family?code=${encodeURIComponent(joinCode9)}`;
         const miniAppUrl = telegramMiniAppStartUrlFromEnv(`join_${joinCode9}`);
-        const buttons: Array<{ text: string; url: string }> = [];
-        if (miniAppUrl) buttons.push({ text: "Открыть Mini App", url: miniAppUrl });
+        const buttons: TelegramInlineButton[] = [];
+        if (miniAppUrl) buttons.push({ text: "Открыть Mini App", miniAppUrl: miniAppUrl });
         buttons.push({ text: "Открыть на сайте", url: webAcceptUrl });
         const nameFor = (n: string) => `«${n}»`;
 

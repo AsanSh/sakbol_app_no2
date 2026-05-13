@@ -35,8 +35,8 @@ export async function notifyPharmaciesNewMedicineRequest(input: {
     (input.note?.trim() ? `\n📝 ${input.note.trim()}` : "") +
     `\n\nОткройте кабинет аптеки → открытые заявки и ответьте.`;
 
-  const buttons: Array<{ text: string; url: string }> = [];
-  if (mini) buttons.push({ text: "✅ Ответить в 1 клик", url: mini });
+  const buttons: Array<{ text: string; url: string } | { text: string; miniAppUrl: string }> = [];
+  if (mini) buttons.push({ text: "✅ Ответить в 1 клик", miniAppUrl: mini });
   buttons.push({ text: "SakBol на сайте", url: appUrl });
 
   await Promise.allSettled(
@@ -89,8 +89,10 @@ export async function notifyUserMedicineResponse(input: {
   const mini = telegramMiniAppStartUrlFromEnv();
   const appPharm = `${getServerAppOrigin()}/?tab=pharmacy`;
 
-  const buttons: Array<{ text: string; url: string }> = [{ text: "🗺 На карте", url: map }];
-  if (mini) buttons.push({ text: "SakBol", url: mini });
+  const buttons: Array<{ text: string; url: string } | { text: string; miniAppUrl: string }> = [
+    { text: "🗺 На карте", url: map },
+  ];
+  if (mini) buttons.push({ text: "SakBol", miniAppUrl: mini });
   buttons.push({ text: "Сайт", url: appPharm });
 
   return telegramSendMessageWithUrlButtons(chatId, msg, buttons);

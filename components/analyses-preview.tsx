@@ -105,6 +105,69 @@ function isTelegramMiniApp(): boolean {
   return Boolean((window as unknown as { Telegram?: { WebApp?: unknown } }).Telegram?.WebApp);
 }
 
+/** Перевод PDF: длинный серверный запрос + DeepSeek — мягкий retry при обрыве сети. */
+async function postDocumentTranslate(
+  docId: string,
+  targetLang: DocTranslateLang,
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  const url = `/api/documents/${encodeURIComponent(docId)}/translate`;
+  const body = JSON.stringify({ targetLang });
+  const maxAttempts = 2;
+  let lastErr = "Не удалось выполнить запрос.";
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 180_000);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body,
+        signal: ctrl.signal,
+      });
+      window.clearTimeout(timer);
+      const raw = await res.text();
+      let j: { error?: string; text?: string } = {};
+      if (raw) {
+        try {
+          j = JSON.parse(raw) as { error?: string; text?: string };
+        } catch {
+          return {
+            ok: false,
+            error: `Сервер вернул неожиданный ответ (${res.status}). Попробуйте позже.`,
+          };
+        }
+      }
+      if (!res.ok) {
+        lastErr = j.error || `Ошибка ${res.status}`;
+        if (res.status >= 502 && attempt < maxAttempts - 1) {
+          await new Promise((r) => setTimeout(r, 1800));
+          continue;
+        }
+        return { ok: false, error: lastErr };
+      }
+      return { ok: true, text: String(j.text ?? "") };
+    } catch (e) {
+      window.clearTimeout(timer);
+      const name = e instanceof Error ? e.name : "";
+      if (name === "AbortError") {
+        lastErr =
+          "Слишком долгое ожидание (медленный интернет или тяжёлый PDF). Попробуйте ещё раз.";
+      } else {
+        const msg = e instanceof Error ? e.message : String(e);
+        lastErr =
+          /fetch|network|failed/i.test(msg) || name === "TypeError"
+            ? "Нет связи с сервером. Проверьте интернет и попробуйте снова."
+            : msg.slice(0, 160);
+      }
+      if (attempt < maxAttempts - 1) {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+  }
+  return { ok: false, error: lastErr };
+}
+
 const DocumentSkeleton = () => (
   <div className="flex items-center gap-3 rounded-xl bg-white p-3 animate-pulse">
     <div className="h-10 w-10 flex-shrink-0 rounded-lg bg-gray-200" />
@@ -685,35 +748,23 @@ export function AnalysesPreview({
       loading: true,
       error: null,
     });
-    try {
-      const res = await fetch(`/api/documents/${encodeURIComponent(d.id)}/translate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ targetLang }),
-      });
-      const j = (await res.json()) as { error?: string; text?: string };
-      if (!res.ok) {
-        setDocTranslation((prev) =>
-          prev ? { ...prev, loading: false, error: j.error || `Ошибка ${res.status}` } : null,
-        );
-        return;
-      }
+    const result = await postDocumentTranslate(d.id, targetLang);
+    if (!result.ok) {
       setDocTranslation((prev) =>
-        prev
-          ? {
-              ...prev,
-              loading: false,
-              text: String(j.text ?? ""),
-              error: null,
-            }
-          : null,
+        prev ? { ...prev, loading: false, error: result.error } : null,
       );
-    } catch {
-      setDocTranslation((prev) =>
-        prev ? { ...prev, loading: false, error: "Ошибка сети" } : null,
-      );
+      return;
     }
+    setDocTranslation((prev) =>
+      prev
+        ? {
+            ...prev,
+            loading: false,
+            text: result.text,
+            error: null,
+          }
+        : null,
+    );
   }, []);
 
   const shareDocTranslation = useCallback(async () => {

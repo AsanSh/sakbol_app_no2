@@ -10,6 +10,7 @@ import "server-only";
  *   DEEPSEEK_API_KEY   — обязательный
  *   DEEPSEEK_MODEL     — модель (по умолчанию deepseek-chat / DeepSeek-V3)
  *   DEEPSEEK_TIMEOUT_MS — таймаут в мс (по умолчанию 60000)
+ *   DEEPSEEK_TRANSLATE_TIMEOUT_MS — отдельный таймаут для перевода документов (по умолчанию 120000)
  */
 
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
@@ -29,6 +30,13 @@ function deepseekTimeoutMs(): number {
   return 60_000;
 }
 
+/** Длиннее обычного: перевод больших PDF по слабому каналу до DeepSeek. */
+export function deepseekTranslateTimeoutMs(): number {
+  const env = process.env.DEEPSEEK_TRANSLATE_TIMEOUT_MS?.trim();
+  if (env && /^\d+$/.test(env)) return Math.max(5000, Number(env));
+  return 120_000;
+}
+
 export type DeepSeekMessage = {
   role: "system" | "user" | "assistant";
   content: string;
@@ -40,6 +48,8 @@ export async function deepseekChatCompletion(params: {
   temperature?: number;
   responseFormatJson?: boolean;
   model?: string;
+  /** Переопределить DEEPSEEK_TIMEOUT_MS для долгих запросов (перевод документов). */
+  timeoutMs?: number;
 }): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
   const key = process.env.DEEPSEEK_API_KEY?.trim();
   if (!key) {
@@ -57,7 +67,7 @@ export async function deepseekChatCompletion(params: {
     body.response_format = { type: "json_object" };
   }
 
-  const timeoutMs = deepseekTimeoutMs();
+  const timeoutMs = params.timeoutMs ?? deepseekTimeoutMs();
   try {
     const res = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
       method: "POST",

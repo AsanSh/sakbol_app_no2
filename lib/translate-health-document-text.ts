@@ -1,6 +1,10 @@
 import "server-only";
 
-import { deepseekChatCompletion, deepseekEnabled } from "@/lib/deepseek";
+import {
+  deepseekChatCompletion,
+  deepseekEnabled,
+  deepseekTranslateTimeoutMs,
+} from "@/lib/deepseek";
 
 export type DocTranslateTargetLang = "ru" | "en" | "hi";
 
@@ -75,6 +79,7 @@ Rules:
       ],
       maxTokens: 8192,
       temperature: 0.15,
+      timeoutMs: deepseekTranslateTimeoutMs(),
     });
     if (!res.ok) {
       return { ok: false, error: res.userMessage || "Ошибка перевода." };

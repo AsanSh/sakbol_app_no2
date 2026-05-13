@@ -14,6 +14,8 @@ import {
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+/** Vercel / долгий перевод PDF + DeepSeek */
+export const maxDuration = 300;
 
 const ALLOWED_LANG = new Set<DocTranslateTargetLang>(["ru", "en", "hi"]);
 

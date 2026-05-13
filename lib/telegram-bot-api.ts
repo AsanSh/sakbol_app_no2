@@ -96,14 +96,26 @@ export async function telegramSendMessageWithUrlButton(
   ]);
 }
 
+/** `miniAppUrl` → кнопка `web_app`: открывает Mini App внутри Telegram (меньше «лишних» вкладок браузера при повторных нажатиях). */
+export type TelegramInlineButton =
+  | { text: string; url: string }
+  | { text: string; miniAppUrl: string };
+
+function inlineKeyboardRow(b: TelegramInlineButton): Array<{ text: string; url: string } | { text: string; web_app: { url: string } }> {
+  if ("miniAppUrl" in b) {
+    return [{ text: b.text, web_app: { url: b.miniAppUrl } }];
+  }
+  return [{ text: b.text, url: b.url }];
+}
+
 /**
- * Отправить сообщение с одной или несколькими URL-кнопками (по одной в строке).
- * Удобно для развилок «Открыть Mini App» / «Открыть на сайте».
+ * Отправить сообщение с одной или несколькими кнопками (по одной в строке).
+ * Для Mini App передайте `{ text, miniAppUrl }` вместо обычной `url`.
  */
 export async function telegramSendMessageWithUrlButtons(
   chatId: string,
   text: string,
-  buttons: Array<{ text: string; url: string }>,
+  buttons: TelegramInlineButton[],
 ): Promise<{ ok: true } | { ok: false; description: string }> {
   const j = await tgCall<unknown>("sendMessage", {
     method: "POST",
@@ -112,7 +124,7 @@ export async function telegramSendMessageWithUrlButtons(
       chat_id: chatId,
       text,
       reply_markup: {
-        inline_keyboard: buttons.map((b) => [{ text: b.text, url: b.url }]),
+        inline_keyboard: buttons.map((b) => inlineKeyboardRow(b)),
       },
     }),
   });
