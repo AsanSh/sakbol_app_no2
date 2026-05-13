@@ -20,10 +20,18 @@
 @layer base {
   body {
     background-color: var(--ui-color-canvas);
+    color: var(--ui-color-foreground);
     /* Спокойный фон без «шума»; лёгкий акцент только сверху */
     background-image:
       radial-gradient(ellipse 100% 60% at 50% -25%, rgba(0, 191, 165, 0.06), transparent 55%);
     background-attachment: fixed;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-image:
+      radial-gradient(ellipse 100% 60% at 50% -25%, rgba(0, 191, 165, 0.12), transparent 55%);
   }
 }
 

@@ -21,13 +21,13 @@ export function BottomSheet({ open, title, onClose, children }: Props) {
         aria-label="Закрыть"
         onClick={onClose}
       />
-      <div className="relative max-h-[85dvh] overflow-y-auto rounded-t-3xl bg-white shadow-2xl">
-        <div className="sticky top-0 flex items-center justify-between border-b border-[#e7e8e9] bg-white px-4 py-3">
-          <h2 className="font-manrope text-base font-bold text-[#191c1d]">{title}</h2>
+      <div className="relative max-h-[85dvh] overflow-y-auto rounded-t-3xl bg-ui-surface shadow-2xl ring-1 ring-ui-border/50">
+        <div className="sticky top-0 flex items-center justify-between border-b border-ui-border bg-ui-surface px-4 py-3">
+          <h2 className="font-manrope text-base font-bold text-ui-foreground">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f3f4f5] text-[#40484c]"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-ui-border-subtle text-ui-muted transition-colors hover:bg-ui-border"
             aria-label="Закрыть"
           >
             <MaterialIcon name="close" className="text-[20px]" />
