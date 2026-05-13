@@ -8,13 +8,13 @@ import "server-only";
  *
  * Переменные:
  *   DEEPSEEK_API_KEY   — обязательный
- *   DEEPSEEK_MODEL     — модель API (по умолчанию deepseek-v4-pro; для Flash: deepseek-v4-flash)
+ *   DEEPSEEK_MODEL     — игнорируется: всегда используется deepseek-v4-pro
  *   DEEPSEEK_TIMEOUT_MS — таймаут в мс (по умолчанию 60000)
  *   DEEPSEEK_TRANSLATE_TIMEOUT_MS — отдельный таймаут для перевода документов (по умолчанию 120000)
  */
 
 export const DEEPSEEK_BASE_URL = "https://api.deepseek.com/v1";
-/** См. https://api-docs.deepseek.com/ — V4 Pro (флагман); Flash: deepseek-v4-flash при экономии. */
+/** Всегда `deepseek-v4-pro` (см. api-docs.deepseek.com). */
 export const DEEPSEEK_DEFAULT_MODEL = "deepseek-v4-pro";
 
 export function deepseekEnabled(): boolean {
@@ -22,7 +22,7 @@ export function deepseekEnabled(): boolean {
 }
 
 export function deepseekModel(): string {
-  return process.env.DEEPSEEK_MODEL?.trim() || DEEPSEEK_DEFAULT_MODEL;
+  return DEEPSEEK_DEFAULT_MODEL;
 }
 
 function deepseekTimeoutMs(): number {

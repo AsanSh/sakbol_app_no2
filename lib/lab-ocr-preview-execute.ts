@@ -25,7 +25,7 @@ export type PreviewLabOcrResult =
         biomarkers: ParsedBiomarker[];
         analysisDate?: string;
         labName?: string;
-        ocrParser: "gemini" | "openai" | "bedrock" | "mock";
+        ocrParser: "gemini" | "openai" | "bedrock" | "deepseek" | "mock";
       };
     }
   | { ok: false; error: string };

@@ -5,19 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { checkProfileAccess } from "@/lib/profile-access-control";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 import { getSession, type SessionPayload } from "@/lib/session";
-import { generateClaudeLabChatAnswer } from "@/lib/anthropic-lab-chat";
-import { generateGeminiLabChatAnswer } from "@/lib/gemini-lab-chat";
-import { generateOpenAILabChatAnswer } from "@/lib/openai-lab-chat";
-import { generateBedrockLabChatAnswer } from "@/lib/bedrock-lab-chat";
-import { anthropicProviderIsBedrock } from "@/lib/bedrock-converse";
-import { openRouterChatText, openRouterEnabled } from "@/lib/openrouter";
 import { deepseekChatText, deepseekEnabled } from "@/lib/deepseek";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const DISCLAIMER =
   "Информация справочная, не диагноз и не замена консультации врача. Статусы у показателей на вкладке «Анализы» считаются по референсу с вашего бланка (если он распознан) и по возрасту.\n\n";
 
-/** Единый системный промпт для Gemini и Claude (интерпретация по цифрам из БД). */
 const LAB_ASSISTANT_SYSTEM = `Ты — образовательный помощник приложения SakBol по лабораторным показателям. Аудитория говорит по-русски (Кыргызстан и соседние регионы).
 
 Как отвечать:
@@ -71,7 +64,7 @@ async function latestLabContextBlock(
   return null;
 }
 
-function fallbackWithoutGemini(question: string, block: string | null, reason: string): string {
+function fallbackWithoutContext(question: string, block: string | null, reason: string): string {
   const q = question.trim();
   if (block) {
     return `${reason}\n\nКонтекст последнего анализа:\n\n${block}\n\n—\nВопрос: «${q}»\n\nСверяйтесь с бланком и при необходимости обсудите результаты с лечащим врачом.`;
@@ -80,10 +73,7 @@ function fallbackWithoutGemini(question: string, block: string | null, reason: s
 }
 
 /**
- * Ответ вкладки «ИИ» («Что это значит»): приоритет по env.
- * - ANTHROPIC_PROVIDER=bedrock и без LAB_ASSISTANT_PROVIDER: Bedrock, при ошибке — OpenRouter (Gemma), затем DeepSeek.
- * - Иначе по умолчанию: OpenRouter (Gemma), затем DeepSeek (если задан DEEPSEEK_API_KEY).
- * - LAB_ASSISTANT_PROVIDER=openai | bedrock | gemini | anthropic | deepseek — один провайдер (без цепочки).
+ * Ответ вкладки «ИИ» («Что это значит»): только DeepSeek (`deepseek-v4-pro`).
  */
 export async function askLabAssistantFromBook(
   question: string,
@@ -115,65 +105,22 @@ export async function askLabAssistantFromBook(
     ? `Вопрос пользователя:\n${q}\n\n---\nКонтекст последнего лабораторного анализа (выбранный профиль семьи):\n${block}\n\nОтветь на вопрос с учётом этих данных.`
     : `Вопрос пользователя:\n${q}\n\nКонтекст конкретного анализа не передан. Дай общий просветительский ответ на русском без привязки к чужим цифрам.`;
 
-  const provider = process.env.LAB_ASSISTANT_PROVIDER?.trim().toLowerCase() ?? "";
-
-  async function tryOpenAI() {
-    return generateOpenAILabChatAnswer(LAB_ASSISTANT_SYSTEM, userPrompt);
-  }
-  async function tryClaude() {
-    return generateClaudeLabChatAnswer(LAB_ASSISTANT_SYSTEM, userPrompt);
-  }
-  async function tryGemini() {
-    return generateGeminiLabChatAnswer(LAB_ASSISTANT_SYSTEM, userPrompt);
-  }
-  async function tryBedrock() {
-    return generateBedrockLabChatAnswer(LAB_ASSISTANT_SYSTEM, userPrompt);
-  }
-  async function tryOpenRouter() {
-    return openRouterChatText(LAB_ASSISTANT_SYSTEM, userPrompt);
-  }
-  async function tryDeepSeek() {
-    return deepseekChatText(LAB_ASSISTANT_SYSTEM, userPrompt);
+  if (!deepseekEnabled()) {
+    return {
+      ok: true,
+      hasBook: false,
+      usedLastLab,
+      answer: `${DISCLAIMER}${fallbackWithoutContext(
+        q,
+        block,
+        "Развёрнутые ответы недоступны: на сервере не задан DEEPSEEK_API_KEY.",
+      )}`,
+    };
   }
 
-  type LlmTry = Awaited<ReturnType<typeof tryOpenAI>>;
-  let llm: LlmTry | null = null;
+  const llm = await deepseekChatText(LAB_ASSISTANT_SYSTEM, userPrompt);
 
-  if (provider === "openai") {
-    llm = await tryOpenAI();
-  } else if (provider === "bedrock") {
-    llm = await tryBedrock();
-  } else if (provider === "gemini") {
-    llm = await tryGemini();
-  } else if (provider === "anthropic") {
-    llm = await tryClaude();
-  } else if (provider === "deepseek") {
-    llm = await tryDeepSeek();
-  } else if (anthropicProviderIsBedrock()) {
-    llm = await tryBedrock();
-    if (!llm.ok && openRouterEnabled()) {
-      console.warn("[lab-assistant] Bedrock failed, falling back to OpenRouter:", llm.userMessage);
-      llm = await tryOpenRouter();
-    }
-    if (llm && !llm.ok && deepseekEnabled()) {
-      console.warn("[lab-assistant] OpenRouter failed, falling back to DeepSeek:", llm.userMessage);
-      llm = await tryDeepSeek();
-    }
-  } else {
-    const chain: Array<() => Promise<LlmTry>> = [];
-    if (openRouterEnabled()) chain.push(tryOpenRouter);
-    if (deepseekEnabled()) chain.push(tryDeepSeek);
-    for (const fn of chain) {
-      const r = await fn();
-      if (r.ok) {
-        llm = r;
-        break;
-      }
-      llm = r;
-    }
-  }
-
-  if (llm?.ok) {
+  if (llm.ok) {
     return {
       ok: true,
       hasBook: false,
@@ -182,25 +129,13 @@ export async function askLabAssistantFromBook(
     };
   }
 
-  const errMsg = llm?.userMessage ?? "NO_KEY";
+  const errMsg = llm.userMessage;
   if (errMsg === "NO_KEY" || /NO_KEY/i.test(errMsg)) {
-    const hint =
-      provider === "openai"
-        ? "На сервере не задан OPENAI_API_KEY."
-        : provider === "bedrock" || anthropicProviderIsBedrock()
-          ? "На сервере не настроен Bedrock: задайте AWS_BEARER_TOKEN_BEDROCK или IAM (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / роль) и AWS_REGION."
-          : provider === "gemini"
-            ? "На сервере не задан GEMINI_API_KEY."
-            : provider === "anthropic"
-              ? "На сервере не задан ANTHROPIC_API_KEY."
-              : provider === "deepseek"
-            ? "На сервере не задан DEEPSEEK_API_KEY."
-            : "На сервере не задан OPENROUTER_API_KEY (OpenRouter) или DEEPSEEK_API_KEY.";
     return {
       ok: true,
       hasBook: false,
       usedLastLab,
-      answer: `${DISCLAIMER}${fallbackWithoutGemini(q, block, `Развёрнутые ответы недоступны: ${hint}`)}`,
+      answer: `${DISCLAIMER}${fallbackWithoutContext(q, block, "Развёрнутые ответы недоступны: не задан DEEPSEEK_API_KEY.")}`,
     };
   }
 
@@ -208,6 +143,6 @@ export async function askLabAssistantFromBook(
     ok: true,
     hasBook: false,
     usedLastLab,
-    answer: `${DISCLAIMER}${fallbackWithoutGemini(q, block, errMsg)}`,
+    answer: `${DISCLAIMER}${fallbackWithoutContext(q, block, errMsg)}`,
   };
 }

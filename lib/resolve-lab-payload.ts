@@ -23,10 +23,11 @@ export function resolveLabAnalysisPayload(
     parserRaw === "gemini" ||
     parserRaw === "openai" ||
     parserRaw === "bedrock" ||
+    parserRaw === "deepseek" ||
     parserRaw === "mock" ||
     parserRaw === "seed"
       ? parserRaw
-      : "mock";
+      : "deepseek";
 
   const fromMetrics =
     metricsPayload && typeof metricsPayload === "object"

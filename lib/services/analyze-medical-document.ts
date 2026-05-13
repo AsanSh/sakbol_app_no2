@@ -1,31 +1,10 @@
 import "server-only";
 
-import type { ContentBlock } from "@aws-sdk/client-bedrock-runtime";
-import {
-  bedrockAuthConfigured,
-  bedrockConverse,
-  bedrockLabOcrModelId,
-  mimeToBedrockImageFormat,
-} from "@/lib/bedrock-converse";
-import {
-  openRouterEnabled,
-  openRouterOcrModel,
-  openRouterPdfTextExtract,
-  openRouterReasoningJson,
-  openRouterReasoningModel,
-  openRouterVisionExtract,
-  openRouterVisionModel,
-} from "@/lib/openrouter";
 import { deepseekEnabled, deepseekModel, deepseekReasoningJson } from "@/lib/deepseek";
 import { extractPlainTextFromHealthDocumentBuffer } from "@/lib/health-document-text-extract";
 
-/** Минимум символов, чтобы слать PDF в DeepSeek (после pdf-parse + опционально Poppler+Tesseract). */
-const PDF_TEXT_MIN_CHARS_FOR_DEEPSEEK = 48;
-
-async function extractPdfPlainText(buffer: Buffer): Promise<string> {
-  const t = await extractPlainTextFromHealthDocumentBuffer(buffer, "application/pdf");
-  return t.replace(/\u0000/g, "").trim().slice(0, 60_000);
-}
+/** Минимум символов извлечённого текста перед вызовом DeepSeek. */
+const DOC_TEXT_MIN_CHARS = 48;
 
 /**
  * Расшифровка немедицинских (с т.з. лаборатории) документов: протоколов приёма
@@ -164,94 +143,18 @@ function coerceAnalysis(raw: unknown): MedicalDocumentAnalysis {
   };
 }
 
-async function callBedrockOnDocument(
-  buffer: Buffer,
-  mimeType: string,
-): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
-  if (!bedrockAuthConfigured()) {
-    return { ok: false, userMessage: "NO_KEY" };
-  }
-  const modelId = bedrockLabOcrModelId();
-  let content: ContentBlock[];
-  if (mimeType === "application/pdf") {
-    content = [
-      { text: DOCUMENT_USER_PROMPT },
-      {
-        document: {
-          format: "pdf",
-          name: "document",
-          source: { bytes: new Uint8Array(buffer) },
-        },
-      },
-    ];
-  } else if (mimeType.startsWith("image/")) {
-    content = [
-      { text: DOCUMENT_USER_PROMPT },
-      {
-        image: {
-          format: mimeToBedrockImageFormat(mimeType),
-          source: { bytes: new Uint8Array(buffer) },
-        },
-      },
-    ];
-  } else {
-    return {
-      ok: false,
-      userMessage: "Bedrock document analysis: поддерживаются только PDF или изображения.",
-    };
-  }
-  return bedrockConverse({
-    modelId,
-    system: DOCUMENT_ANALYSIS_SYSTEM_PROMPT,
-    messages: [{ role: "user", content }],
-    maxTokens: 4096,
-    temperature: 0.2,
-  });
-}
-
-async function callOpenRouterOnDocument(
-  buffer: Buffer,
-  mimeType: string,
-): Promise<{ ok: true; text: string } | { ok: false; userMessage: string }> {
-  if (mimeType.startsWith("image/")) {
-    return openRouterVisionExtract(
-      DOCUMENT_ANALYSIS_SYSTEM_PROMPT,
-      DOCUMENT_USER_PROMPT,
-      buffer,
-      mimeType,
-    );
-  }
-  if (mimeType === "application/pdf") {
-    let pdfText = "";
-    try {
-      pdfText = await extractPdfPlainText(buffer);
-    } catch (e) {
-      return {
-        ok: false,
-        userMessage: `OpenRouter fallback: не удалось извлечь текст из PDF (${(e as Error).message.slice(0, 160)}).`,
-      };
-    }
-    return openRouterPdfTextExtract(
-      DOCUMENT_ANALYSIS_SYSTEM_PROMPT,
-      DOCUMENT_USER_PROMPT,
-      pdfText,
-    );
-  }
-  return {
-    ok: false,
-    userMessage: "OpenRouter document analysis: поддерживаются только PDF или изображения.",
-  };
-}
-
-async function callOpenRouterOnText(text: string): Promise<
+async function deepseekAnalyzeFromPlainText(plain: string): Promise<
   { ok: true; text: string } | { ok: false; userMessage: string }
 > {
-  const trimmed = text.replace(/\u0000/g, "").trim().slice(0, 60_000);
-  if (!trimmed) {
-    return { ok: false, userMessage: "Пустой текст документа." };
+  const trimmed = plain.replace(/\u0000/g, "").trim().slice(0, 60_000);
+  if (trimmed.length < DOC_TEXT_MIN_CHARS) {
+    return {
+      ok: false,
+      userMessage: "Слишком мало текста для разбора. Проверьте качество скана или загрузите PDF с текстовым слоем.",
+    };
   }
   const enriched = `${DOCUMENT_USER_PROMPT}\n\n--- ТЕКСТ ДОКУМЕНТА ---\n${trimmed}`;
-  return openRouterReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
+  return deepseekReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
 }
 
 export type AnalyzeMedicalDocumentResult =
@@ -264,10 +167,7 @@ export type AnalyzeMedicalDocumentResult =
   | { ok: false; error: string };
 
 /**
- * Главная точка: PDF / изображение → структурированный JSON разбора.
- *
- * Порядок провайдеров:
- *   OpenRouter (Nemotron: vision / PDF-текст) → DeepSeek (текст PDF) → Bedrock (если настроен).
+ * PDF / изображение → извлечение текста (локально) → DeepSeek `deepseek-v4-pro` (JSON).
  */
 export async function analyzeMedicalDocumentBuffer(
   buffer: Buffer,
@@ -285,48 +185,30 @@ export async function analyzeMedicalDocumentBuffer(
     };
   }
 
-  let usedModelId = "";
-  let res: { ok: true; text: string } | { ok: false; userMessage: string } | undefined;
-
-  if (openRouterEnabled()) {
-    res = await callOpenRouterOnDocument(buffer, mimeType);
-    if (res.ok) {
-      usedModelId = isImage ? openRouterVisionModel() : openRouterOcrModel();
-    } else {
-      console.warn("[analyzeMedicalDocument] OpenRouter failed:", res.userMessage);
-    }
+  if (!deepseekEnabled()) {
+    return {
+      ok: false,
+      error: "ИИ недоступен. Задайте DEEPSEEK_API_KEY на сервере.",
+    };
   }
 
-  if (!res?.ok && isPdf && deepseekEnabled()) {
-    const pdfPlain = await extractPdfPlainText(buffer);
-    if (pdfPlain.length >= PDF_TEXT_MIN_CHARS_FOR_DEEPSEEK) {
-      const enriched = `${DOCUMENT_USER_PROMPT}\n\n--- ТЕКСТ PDF ---\n${pdfPlain}`;
-      const ds = await deepseekReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
-      res = ds;
-      if (ds.ok) {
-        usedModelId = deepseekModel();
-      } else {
-        console.warn("[analyzeMedicalDocument] DeepSeek failed, falling back to Bedrock:", ds.userMessage);
-      }
-    } else {
-      console.warn(
-        "[analyzeMedicalDocument] PDF без достаточного текстового слоя (скан?) — пропускаем DeepSeek, Bedrock.",
-      );
-    }
+  let plain: string;
+  try {
+    plain = await extractPlainTextFromHealthDocumentBuffer(buffer, mimeType);
+  } catch (e) {
+    return {
+      ok: false,
+      error: `Не удалось извлечь текст: ${(e as Error).message.slice(0, 200)}`,
+    };
   }
 
-  if (!res?.ok) {
-    usedModelId = bedrockLabOcrModelId();
-    res = await callBedrockOnDocument(buffer, mimeType);
-    if (res.ok) usedModelId = bedrockLabOcrModelId();
-  }
-
+  const res = await deepseekAnalyzeFromPlainText(plain);
   if (!res.ok) {
     return {
       ok: false,
       error:
         res.userMessage === "NO_KEY"
-          ? "ИИ-провайдер не настроен. Задайте OPENROUTER_API_KEY и при необходимости DEEPSEEK_API_KEY или Bedrock (AWS)."
+          ? "ИИ недоступен. Задайте DEEPSEEK_API_KEY на сервере."
           : `Не удалось получить разбор документа: ${res.userMessage}`,
     };
   }
@@ -353,32 +235,21 @@ export async function analyzeMedicalDocumentBuffer(
   return {
     ok: true,
     analysis,
-    modelId: usedModelId,
+    modelId: deepseekModel(),
     disclaimer: DOCUMENT_DISCLAIMER,
   };
 }
 
 /**
- * Резерв: уже извлечённый текст (например, из готовой OCR-выгрузки) — отдаём в
- * рассуждающую модель напрямую без бинарника. Используется как «текстовый» fallback,
- * если оба провайдера не справились с бинарём.
+ * Уже извлечённый текст → DeepSeek (JSON).
  */
 export async function analyzeMedicalDocumentFromText(
   text: string,
 ): Promise<AnalyzeMedicalDocumentResult> {
-  let res = await callOpenRouterOnText(text);
-  let modelId = openRouterReasoningModel();
-  if (!res.ok && deepseekEnabled()) {
-    const trimmed = text.replace(/\u0000/g, "").trim().slice(0, 60_000);
-    if (trimmed) {
-      const enriched = `${DOCUMENT_USER_PROMPT}\n\n--- ТЕКСТ ДОКУМЕНТА ---\n${trimmed}`;
-      const ds = await deepseekReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
-      if (ds.ok) {
-        res = ds;
-        modelId = deepseekModel();
-      }
-    }
+  if (!deepseekEnabled()) {
+    return { ok: false, error: "ИИ недоступен. Задайте DEEPSEEK_API_KEY на сервере." };
   }
+  const res = await deepseekAnalyzeFromPlainText(text);
   if (!res.ok) {
     return { ok: false, error: `Не удалось получить разбор документа: ${res.userMessage}` };
   }
@@ -398,7 +269,7 @@ export async function analyzeMedicalDocumentFromText(
   return {
     ok: true,
     analysis,
-    modelId,
+    modelId: deepseekModel(),
     disclaimer: DOCUMENT_DISCLAIMER,
   };
 }

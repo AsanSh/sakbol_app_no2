@@ -5,15 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { checkProfileAccess } from "@/lib/profile-access-control";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 import { getSession } from "@/lib/session";
-import {
-  bedrockConverse,
-  bedrockLabOcrModelId,
-} from "@/lib/bedrock-converse";
-import {
-  openRouterEnabled,
-  openRouterReasoningJson,
-  openRouterReasoningModel,
-} from "@/lib/openrouter";
 import { deepseekEnabled, deepseekModel, deepseekReasoningJson } from "@/lib/deepseek";
 
 const DISCLAIMER =
@@ -301,48 +292,22 @@ export async function analyzeMedicalHistoryForProfile(
     "Верни ТОЛЬКО JSON по схеме из системного промпта (без префиксов, без ```).",
   ].join("\n");
 
-  const bedrockModelId = bedrockLabOcrModelId();
-  let usedModelId = openRouterReasoningModel();
-  let res: { ok: true; text: string } | { ok: false; userMessage: string } = {
-    ok: false,
-    userMessage: "NO_KEY",
-  };
-
-  if (openRouterEnabled()) {
-    const fb = await openRouterReasoningJson(ANALYSIS_SYSTEM_PROMPT, userText);
-    res = fb;
-    if (fb.ok) {
-      usedModelId = openRouterReasoningModel();
-    } else {
-      console.warn("[medical-history] OpenRouter failed, falling back to DeepSeek:", fb.userMessage);
-    }
+  if (!deepseekEnabled()) {
+    return {
+      ok: false,
+      error: "ИИ-провайдер не настроен. Задайте DEEPSEEK_API_KEY на сервере.",
+    };
   }
 
-  if (!res.ok && deepseekEnabled()) {
-    usedModelId = deepseekModel();
-    res = await deepseekReasoningJson(ANALYSIS_SYSTEM_PROMPT, userText);
-    if (!res.ok) {
-      console.warn("[medical-history] DeepSeek failed, falling back to Bedrock:", res.userMessage);
-    }
-  }
-
-  if (!res.ok) {
-    usedModelId = bedrockModelId;
-    res = await bedrockConverse({
-      modelId: bedrockModelId,
-      system: ANALYSIS_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: [{ text: userText }] }],
-      maxTokens: 2048,
-      temperature: 0.2,
-    });
-  }
+  const usedModelId = deepseekModel();
+  const res = await deepseekReasoningJson(ANALYSIS_SYSTEM_PROMPT, userText);
 
   if (!res.ok) {
     return {
       ok: false,
       error:
         res.userMessage === "NO_KEY"
-          ? "ИИ-провайдер не настроен. Задайте OPENROUTER_API_KEY и при необходимости DEEPSEEK_API_KEY или Bedrock (AWS)."
+          ? "ИИ-провайдер не настроен. Задайте DEEPSEEK_API_KEY на сервере."
           : `Не удалось получить разбор: ${res.userMessage}`,
     };
   }

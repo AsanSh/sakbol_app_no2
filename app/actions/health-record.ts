@@ -74,7 +74,7 @@ type ConfirmedLabPayload = {
   analysisDate?: string;
   labName?: string;
   title?: string;
-  ocrParser?: "gemini" | "openai" | "bedrock" | "mock";
+  ocrParser?: "gemini" | "openai" | "bedrock" | "deepseek" | "mock";
 };
 
 function parseConfirmedLabPayload(raw: string): { ok: true; data: ConfirmedLabPayload } | { ok: false; error: string } {
@@ -128,8 +128,10 @@ function parseConfirmedLabPayload(raw: string): { ok: true; data: ConfirmedLabPa
     typeof titleRaw === "string" && titleRaw.trim() ? titleRaw.trim().slice(0, 200) : undefined;
 
   const pr = o.ocrParser;
-  let ocrParser: "gemini" | "openai" | "bedrock" | "mock" = "gemini";
-  if (pr === "openai" || pr === "bedrock" || pr === "mock") ocrParser = pr;
+  let ocrParser: "gemini" | "openai" | "bedrock" | "deepseek" | "mock" = "deepseek";
+  if (pr === "openai" || pr === "bedrock" || pr === "mock" || pr === "gemini" || pr === "deepseek") {
+    ocrParser = pr;
+  }
 
   return {
     ok: true,
@@ -166,7 +168,7 @@ async function persistLabAnalysisUpload(args: {
   buf: Buffer;
   mime: string;
   biomarkers: ParsedBiomarker[];
-  parser: "gemini" | "openai" | "bedrock" | "mock";
+  parser: "gemini" | "openai" | "bedrock" | "deepseek" | "mock";
   analysisDate?: string;
   labName?: string;
   titleOverride?: string;
@@ -239,7 +241,7 @@ async function persistLabAnalysisUpload(args: {
     contentSha256: string;
     anonymizedAt: string;
     parsedAt: string;
-    parser: "gemini" | "openai" | "bedrock" | "mock";
+    parser: "gemini" | "openai" | "bedrock" | "deepseek" | "mock";
   } = {
     sourceFileId: fileId,
     sourceOriginalFileId: fileId,
@@ -347,7 +349,7 @@ export async function commitConfirmedLabUpload(formData: FormData) {
     buf,
     mime,
     biomarkers,
-    parser: ocrParser ?? "gemini",
+    parser: ocrParser ?? "deepseek",
     analysisDate,
     labName,
     titleOverride: title,

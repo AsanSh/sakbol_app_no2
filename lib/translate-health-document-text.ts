@@ -5,11 +5,6 @@ import {
   deepseekEnabled,
   deepseekTranslateTimeoutMs,
 } from "@/lib/deepseek";
-import {
-  openRouterChatCompletion,
-  openRouterChatModel,
-  openRouterEnabled,
-} from "@/lib/openrouter";
 
 export type DocTranslateTargetLang = "ru" | "en" | "hi";
 
@@ -48,16 +43,16 @@ function splitForTranslation(text: string): string[] {
 
 /**
  * Перевод распознанного текста медицинского документа; сохраняем абзацы и списки.
+ * Только DeepSeek (`deepseek-v4-pro`).
  */
 export async function translateHealthDocumentPlainText(
   plainText: string,
   target: DocTranslateTargetLang,
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
-  if (!openRouterEnabled() && !deepseekEnabled()) {
+  if (!deepseekEnabled()) {
     return {
       ok: false,
-      error:
-        "Перевод недоступен: задайте OPENROUTER_API_KEY (OpenRouter) или DEEPSEEK_API_KEY.",
+      error: "Перевод недоступен: задайте DEEPSEEK_API_KEY на сервере.",
     };
   }
   const trimmed = plainText.replace(/\0/g, "").trim();
@@ -83,46 +78,19 @@ Rules:
         : "";
     const userContent = `${header}${chunk}`;
 
-    let openRouterErr = "";
-    if (openRouterEnabled()) {
-      const or = await openRouterChatCompletion({
-        model: openRouterChatModel(),
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: userContent },
-        ],
-        maxTokens: 8192,
-        temperature: 0.15,
-      });
-      if (or.ok) {
-        out.push(or.text.trim());
-        continue;
-      }
-      openRouterErr = or.userMessage;
+    const res = await deepseekChatCompletion({
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: userContent },
+      ],
+      maxTokens: 8192,
+      temperature: 0.15,
+      timeoutMs: deepseekTranslateTimeoutMs(),
+    });
+    if (!res.ok) {
+      return { ok: false, error: res.userMessage || "Ошибка перевода." };
     }
-
-    if (deepseekEnabled()) {
-      const res = await deepseekChatCompletion({
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: userContent },
-        ],
-        maxTokens: 8192,
-        temperature: 0.15,
-        timeoutMs: deepseekTranslateTimeoutMs(),
-      });
-      if (!res.ok) {
-        const hint = openRouterErr ? `${res.userMessage || "Ошибка"} (OpenRouter: ${openRouterErr})` : res.userMessage;
-        return { ok: false, error: hint || "Ошибка перевода." };
-      }
-      out.push(res.text.trim());
-      continue;
-    }
-
-    return {
-      ok: false,
-      error: openRouterErr || "Ошибка перевода.",
-    };
+    out.push(res.text.trim());
   }
 
   return { ok: true, text: out.join("\n\n") };

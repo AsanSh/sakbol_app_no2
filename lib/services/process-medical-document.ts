@@ -1,18 +1,5 @@
 import "server-only";
 
-import type { ContentBlock } from "@aws-sdk/client-bedrock-runtime";
-import {
-  anthropicProviderIsBedrock,
-  bedrockAuthConfigured,
-  bedrockConverse,
-  bedrockLabOcrModelId,
-  mimeToBedrockImageFormat,
-} from "@/lib/bedrock-converse";
-import {
-  openRouterEnabled,
-  openRouterPdfTextExtract,
-  openRouterVisionExtract,
-} from "@/lib/openrouter";
 import { deepseekEnabled, deepseekReasoningJson } from "@/lib/deepseek";
 import { extractPlainTextFromHealthDocumentBuffer } from "@/lib/health-document-text-extract";
 import type { ParsedBiomarker } from "@/types/biomarker";
@@ -245,414 +232,42 @@ export function labDraftFromLlmJsonText(text: string): LabOcrDraft {
   throw new Error("LLM returned invalid JSON");
 }
 
-/**
- * Имена моделей для AI Studio REST (без префикса models/).
- * Порядок: сначала актуальные flash, затем стабильные версии с суффиксами.
- */
-function geminiModelCandidates(): string[] {
-  const fromEnv = process.env.GEMINI_MODEL?.trim();
-  const fallbacks = [
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-lite",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-001",
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-flash-002",
-    "gemini-1.5-flash-8b",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro-latest",
-    "gemini-1.5-pro",
-    "gemini-1.5-pro-002",
-  ];
-  const raw = (fromEnv ? [fromEnv, ...fallbacks] : fallbacks).filter(Boolean);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const m of raw) {
-    if (seen.has(m)) continue;
-    seen.add(m);
-    out.push(m);
-  }
-  return out;
-}
-
-/** Следующая модель из списка — только при «модель не найдена» (часто 404 на v1beta). */
-function shouldTryNextGeminiModel(errMsg: string): boolean {
-  return /(^|\s)404(\s|:)|\bNOT_FOUND\b|is not found for API version|not supported for generateContent/i.test(
-    errMsg,
-  );
-}
-
-/** Короткое сообщение в модалку загрузки (без простыни JSON). */
-function humanizeGeminiFailureForUser(raw: string): string {
-  const t = raw.trim();
-  if (/\b429\b|quota|Quota exceeded|exceeded your current quota|rate limit|RESOURCE_EXHAUSTED/i.test(t)) {
-    return [
-      "Квота Gemini исчерпана или для ключа не включён доступ к API (часто «limit: 0» на бесплатном плане).",
-      "Откройте Google AI Studio → проверьте биллинг и лимиты, подождите минуту и повторите.",
-      "Документация: https://ai.google.dev/gemini-api/docs/rate-limits",
-    ].join(" ");
-  }
-  if (/\b403\b|PERMISSION_DENIED/i.test(t)) {
-    return "Доступ к Gemini запрещён (403). Проверьте ключ в AI Studio и включённый Generative Language API для проекта.";
-  }
-  if (/\b400\b|API key not valid|API_KEY_INVALID|invalid API key/i.test(t)) {
-    return "Ключ GEMINI_API_KEY недействителен. Создайте новый в Google AI Studio и обновите переменную на сервере.";
-  }
-  if (/\b404\b|NOT_FOUND|is not found for API version|ни одна модель не подошла/i.test(t)) {
-    return [
-      "Ни одна из встроенных моделей Gemini не ответила для вашего ключа (404 или нет доступа).",
-      "Откройте Google AI Studio → раздел моделей, скопируйте точное имя (например gemini-2.5-flash) и задайте GEMINI_MODEL в .env / Vercel.",
-      "Список: https://ai.google.dev/gemini-api/docs/models",
-    ].join(" ");
-  }
-  return `Не удалось разобрать файл через Gemini. ${t.slice(0, 280)}${t.length > 280 ? "…" : ""}`;
-}
-
-const GEMINI_API_VERSIONS = ["v1beta", "v1"] as const;
-
-async function generateContentWithGeminiModel(
-  model: string,
-  buffer: Buffer,
-  mimeType: string,
-  key: string,
-  apiVersion: (typeof GEMINI_API_VERSIONS)[number],
-): Promise<LabOcrDraft> {
-  const b64 = buffer.toString("base64");
-  const userPrompt =
-    "Чыгарып бер: гана JSON — объект { analysisDate, labName, biomarkers } (көрсөткүчтөрдүн тизмеси), башка текст жок.";
-
-  const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${encodeURIComponent(model)}:generateContent`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: LLM_BIOMARKER_SYSTEM }] },
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: userPrompt }, { inlineData: { mimeType, data: b64 } }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.1,
-        responseMimeType: "application/json",
-      },
-    }),
-  });
-
-  const bodyText = await res.text();
-  if (!res.ok) {
-    throw new Error(`Gemini ${res.status} [${apiVersion}/${model}]: ${bodyText.slice(0, 400)}`);
-  }
-
-  const json = JSON.parse(bodyText) as {
-    candidates?: Array<{
-      finishReason?: string;
-      content?: { parts?: Array<{ text?: string }> };
-    }>;
-    promptFeedback?: { blockReason?: string };
-  };
-  if (json.promptFeedback?.blockReason) {
-    throw new Error(`Gemini blocked: ${json.promptFeedback.blockReason}`);
-  }
-  if (!json.candidates?.length) throw new Error("Gemini: empty candidates");
-  const cand = json.candidates[0];
-  const fr = cand?.finishReason;
-  if (fr && fr !== "STOP" && fr !== "MAX_TOKENS") {
-    throw new Error(`Gemini finish: ${fr}`);
-  }
-  const text =
-    cand?.content?.parts?.map((part) => part.text ?? "").join("")?.trim() ?? "";
-  if (!text) throw new Error("Empty Gemini response");
-  return labDraftFromLlmJsonText(text);
-}
-
-/** Google AI Studio / Gemini API: изображения и PDF (inline). */
-async function parseWithGemini(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
-  const key = process.env.GEMINI_API_KEY?.trim();
-  if (!key) throw new Error("No Gemini API key");
-
-  const models = geminiModelCandidates();
-  let lastErr = "";
-  for (const model of models) {
-    for (const apiVersion of GEMINI_API_VERSIONS) {
-      try {
-        return await generateContentWithGeminiModel(model, buffer, mimeType, key, apiVersion);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        lastErr = msg;
-        if (shouldTryNextGeminiModel(msg)) {
-          continue;
-        }
-        throw e;
-      }
-    }
-  }
-  throw new Error(
-    `Gemini: ни одна модель не подошла (${models.join(", ")}; пробовали API v1beta и v1). Последняя ошибка: ${lastErr.slice(0, 320)}`,
-  );
-}
-
 const LAB_OCR_USER_PROMPT =
   "Классифицируй документ. Если это лабораторный анализ — извлеки реальные показатели. Если это протокол приёма врача, выписка, назначение, рецепт, направление, справка или иной не-лабораторный документ — верни documentType=\"non-lab\" и пустой массив biomarkers. Никогда не выдумывай показатели. Верни только JSON по схеме из системного промпта.";
 
-/** OpenRouter fallback: image → vision-модель; PDF → pdf-parse + текстовый prompt. */
-async function parseWithOpenRouter(buffer: Buffer, mimeType: string): Promise<{
-  biomarkers: ParsedBiomarker[];
-  analysisDate?: string;
-  labName?: string;
-  parser: "bedrock";
-}> {
-  const userPrompt = LAB_OCR_USER_PROMPT;
-  let result: { ok: true; text: string } | { ok: false; userMessage: string };
-  if (mimeType.startsWith("image/")) {
-    result = await openRouterVisionExtract(LLM_BIOMARKER_SYSTEM, userPrompt, buffer, mimeType);
-  } else if (mimeType === "application/pdf") {
-    let pdfText = "";
-    try {
-      pdfText = await extractPlainTextFromHealthDocumentBuffer(buffer, "application/pdf");
-    } catch (e) {
-      throw new Error(
-        `OpenRouter fallback: не удалось извлечь текст из PDF (${(e as Error).message.slice(0, 160)}).`,
-      );
-    }
-    result = await openRouterPdfTextExtract(LLM_BIOMARKER_SYSTEM, userPrompt, pdfText);
-  } else {
-    throw new Error("OpenRouter fallback поддерживает только PDF или изображение.");
-  }
-
-  if (!result.ok) {
-    throw new Error(`OpenRouter OCR: ${result.userMessage}`);
-  }
-  const draft = labDraftFromLlmJsonText(result.text);
-  return {
-    biomarkers: draft.biomarkers,
-    analysisDate: draft.analysisDate,
-    labName: draft.labName,
-    parser: "bedrock",
-  };
-}
+/** Минимум символов извлечённого текста (pdf-parse / Poppler+Tesseract / Tesseract на фото). */
+const LAB_TEXT_MIN_CHARS = 48;
 
 /**
- * DeepSeek (текст-only): PDF → pdf-parse → DeepSeek V4 Pro (deepseek-v4-pro по умолчанию) JSON.
- * Изображения не поддерживаются.
+ * PDF и изображения: локальный текст → DeepSeek `deepseek-v4-pro` (JSON).
  */
 async function parseWithDeepSeek(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
   if (!deepseekEnabled()) {
     throw new Error("DEEPSEEK_API_KEY не задан.");
   }
-  if (mimeType !== "application/pdf") {
-    throw new Error("DeepSeek OCR: поддерживается только PDF (текстовый режим).");
-  }
-  let pdfText = "";
-  try {
-    pdfText = (await extractPlainTextFromHealthDocumentBuffer(buffer, "application/pdf"))
-      .replace(/\u0000/g, "")
-      .trim()
-      .slice(0, 60_000);
-  } catch (e) {
+  const plain = await extractPlainTextFromHealthDocumentBuffer(buffer, mimeType);
+  const docText = plain.replace(/\u0000/g, "").trim().slice(0, 60_000);
+  if (docText.length < LAB_TEXT_MIN_CHARS) {
+    if (mimeType === "application/pdf") {
+      throw new Error(
+        "Не удалось извлечь достаточно текста из PDF для ИИ. Если это скан, на сервере должны быть Poppler и Tesseract; либо загрузите более чёткий скан / экспорт с текстовым слоем.",
+      );
+    }
     throw new Error(
-      `DeepSeek OCR: не удалось извлечь текст из PDF (${(e as Error).message.slice(0, 160)}).`,
+      "С фото распознано слишком мало текста. Сфотографируйте бланк ровнее, при хорошем свете, или сохраните анализ как PDF.",
     );
   }
-  if (!pdfText) {
-    throw new Error("DeepSeek OCR: PDF не содержит извлекаемого текста.");
-  }
-  const enriched = `${LAB_OCR_USER_PROMPT}\n\n--- ТЕКСТ PDF ---\n${pdfText}`;
+  const enriched = `${LAB_OCR_USER_PROMPT}\n\n--- ИЗВЛЕЧЁННЫЙ ТЕКСТ ДОКУМЕНТА ---\n${docText}`;
   const result = await deepseekReasoningJson(LLM_BIOMARKER_SYSTEM, enriched);
   if (!result.ok) {
-    throw new Error(`DeepSeek OCR: ${result.userMessage}`);
+    throw new Error(`DeepSeek: ${result.userMessage}`);
   }
   return labDraftFromLlmJsonText(result.text);
 }
 
-/** Amazon Bedrock Converse: PDF (document) или изображение — извлечение JSON бланка. */
-async function parseWithBedrock(buffer: Buffer, mimeType: string): Promise<LabOcrDraft> {
-  if (!bedrockAuthConfigured()) {
-    throw new Error("Bedrock: не задан Bearer или IAM для AWS.");
-  }
-  const userPrompt = LAB_OCR_USER_PROMPT;
-
-  const modelId = bedrockLabOcrModelId();
-  let content: ContentBlock[];
-
-  if (mimeType === "application/pdf") {
-    content = [
-      { text: userPrompt },
-      {
-        document: {
-          format: "pdf",
-          name: "analysis",
-          source: { bytes: new Uint8Array(buffer) },
-        },
-      },
-    ];
-  } else if (mimeType.startsWith("image/")) {
-    const format = mimeToBedrockImageFormat(mimeType);
-    content = [
-      { text: userPrompt },
-      {
-        image: {
-          format,
-          source: { bytes: new Uint8Array(buffer) },
-        },
-      },
-    ];
-  } else {
-    throw new Error("Bedrock OCR поддерживает только PDF или изображение.");
-  }
-
-  const res = await bedrockConverse({
-    modelId,
-    system: LLM_BIOMARKER_SYSTEM,
-    messages: [{ role: "user", content }],
-    maxTokens: 8192,
-    temperature: 0.1,
-  });
-
-  if (!res.ok) {
-    throw new Error(res.userMessage);
-  }
-  return labDraftFromLlmJsonText(res.text);
-}
-
-function openaiLabOcrModel(): string {
-  return process.env.OPENAI_LAB_OCR_MODEL?.trim() || "gpt-4o-mini";
-}
-
-/** Модель для PDF через `/v1/responses` + `input_file` (можно задать отдельно). */
-function openaiLabOcrPdfModel(): string {
-  return process.env.OPENAI_LAB_OCR_PDF_MODEL?.trim() || openaiLabOcrModel();
-}
-
-function extractOpenAIResponsesText(data: unknown): string {
-  const o = data as {
-    output?: Array<{
-      type?: string;
-      content?: Array<{ type?: string; text?: string }>;
-    }>;
-    status?: string;
-    error?: { message?: string } | null;
-  };
-  if (o.error) {
-    const m = o.error && typeof o.error === "object" && "message" in o.error ? String(o.error.message) : "";
-    throw new Error(m || "OpenAI Responses error");
-  }
-  if (o.status && o.status !== "completed") {
-    throw new Error(`OpenAI Responses status: ${o.status}`);
-  }
-  const parts: string[] = [];
-  for (const item of o.output ?? []) {
-    if (item.type !== "message") continue;
-    for (const c of item.content ?? []) {
-      if (c.type === "output_text" && c.text) parts.push(c.text);
-    }
-  }
-  const text = parts.join("").trim();
-  if (!text) throw new Error("Empty OpenAI Responses output");
-  return text;
-}
-
-/** PDF: OpenAI Responses API с `input_file` (base64 data URL). */
-async function parseWithOpenAIPdf(buffer: Buffer): Promise<LabOcrDraft> {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error("No API key");
-
-  const b64 = buffer.toString("base64");
-  const fileData = `data:application/pdf;base64,${b64}`;
-
-  const res = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: openaiLabOcrPdfModel(),
-      temperature: 0.1,
-      instructions: LLM_BIOMARKER_SYSTEM,
-      input: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: "Чыгарып бер: JSON объект { analysisDate, labName, biomarkers } гана, башка текст жок.",
-            },
-            {
-              type: "input_file",
-              filename: "analysis.pdf",
-              file_data: fileData,
-            },
-          ],
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`OpenAI ${res.status}: ${t.slice(0, 400)}`);
-  }
-
-  const json = (await res.json()) as unknown;
-  const text = extractOpenAIResponsesText(json);
-  return labDraftFromLlmJsonText(text);
-}
-
-async function parseWithOpenAIVision(
-  buffer: Buffer,
-  mimeType: string,
-): Promise<LabOcrDraft> {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error("No API key");
-
-  const b64 = buffer.toString("base64");
-  const dataUrl = `data:${mimeType};base64,${b64}`;
-
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: openaiLabOcrModel(),
-      temperature: 0.1,
-      messages: [
-        { role: "system", content: LLM_BIOMARKER_SYSTEM },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Чыгарып бер: JSON объект { analysisDate, labName, biomarkers } гана.",
-            },
-            { type: "image_url", image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`OpenAI ${res.status}: ${t.slice(0, 200)}`);
-  }
-
-  const json = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const text = json.choices?.[0]?.message?.content?.trim() ?? "";
-  return labDraftFromLlmJsonText(text);
-}
-
 /**
- * OCR/LLM извлечения показателей:
- * - По умолчанию (без ANTHROPIC_PROVIDER=bedrock): OpenRouter (Nemotron) → DeepSeek (PDF) → OpenAI / Gemini при наличии ключей.
- * - `LAB_OCR_PREFER_GEMINI_FIRST=1` — сначала Gemini, потом OpenAI (если заданы ключи).
- * - `LAB_OCR_PREFER_OPENAI=1` — явно предпочесть OpenAI.
- * - `ANTHROPIC_PROVIDER=bedrock` — OpenRouter → DeepSeek (PDF) → Bedrock; без OpenAI/Gemini в основной цепочке.
+ * OCR/LLM извлечения показателей: только DeepSeek (`deepseek-v4-pro`) по тексту,
+ * извлечённому из PDF (pdf-parse, при необходимости Poppler+Tesseract) или с фото (Tesseract).
  * Мок только при ALLOW_MOCK_LAB_PARSER=1.
  */
 export async function processMedicalDocument(
@@ -662,262 +277,12 @@ export async function processMedicalDocument(
   biomarkers: ParsedBiomarker[];
   analysisDate?: string;
   labName?: string;
-  parser: "gemini" | "openai" | "bedrock" | "mock";
+  parser: "deepseek" | "mock";
 }> {
   const isImage = mimeType.startsWith("image/");
   const isPdf = mimeType === "application/pdf";
-
-  if (anthropicProviderIsBedrock()) {
-    if (!bedrockAuthConfigured() && !openRouterEnabled() && !deepseekEnabled()) {
-      throw new Error(
-        "ANTHROPIC_PROVIDER=bedrock: задайте OPENROUTER_API_KEY, DEEPSEEK_API_KEY или AWS_BEARER_TOKEN_BEDROCK / IAM (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY / роль) и регион AWS_REGION или BEDROCK_REGION.",
-      );
-    }
-    if (!isImage && !isPdf) {
-      throw new Error("Поддерживаются только PDF или изображение (PNG, JPG, WEBP).");
-    }
-
-    if (openRouterEnabled()) {
-      try {
-        return await parseWithOpenRouter(buffer, mimeType);
-      } catch (e) {
-        if (e instanceof NonLabDocumentError) throw e;
-        const msg = e instanceof Error ? e.message : String(e);
-        console.warn("[processMedicalDocument] OpenRouter OCR failed (bedrock mode):", msg);
-      }
-    }
-
-    if (isPdf && deepseekEnabled()) {
-      try {
-        const draft = await parseWithDeepSeek(buffer, mimeType);
-        return {
-          biomarkers: draft.biomarkers,
-          analysisDate: draft.analysisDate,
-          labName: draft.labName,
-          parser: "bedrock",
-        };
-      } catch (e) {
-        if (e instanceof NonLabDocumentError) throw e;
-        const msg = e instanceof Error ? e.message : String(e);
-        console.warn("[processMedicalDocument] DeepSeek OCR failed, falling back to Bedrock:", msg);
-      }
-    }
-
-    if (bedrockAuthConfigured()) {
-      try {
-        const draft = await parseWithBedrock(buffer, mimeType);
-        return {
-          biomarkers: draft.biomarkers,
-          analysisDate: draft.analysisDate,
-          labName: draft.labName,
-          parser: "bedrock",
-        };
-      } catch (e) {
-        if (e instanceof NonLabDocumentError) {
-          throw e;
-        }
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error("[processMedicalDocument] Bedrock OCR failed:", msg);
-        throw e;
-      }
-    }
-
-    throw new Error(
-      "Не удалось распознать анализ: задайте OPENROUTER_API_KEY, DEEPSEEK_API_KEY (для PDF с текстом) или доступ к Bedrock.",
-    );
-  }
-
-  if (openRouterEnabled()) {
-    try {
-      const r = await parseWithOpenRouter(buffer, mimeType);
-      return {
-        biomarkers: r.biomarkers,
-        analysisDate: r.analysisDate,
-        labName: r.labName,
-        parser: "openai",
-      };
-    } catch (e) {
-      if (e instanceof NonLabDocumentError) throw e;
-      const msg = e instanceof Error ? e.message : String(e);
-      console.warn("[processMedicalDocument] OpenRouter OCR failed:", msg);
-    }
-    if (isPdf && deepseekEnabled()) {
-      try {
-        const draft = await parseWithDeepSeek(buffer, mimeType);
-        return {
-          biomarkers: draft.biomarkers,
-          analysisDate: draft.analysisDate,
-          labName: draft.labName,
-          parser: "openai",
-        };
-      } catch (e) {
-        if (e instanceof NonLabDocumentError) throw e;
-        const msg = e instanceof Error ? e.message : String(e);
-        console.warn("[processMedicalDocument] DeepSeek PDF after OpenRouter failed:", msg);
-      }
-    }
-  }
-  const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
-  const hasOpenAI = !!process.env.OPENAI_API_KEY?.trim();
-  const canGemini = hasGemini && (isImage || isPdf);
-  const canOpenAIVision = isImage && hasOpenAI;
-  const canOpenAIPdf = isPdf && hasOpenAI;
-
-  const preferGeminiFirst =
-    process.env.LAB_OCR_PREFER_GEMINI_FIRST?.trim().toLowerCase() === "1" ||
-    process.env.LAB_OCR_PREFER_GEMINI_FIRST?.trim().toLowerCase() === "true" ||
-    process.env.LAB_OCR_PREFER_GEMINI_FIRST?.trim().toLowerCase() === "yes";
-
-  const preferOpenAIExplicit =
-    process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "1" ||
-    process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "true" ||
-    process.env.LAB_OCR_PREFER_OPENAI?.trim().toLowerCase() === "yes";
-
-  /** По умолчанию: OpenAI → Gemini для фото и PDF (если есть соответствующий ключ). Иначе: LAB_OCR_PREFER_GEMINI_FIRST=1 */
-  const preferOpenAI =
-    preferOpenAIExplicit || (!preferGeminiFirst && (canOpenAIVision || canOpenAIPdf));
-
-  const fromDraft = (
-    draft: LabOcrDraft,
-    parser: "gemini" | "openai" | "bedrock",
-  ): {
-    biomarkers: ParsedBiomarker[];
-    analysisDate?: string;
-    labName?: string;
-    parser: "gemini" | "openai" | "bedrock";
-  } => ({
-    biomarkers: draft.biomarkers,
-    analysisDate: draft.analysisDate,
-    labName: draft.labName,
-    parser,
-  });
-
-  async function tryGemini(): Promise<LabOcrDraft> {
-    return parseWithGemini(buffer, mimeType);
-  }
-
-  async function tryOpenAI(): Promise<LabOcrDraft> {
-    if (isPdf) return parseWithOpenAIPdf(buffer);
-    return parseWithOpenAIVision(buffer, mimeType);
-  }
-
-  /** Сценарий: только изображения — выбор порядка OpenAI / Gemini. */
-  if (isImage && (canOpenAIVision || canGemini)) {
-    if (preferOpenAI && canOpenAIVision) {
-      try {
-        return fromDraft(await tryOpenAI(), "openai");
-      } catch (openErr) {
-        const omsg = openErr instanceof Error ? openErr.message : String(openErr);
-        console.error("[processMedicalDocument] OpenAI (preferred):", omsg);
-        if (canGemini) {
-          try {
-            return fromDraft(await tryGemini(), "gemini");
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.error("[processMedicalDocument] Gemini fallback:", msg);
-            throw new Error(humanizeGeminiFailureForUser(msg));
-          }
-        }
-        throw new Error(`OpenAI Vision: ${omsg}`);
-      }
-    }
-
-    if (canGemini) {
-      try {
-        return fromDraft(await tryGemini(), "gemini");
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error("[processMedicalDocument] Gemini:", msg);
-        if (canOpenAIVision) {
-          try {
-            return fromDraft(await tryOpenAI(), "openai");
-          } catch (openErr) {
-            const omsg = openErr instanceof Error ? openErr.message : String(openErr);
-            console.error("[processMedicalDocument] OpenAI fallback:", omsg);
-            throw new Error(humanizeGeminiFailureForUser(msg));
-          }
-        }
-        throw new Error(humanizeGeminiFailureForUser(msg));
-      }
-    }
-
-    if (canOpenAIVision) {
-      try {
-        return fromDraft(await tryOpenAI(), "openai");
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error("[processMedicalDocument] OpenAI:", msg);
-        throw new Error(`OpenAI Vision: ${msg}`);
-      }
-    }
-  }
-
-  /** PDF: DeepSeek (текст), если OpenRouter не использовался — иначе уже пробовали выше. */
-  if (isPdf && deepseekEnabled() && !openRouterEnabled()) {
-    try {
-      const draft = await parseWithDeepSeek(buffer, mimeType);
-      return {
-        biomarkers: draft.biomarkers,
-        analysisDate: draft.analysisDate,
-        labName: draft.labName,
-        parser: "openai",
-      };
-    } catch (e) {
-      if (e instanceof NonLabDocumentError) throw e;
-      const msg = e instanceof Error ? e.message : String(e);
-      console.warn("[processMedicalDocument] DeepSeek PDF failed, continuing to OpenAI/Gemini:", msg);
-    }
-  }
-
-  /** PDF — OpenAI Responses по умолчанию, иначе Gemini (порядок как у фото). */
-  if (isPdf && (canOpenAIPdf || canGemini)) {
-    if (preferOpenAI && canOpenAIPdf) {
-      try {
-        return fromDraft(await tryOpenAI(), "openai");
-      } catch (openErr) {
-        const omsg = openErr instanceof Error ? openErr.message : String(openErr);
-        console.error("[processMedicalDocument] OpenAI PDF (preferred):", omsg);
-        if (canGemini) {
-          try {
-            return fromDraft(await tryGemini(), "gemini");
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.error("[processMedicalDocument] Gemini fallback:", msg);
-            throw new Error(humanizeGeminiFailureForUser(msg));
-          }
-        }
-        throw new Error(`OpenAI PDF: ${omsg}`);
-      }
-    }
-
-    if (canGemini) {
-      try {
-        return fromDraft(await tryGemini(), "gemini");
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error("[processMedicalDocument] Gemini:", msg);
-        if (canOpenAIPdf) {
-          try {
-            return fromDraft(await tryOpenAI(), "openai");
-          } catch (openErr) {
-            const omsg = openErr instanceof Error ? openErr.message : String(openErr);
-            console.error("[processMedicalDocument] OpenAI PDF fallback:", omsg);
-            throw new Error(humanizeGeminiFailureForUser(msg));
-          }
-        }
-        throw new Error(humanizeGeminiFailureForUser(msg));
-      }
-    }
-
-    if (canOpenAIPdf) {
-      try {
-        return fromDraft(await tryOpenAI(), "openai");
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.error("[processMedicalDocument] OpenAI PDF:", msg);
-        throw new Error(`OpenAI PDF: ${msg}`);
-      }
-    }
+  if (!isImage && !isPdf) {
+    throw new Error("Поддерживаются только PDF или изображение (PNG, JPG, WEBP).");
   }
 
   if (allowMockLabParser()) {
@@ -931,17 +296,17 @@ export async function processMedicalDocument(
     };
   }
 
-  if (!hasGemini && !hasOpenAI && !deepseekEnabled() && !openRouterEnabled()) {
+  if (!deepseekEnabled()) {
     throw new Error(
-      "Не задан OPENROUTER_API_KEY (рекомендуется), либо DEEPSEEK_API_KEY, OPENAI_API_KEY или GEMINI_API_KEY. Добавьте ключ в .env на сервере и перезапустите.",
+      "Распознавание недоступно: задайте DEEPSEEK_API_KEY в .env на сервере и перезапустите приложение.",
     );
   }
 
-  if (hasGemini && !mimeType.startsWith("image/") && mimeType !== "application/pdf") {
-    throw new Error("Поддерживаются только PDF или изображение (PNG, JPG, WEBP).");
-  }
-
-  throw new Error(
-    "Не удалось распознать файл. Проверьте OPENROUTER_API_KEY (OCR Nemotron), для PDF с текстом — DEEPSEEK_API_KEY, либо OPENAI/GEMINI при наличии ключей.",
-  );
+  const draft = await parseWithDeepSeek(buffer, mimeType);
+  return {
+    biomarkers: draft.biomarkers,
+    analysisDate: draft.analysisDate,
+    labName: draft.labName,
+    parser: "deepseek",
+  };
 }
