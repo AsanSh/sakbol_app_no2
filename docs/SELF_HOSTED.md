@@ -50,7 +50,7 @@ nano .env.production
 | Переменная | Зачем |
 |------------|--------|
 | `POSTGRES_PASSWORD` | Пароль БД (для `docker compose`) |
-| `NEXT_PUBLIC_APP_URL` и `APP_URL` | `https://adventory.store` |
+| `NEXT_PUBLIC_APP_URL` и `APP_URL` | `https://adventroy.store` |
 | `WEBHOOK_BASE_URL` | Тот же URL (для webhook-скрипта) |
 | `TELEGRAM_BOT_TOKEN` | Бот |
 | `TELEGRAM_WEBHOOK_SECRET` | Секрет для проверки webhook |

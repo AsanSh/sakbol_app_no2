@@ -22,6 +22,7 @@ import {
   clientLooksLikeTelegramWebApp,
   hasTelegramWebAppBridge,
 } from "@/lib/client-twa-detection";
+import { formatFetchErrorForUser } from "@/lib/format-fetch-error-for-user";
 
 export type TelegramViewer = {
   id: string;
@@ -160,7 +161,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ initData, pin, subjectIdCountry }),
       });
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Сеть недоступна." };
+      return { ok: false, error: formatFetchErrorForUser(e) };
     }
     const j = (await res.json().catch(() => ({}))) as {
       error?: string;
@@ -303,8 +304,7 @@ export function TelegramSessionProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setState({
           status: "error",
-          reason:
-            e instanceof Error ? `Сеть: ${e.message}` : "Не удалось связаться с сервером.",
+          reason: `Сеть: ${formatFetchErrorForUser(e)}`,
           canRetry: true,
         });
         setAuthReady(true);
