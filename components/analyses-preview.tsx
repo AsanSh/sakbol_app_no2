@@ -1,6 +1,15 @@
 "use client";
 
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import useSWRInfinite from "swr/infinite";
 import {
@@ -205,7 +214,12 @@ export function AnalysesPreview({
   const [docActionMenu, setDocActionMenu] = useState<{
     doc: HealthDocRow;
     phase: DocMenuPhase;
+    anchorX: number;
+    anchorY: number;
   } | null>(null);
+
+  const docMenuPanelRef = useRef<HTMLDivElement>(null);
+  const [docMenuFixedPos, setDocMenuFixedPos] = useState({ left: 0, top: 0 });
 
   const [docTranslation, setDocTranslation] = useState<{
     docId: string;
@@ -619,7 +633,12 @@ export function AnalysesPreview({
     docLongPressRef.current.timer = setTimeout(() => {
       docLongPressRef.current.timer = null;
       docLongPressRef.current.fired = true;
-      setDocActionMenu({ doc: d, phase: "actions" });
+      setDocActionMenu({
+        doc: d,
+        phase: "actions",
+        anchorX: docLongPressRef.current.startX,
+        anchorY: docLongPressRef.current.startY,
+      });
     }, 480);
   };
 
@@ -647,7 +666,12 @@ export function AnalysesPreview({
 
   const openDocRowContextMenu = (e: React.MouseEvent, d: HealthDocRow) => {
     e.preventDefault();
-    setDocActionMenu({ doc: d, phase: "actions" });
+    setDocActionMenu({
+      doc: d,
+      phase: "actions",
+      anchorX: e.clientX,
+      anchorY: e.clientY,
+    });
   };
 
   const runDocTranslation = useCallback(async (d: HealthDocRow, targetLang: DocTranslateLang) => {
@@ -709,6 +733,26 @@ export function AnalysesPreview({
       window.setTimeout(() => setShareToast(null), 2500);
     }
   }, [docTranslation]);
+
+  useLayoutEffect(() => {
+    if (!docActionMenu) return;
+    const apply = () => {
+      const pad = 10;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const el = docMenuPanelRef.current;
+      const w = Math.max(el?.offsetWidth ?? 300, 120);
+      const h = Math.max(el?.offsetHeight ?? 220, 100);
+      let left = docActionMenu.anchorX - w / 2;
+      let top = docActionMenu.anchorY + 12;
+      left = Math.max(pad, Math.min(left, vw - w - pad));
+      top = Math.max(pad, Math.min(top, vh - h - pad));
+      setDocMenuFixedPos({ left, top });
+    };
+    apply();
+    const id = requestAnimationFrame(apply);
+    return () => cancelAnimationFrame(id);
+  }, [docActionMenu]);
 
   useEffect(() => {
     if (!docActionMenu && !docTranslation) return;
@@ -1640,20 +1684,23 @@ export function AnalysesPreview({
         </div>
       ) : null}
 
-      {docActionMenu ? (
-        <div
-          className="fixed inset-0 z-[202] flex items-end justify-center sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Действия с документом"
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/45"
-            aria-label="Закрыть"
-            onClick={() => setDocActionMenu(null)}
-          />
-          <div className="relative z-10 w-full max-w-sm rounded-t-2xl bg-white p-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-2">
+      {docActionMenu && typeof document !== "undefined"
+        ? createPortal(
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-[202] bg-black/45"
+                aria-label="Закрыть"
+                onClick={() => setDocActionMenu(null)}
+              />
+              <div
+                ref={docMenuPanelRef}
+                className="fixed z-[203] w-[min(calc(100vw-20px),20rem)] rounded-2xl bg-white p-1 shadow-2xl ring-1 ring-black/10"
+                style={{ left: docMenuFixedPos.left, top: docMenuFixedPos.top }}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Действия с документом"
+              >
             {docActionMenu.phase === "actions" ? (
               <div className="flex flex-col">
                 <button
@@ -1742,9 +1789,11 @@ export function AnalysesPreview({
                 ))}
               </div>
             )}
-          </div>
-        </div>
-      ) : null}
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
 
       {docTranslation ? (
         <div

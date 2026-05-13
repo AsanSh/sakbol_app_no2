@@ -20,10 +20,10 @@ type Dock = "fixed" | "embedded";
 
 type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 
-/** Порядок: Главная → Медкарта → Аптека → Врачи → Профиль. Вкладка «Пациенты» — опционально в конце (врачам). */
+/** Порядок: Медкарта (главная) → Дашборд → Аптека → Врачи → Профиль. Вкладка «Пациенты» — опционально в конце (врачам). */
 const BASE_NAV_ITEMS: NavItem[] = [
-  { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
   { id: "analyses", labelKey: "nav.medcard", Icon: BookMarked },
+  { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
   { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
   { id: "doctors", labelKey: "nav.doctors", Icon: Stethoscope },
   { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },
