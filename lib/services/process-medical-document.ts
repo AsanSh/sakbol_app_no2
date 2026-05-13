@@ -9,7 +9,7 @@ import {
   mimeToBedrockImageFormat,
 } from "@/lib/bedrock-converse";
 import {
-  openRouterFallbackEnabled,
+  openRouterEnabled,
   openRouterPdfTextExtract,
   openRouterVisionExtract,
 } from "@/lib/openrouter";
@@ -649,11 +649,10 @@ async function parseWithOpenAIVision(
 
 /**
  * OCR/LLM извлечения показателей:
- * - PDF: по умолчанию OpenAI (`/v1/responses` + `input_file`, модель `OPENAI_LAB_OCR_PDF_MODEL` или `OPENAI_LAB_OCR_MODEL`), при ошибке — Gemini.
- * - Фото: по умолчанию OpenAI Vision (`OPENAI_LAB_OCR_MODEL`), при ошибке — Gemini.
- * - `LAB_OCR_PREFER_GEMINI_FIRST=1` — сначала Gemini, потом OpenAI.
- * - `LAB_OCR_PREFER_OPENAI=1` — явно предпочесть OpenAI (по умолчанию и так, если не задан prefer Gemini first).
- * - `ANTHROPIC_PROVIDER=bedrock` — только Amazon Bedrock (IAM или AWS_BEARER_TOKEN_BEDROCK), без OpenAI/Gemini.
+ * - По умолчанию (без ANTHROPIC_PROVIDER=bedrock): OpenRouter (Nemotron) → DeepSeek (PDF) → OpenAI / Gemini при наличии ключей.
+ * - `LAB_OCR_PREFER_GEMINI_FIRST=1` — сначала Gemini, потом OpenAI (если заданы ключи).
+ * - `LAB_OCR_PREFER_OPENAI=1` — явно предпочесть OpenAI.
+ * - `ANTHROPIC_PROVIDER=bedrock` — OpenRouter → DeepSeek (PDF) → Bedrock; без OpenAI/Gemini в основной цепочке.
  * Мок только при ALLOW_MOCK_LAB_PARSER=1.
  */
 export async function processMedicalDocument(
@@ -669,16 +668,25 @@ export async function processMedicalDocument(
   const isPdf = mimeType === "application/pdf";
 
   if (anthropicProviderIsBedrock()) {
-    if (!bedrockAuthConfigured() && !openRouterFallbackEnabled() && !deepseekEnabled()) {
+    if (!bedrockAuthConfigured() && !openRouterEnabled() && !deepseekEnabled()) {
       throw new Error(
-        "ANTHROPIC_PROVIDER=bedrock: задайте DEEPSEEK_API_KEY, AWS_BEARER_TOKEN_BEDROCK или IAM (AWS_ACCESS_KEY_ID и AWS_SECRET_ACCESS_KEY / роль) и регион AWS_REGION или BEDROCK_REGION.",
+        "ANTHROPIC_PROVIDER=bedrock: задайте OPENROUTER_API_KEY, DEEPSEEK_API_KEY или AWS_BEARER_TOKEN_BEDROCK / IAM (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY / роль) и регион AWS_REGION или BEDROCK_REGION.",
       );
     }
     if (!isImage && !isPdf) {
       throw new Error("Поддерживаются только PDF или изображение (PNG, JPG, WEBP).");
     }
 
-    // DeepSeek первым — только для PDF (текстовый режим)
+    if (openRouterEnabled()) {
+      try {
+        return await parseWithOpenRouter(buffer, mimeType);
+      } catch (e) {
+        if (e instanceof NonLabDocumentError) throw e;
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn("[processMedicalDocument] OpenRouter OCR failed (bedrock mode):", msg);
+      }
+    }
+
     if (isPdf && deepseekEnabled()) {
       try {
         const draft = await parseWithDeepSeek(buffer, mimeType);
@@ -710,16 +718,45 @@ export async function processMedicalDocument(
         }
         const msg = e instanceof Error ? e.message : String(e);
         console.error("[processMedicalDocument] Bedrock OCR failed:", msg);
-        if (!openRouterFallbackEnabled()) {
-          throw e;
-        }
-        console.warn("[processMedicalDocument] falling back to OpenRouter…");
+        throw e;
       }
     }
 
-    return parseWithOpenRouter(buffer, mimeType);
+    throw new Error(
+      "Не удалось распознать анализ: задайте OPENROUTER_API_KEY, DEEPSEEK_API_KEY (для PDF с текстом) или доступ к Bedrock.",
+    );
   }
 
+  if (openRouterEnabled()) {
+    try {
+      const r = await parseWithOpenRouter(buffer, mimeType);
+      return {
+        biomarkers: r.biomarkers,
+        analysisDate: r.analysisDate,
+        labName: r.labName,
+        parser: "openai",
+      };
+    } catch (e) {
+      if (e instanceof NonLabDocumentError) throw e;
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn("[processMedicalDocument] OpenRouter OCR failed:", msg);
+    }
+    if (isPdf && deepseekEnabled()) {
+      try {
+        const draft = await parseWithDeepSeek(buffer, mimeType);
+        return {
+          biomarkers: draft.biomarkers,
+          analysisDate: draft.analysisDate,
+          labName: draft.labName,
+          parser: "openai",
+        };
+      } catch (e) {
+        if (e instanceof NonLabDocumentError) throw e;
+        const msg = e instanceof Error ? e.message : String(e);
+        console.warn("[processMedicalDocument] DeepSeek PDF after OpenRouter failed:", msg);
+      }
+    }
+  }
   const hasGemini = !!process.env.GEMINI_API_KEY?.trim();
   const hasOpenAI = !!process.env.OPENAI_API_KEY?.trim();
   const canGemini = hasGemini && (isImage || isPdf);
@@ -815,8 +852,8 @@ export async function processMedicalDocument(
     }
   }
 
-  /** PDF: сначала пробуем DeepSeek (текст), потом OpenAI / Gemini (multimodal). */
-  if (isPdf && deepseekEnabled()) {
+  /** PDF: DeepSeek (текст), если OpenRouter не использовался — иначе уже пробовали выше. */
+  if (isPdf && deepseekEnabled() && !openRouterEnabled()) {
     try {
       const draft = await parseWithDeepSeek(buffer, mimeType);
       return {
@@ -894,9 +931,9 @@ export async function processMedicalDocument(
     };
   }
 
-  if (!hasGemini && !hasOpenAI && !deepseekEnabled()) {
+  if (!hasGemini && !hasOpenAI && !deepseekEnabled() && !openRouterEnabled()) {
     throw new Error(
-      "Не задан DEEPSEEK_API_KEY, OPENAI_API_KEY или GEMINI_API_KEY. Добавьте ключ в .env на сервере и перезапустите.",
+      "Не задан OPENROUTER_API_KEY (рекомендуется), либо DEEPSEEK_API_KEY, OPENAI_API_KEY или GEMINI_API_KEY. Добавьте ключ в .env на сервере и перезапустите.",
     );
   }
 
@@ -905,6 +942,6 @@ export async function processMedicalDocument(
   }
 
   throw new Error(
-    "Для распознавания нужен OPENAI_API_KEY (рекомендуется) или GEMINI_API_KEY. Проверьте .env на сервере.",
+    "Не удалось распознать файл. Проверьте OPENROUTER_API_KEY (OCR Nemotron), для PDF с текстом — DEEPSEEK_API_KEY, либо OPENAI/GEMINI при наличии ключей.",
   );
 }

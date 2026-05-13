@@ -10,7 +10,7 @@ import {
   bedrockLabOcrModelId,
 } from "@/lib/bedrock-converse";
 import {
-  openRouterFallbackEnabled,
+  openRouterEnabled,
   openRouterReasoningJson,
   openRouterReasoningModel,
 } from "@/lib/openrouter";
@@ -302,16 +302,28 @@ export async function analyzeMedicalHistoryForProfile(
   ].join("\n");
 
   const bedrockModelId = bedrockLabOcrModelId();
-  let usedModelId = deepseekModel();
-  let res: { ok: true; text: string } | { ok: false; userMessage: string };
+  let usedModelId = openRouterReasoningModel();
+  let res: { ok: true; text: string } | { ok: false; userMessage: string } = {
+    ok: false,
+    userMessage: "NO_KEY",
+  };
 
-  if (deepseekEnabled()) {
+  if (openRouterEnabled()) {
+    const fb = await openRouterReasoningJson(ANALYSIS_SYSTEM_PROMPT, userText);
+    res = fb;
+    if (fb.ok) {
+      usedModelId = openRouterReasoningModel();
+    } else {
+      console.warn("[medical-history] OpenRouter failed, falling back to DeepSeek:", fb.userMessage);
+    }
+  }
+
+  if (!res.ok && deepseekEnabled()) {
+    usedModelId = deepseekModel();
     res = await deepseekReasoningJson(ANALYSIS_SYSTEM_PROMPT, userText);
     if (!res.ok) {
       console.warn("[medical-history] DeepSeek failed, falling back to Bedrock:", res.userMessage);
     }
-  } else {
-    res = { ok: false, userMessage: "NO_KEY" };
   }
 
   if (!res.ok) {
@@ -325,24 +337,12 @@ export async function analyzeMedicalHistoryForProfile(
     });
   }
 
-  if (!res.ok && openRouterFallbackEnabled()) {
-    console.warn(
-      "[medical-history] Bedrock failed, falling back to OpenRouter:",
-      res.userMessage,
-    );
-    const fb = await openRouterReasoningJson(ANALYSIS_SYSTEM_PROMPT, userText);
-    if (fb.ok) {
-      res = fb;
-      usedModelId = openRouterReasoningModel();
-    }
-  }
-
   if (!res.ok) {
     return {
       ok: false,
       error:
         res.userMessage === "NO_KEY"
-          ? "ИИ-провайдер не настроен. Задайте DEEPSEEK_API_KEY, Bedrock (AWS) или OPENROUTER_API_KEY + OPENROUTER_ENABLED=1."
+          ? "ИИ-провайдер не настроен. Задайте OPENROUTER_API_KEY и при необходимости DEEPSEEK_API_KEY или Bedrock (AWS)."
           : `Не удалось получить разбор: ${res.userMessage}`,
     };
   }

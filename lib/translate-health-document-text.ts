@@ -57,7 +57,7 @@ export async function translateHealthDocumentPlainText(
     return {
       ok: false,
       error:
-        "Перевод недоступен: задайте OPENROUTER_API_KEY и OPENROUTER_ENABLED=1 (OpenRouter) или DEEPSEEK_API_KEY.",
+        "Перевод недоступен: задайте OPENROUTER_API_KEY (OpenRouter) или DEEPSEEK_API_KEY.",
     };
   }
   const trimmed = plainText.replace(/\0/g, "").trim();

@@ -1,12 +1,11 @@
 import "server-only";
 
 /**
- * OpenRouter (https://openrouter.ai) — чат/перевод (Gemma 4 26B IT free), OCR PDF и фото бланков
- * (Nemotron 3 Nano Omni reasoning free). Bedrock в этом окружении может отсутствовать — тогда
- * достаточно OPENROUTER_* + ключи Gemini/OpenAI при необходимости.
+ * OpenRouter (https://openrouter.ai) — чат/перевод (Gemma 4 31B free), OCR PDF и фото бланков
+ * (NVIDIA Nemotron 3 Nano Omni free). Достаточно OPENROUTER_API_KEY; резерв — DeepSeek.
  *
- * Включение: OPENROUTER_API_KEY и OPENROUTER_ENABLED=1 (или legacy OPENROUTER_FALLBACK_ENABLED=1).
- * Отключить явно: OPENROUTER_DISABLED=1.
+ * Включение: задан OPENROUTER_API_KEY (и не OPENROUTER_DISABLED=1). Явно выключить: OPENROUTER_DISABLED=1
+ * или OPENROUTER_ENABLED=0|false|no. Дополнительно: OPENROUTER_ENABLED=1 как явное «вкл».
  *
  * Для медицинских данных принудительно ставим data_collection: "deny" в provider hints
  * (это отсекает free-провайдеров с обязательным логированием/обучением).
@@ -20,9 +19,11 @@ export function openRouterEnabled(): boolean {
   const disabled = process.env.OPENROUTER_DISABLED?.trim().toLowerCase();
   if (disabled === "1" || disabled === "true" || disabled === "yes") return false;
   const enabled = process.env.OPENROUTER_ENABLED?.trim().toLowerCase();
+  if (enabled === "0" || enabled === "false" || enabled === "no") return false;
   if (enabled === "1" || enabled === "true" || enabled === "yes") return true;
   const fallback = process.env.OPENROUTER_FALLBACK_ENABLED?.trim().toLowerCase();
-  return fallback === "1" || fallback === "true" || fallback === "yes";
+  if (fallback === "1" || fallback === "true" || fallback === "yes") return true;
+  return true;
 }
 
 /** @deprecated Используйте openRouterEnabled — то же поведение (ключ + ENABLED или FALLBACK). */
@@ -33,16 +34,16 @@ export function openRouterFallbackEnabled(): boolean {
 export function openRouterChatModel(): string {
   return (
     process.env.OPENROUTER_CHAT_MODEL?.trim() ||
-    "google/gemma-4-26b-a4b-it:free"
+    "google/gemma-4-31b:free"
   );
 }
 
-/** JSON-reasoning (расшифровка документов, fallback после Bedrock): Gemma 4 26B IT free по умолчанию. */
+/** JSON-reasoning (чат, перевод, разбор текста): Gemma 4 31B free по умолчанию. */
 export function openRouterReasoningModel(): string {
   return (
     process.env.OPENROUTER_REASONING_MODEL?.trim() ||
     process.env.OPENROUTER_CHAT_MODEL?.trim() ||
-    "google/gemma-4-26b-a4b-it:free"
+    "google/gemma-4-31b:free"
   );
 }
 
@@ -50,16 +51,16 @@ export function openRouterReasoningModel(): string {
 export function openRouterOcrModel(): string {
   return (
     process.env.OPENROUTER_OCR_MODEL?.trim() ||
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+    "nvidia/nemotron-3-nano-omni:free"
   );
 }
 
-/** Фото бланков / сканы как изображение (vision + JSON). По умолчанию та же Nemotron Omni reasoning free. */
+/** Фото бланков / сканы как изображение (vision + JSON). По умолчанию та же Nemotron Omni free. */
 export function openRouterVisionModel(): string {
   return (
     process.env.OPENROUTER_VISION_MODEL?.trim() ||
     process.env.OPENROUTER_OCR_MODEL?.trim() ||
-    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+    "nvidia/nemotron-3-nano-omni:free"
   );
 }
 

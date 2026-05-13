@@ -81,11 +81,9 @@ function fallbackWithoutGemini(question: string, block: string | null, reason: s
 
 /**
  * Ответ вкладки «ИИ» («Что это значит»): приоритет по env.
- * - ANTHROPIC_PROVIDER=bedrock и без LAB_ASSISTANT_PROVIDER: только Amazon Bedrock (Bearer или IAM),
- *   при ошибке — OpenRouter если OPENROUTER_ENABLED=1 (или legacy OPENROUTER_FALLBACK_ENABLED) и ключ.
- * - Иначе по умолчанию: при OPENROUTER_ENABLED — сначала OpenRouter (Gemma), затем Bedrock → OpenAI → Gemini → Anthropic;
- *   DeepSeek — последний резерв, если задан DEEPSEEK_API_KEY.
- * - LAB_ASSISTANT_PROVIDER=openai | bedrock | gemini | anthropic — один провайдер (без цепочки).
+ * - ANTHROPIC_PROVIDER=bedrock и без LAB_ASSISTANT_PROVIDER: Bedrock, при ошибке — OpenRouter (Gemma), затем DeepSeek.
+ * - Иначе по умолчанию: OpenRouter (Gemma), затем DeepSeek (если задан DEEPSEEK_API_KEY).
+ * - LAB_ASSISTANT_PROVIDER=openai | bedrock | gemini | anthropic | deepseek — один провайдер (без цепочки).
  */
 export async function askLabAssistantFromBook(
   question: string,
@@ -164,7 +162,6 @@ export async function askLabAssistantFromBook(
   } else {
     const chain: Array<() => Promise<LlmTry>> = [];
     if (openRouterEnabled()) chain.push(tryOpenRouter);
-    chain.push(tryBedrock, tryOpenAI, tryGemini, tryClaude);
     if (deepseekEnabled()) chain.push(tryDeepSeek);
     for (const fn of chain) {
       const r = await fn();
@@ -198,7 +195,7 @@ export async function askLabAssistantFromBook(
               ? "На сервере не задан ANTHROPIC_API_KEY."
               : provider === "deepseek"
             ? "На сервере не задан DEEPSEEK_API_KEY."
-            : "На сервере не задан ни один из ключей: OPENROUTER_API_KEY + OPENROUTER_ENABLED=1, Bedrock (Bearer или IAM), OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY.";
+            : "На сервере не задан OPENROUTER_API_KEY (OpenRouter) или DEEPSEEK_API_KEY.";
     return {
       ok: true,
       hasBook: false,

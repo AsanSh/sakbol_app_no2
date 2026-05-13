@@ -8,11 +8,13 @@ import {
   mimeToBedrockImageFormat,
 } from "@/lib/bedrock-converse";
 import {
-  openRouterFallbackEnabled,
+  openRouterEnabled,
+  openRouterOcrModel,
   openRouterPdfTextExtract,
   openRouterReasoningJson,
   openRouterReasoningModel,
   openRouterVisionExtract,
+  openRouterVisionModel,
 } from "@/lib/openrouter";
 import { deepseekEnabled, deepseekModel, deepseekReasoningJson } from "@/lib/deepseek";
 import { extractPlainTextFromHealthDocumentBuffer } from "@/lib/health-document-text-extract";
@@ -265,8 +267,7 @@ export type AnalyzeMedicalDocumentResult =
  * Главная точка: PDF / изображение → структурированный JSON разбора.
  *
  * Порядок провайдеров:
- *   PDF: pdf-parse + при необходимости Poppler+Tesseract (см. health-document-text-extract) → DeepSeek (текст) → Bedrock → OpenRouter
- *   Изображение: Bedrock → OpenRouter
+ *   OpenRouter (Nemotron: vision / PDF-текст) → DeepSeek (текст PDF) → Bedrock (если настроен).
  */
 export async function analyzeMedicalDocumentBuffer(
   buffer: Buffer,
@@ -284,10 +285,19 @@ export async function analyzeMedicalDocumentBuffer(
     };
   }
 
-  let usedModelId = bedrockLabOcrModelId();
+  let usedModelId = "";
   let res: { ok: true; text: string } | { ok: false; userMessage: string } | undefined;
 
-  if (isPdf && deepseekEnabled()) {
+  if (openRouterEnabled()) {
+    res = await callOpenRouterOnDocument(buffer, mimeType);
+    if (res.ok) {
+      usedModelId = isImage ? openRouterVisionModel() : openRouterOcrModel();
+    } else {
+      console.warn("[analyzeMedicalDocument] OpenRouter failed:", res.userMessage);
+    }
+  }
+
+  if (!res?.ok && isPdf && deepseekEnabled()) {
     const pdfPlain = await extractPdfPlainText(buffer);
     if (pdfPlain.length >= PDF_TEXT_MIN_CHARS_FOR_DEEPSEEK) {
       const enriched = `${DOCUMENT_USER_PROMPT}\n\n--- ТЕКСТ PDF ---\n${pdfPlain}`;
@@ -300,23 +310,15 @@ export async function analyzeMedicalDocumentBuffer(
       }
     } else {
       console.warn(
-        "[analyzeMedicalDocument] PDF без достаточного текстового слоя (скан?) — пропускаем DeepSeek, Bedrock/OpenRouter.",
+        "[analyzeMedicalDocument] PDF без достаточного текстового слоя (скан?) — пропускаем DeepSeek, Bedrock.",
       );
     }
   }
 
   if (!res?.ok) {
+    usedModelId = bedrockLabOcrModelId();
     res = await callBedrockOnDocument(buffer, mimeType);
     if (res.ok) usedModelId = bedrockLabOcrModelId();
-  }
-
-  if (!res.ok && openRouterFallbackEnabled()) {
-    console.warn(
-      "[analyzeMedicalDocument] Bedrock failed, falling back to OpenRouter:",
-      res.userMessage,
-    );
-    res = await callOpenRouterOnDocument(buffer, mimeType);
-    usedModelId = openRouterReasoningModel();
   }
 
   if (!res.ok) {
@@ -324,7 +326,7 @@ export async function analyzeMedicalDocumentBuffer(
       ok: false,
       error:
         res.userMessage === "NO_KEY"
-          ? "ИИ-провайдер не настроен. Задайте Bedrock (AWS), OPENROUTER_API_KEY + OPENROUTER_ENABLED=1 или DEEPSEEK_API_KEY."
+          ? "ИИ-провайдер не настроен. Задайте OPENROUTER_API_KEY и при необходимости DEEPSEEK_API_KEY или Bedrock (AWS)."
           : `Не удалось получить разбор документа: ${res.userMessage}`,
     };
   }
@@ -364,7 +366,19 @@ export async function analyzeMedicalDocumentBuffer(
 export async function analyzeMedicalDocumentFromText(
   text: string,
 ): Promise<AnalyzeMedicalDocumentResult> {
-  const res = await callOpenRouterOnText(text);
+  let res = await callOpenRouterOnText(text);
+  let modelId = openRouterReasoningModel();
+  if (!res.ok && deepseekEnabled()) {
+    const trimmed = text.replace(/\u0000/g, "").trim().slice(0, 60_000);
+    if (trimmed) {
+      const enriched = `${DOCUMENT_USER_PROMPT}\n\n--- ТЕКСТ ДОКУМЕНТА ---\n${trimmed}`;
+      const ds = await deepseekReasoningJson(DOCUMENT_ANALYSIS_SYSTEM_PROMPT, enriched);
+      if (ds.ok) {
+        res = ds;
+        modelId = deepseekModel();
+      }
+    }
+  }
   if (!res.ok) {
     return { ok: false, error: `Не удалось получить разбор документа: ${res.userMessage}` };
   }
@@ -384,7 +398,7 @@ export async function analyzeMedicalDocumentFromText(
   return {
     ok: true,
     analysis,
-    modelId: openRouterReasoningModel(),
+    modelId,
     disclaimer: DOCUMENT_DISCLAIMER,
   };
 }
