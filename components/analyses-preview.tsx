@@ -12,6 +12,7 @@ import {
   Loader2,
   PlusCircle,
   RefreshCw,
+  Share2,
   Sparkles,
   Stethoscope,
   Trash2,
@@ -75,6 +76,14 @@ type DocumentsPage = {
   documents: HealthDocRow[];
   hasMore?: boolean;
   nextCursor?: string | null;
+};
+
+type DocTranslateLang = "ru" | "en" | "hi";
+
+const DOC_TRANSLATE_LANG_LABEL: Record<DocTranslateLang, string> = {
+  ru: "Русский",
+  en: "English",
+  hi: "हिन्दी (Hindi)",
 };
 
 const documentsFetcher = async (url: string): Promise<DocumentsPage> => {
@@ -192,6 +201,32 @@ export function AnalysesPreview({
   const [manualSyncTick, setManualSyncTick] = useState(0);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [aiDocModal, setAiDocModal] = useState<{ id: string; title: string } | null>(null);
+
+  type DocMenuPhase = "actions" | "language";
+  const [docActionMenu, setDocActionMenu] = useState<{
+    doc: HealthDocRow;
+    phase: DocMenuPhase;
+  } | null>(null);
+
+  const [docTranslation, setDocTranslation] = useState<{
+    docId: string;
+    title: string;
+    targetLang: DocTranslateLang;
+    langLabel: string;
+    text: string;
+    loading: boolean;
+    error: string | null;
+  } | null>(null);
+
+  const [shareToast, setShareToast] = useState<string | null>(null);
+
+  const docLongPressRef = useRef<{
+    timer: ReturnType<typeof setTimeout> | null;
+    fired: boolean;
+    startX: number;
+    startY: number;
+  }>({ timer: null, fired: false, startX: 0, startY: 0 });
+
   /** В Telegram Mini App нельзя открыть blob в новой вкладке — показываем файл внутри приложения с кнопкой «Назад». */
   const [documentPreview, setDocumentPreview] = useState<{
     title: string;
@@ -570,6 +605,125 @@ export function AnalysesPreview({
     }
   };
 
+  const clearDocLongPressTimer = useCallback(() => {
+    const r = docLongPressRef.current;
+    if (r.timer) {
+      clearTimeout(r.timer);
+      r.timer = null;
+    }
+  }, []);
+
+  const onDocRowPointerDown = (e: React.PointerEvent, d: HealthDocRow) => {
+    if (e.button !== 0) return;
+    clearDocLongPressTimer();
+    docLongPressRef.current.startX = e.clientX;
+    docLongPressRef.current.startY = e.clientY;
+    docLongPressRef.current.fired = false;
+    docLongPressRef.current.timer = setTimeout(() => {
+      docLongPressRef.current.timer = null;
+      docLongPressRef.current.fired = true;
+      setDocActionMenu({ doc: d, phase: "actions" });
+    }, 480);
+  };
+
+  const onDocRowPointerMove = (e: React.PointerEvent) => {
+    const r = docLongPressRef.current;
+    if (!r.timer) return;
+    if (Math.hypot(e.clientX - r.startX, e.clientY - r.startY) > 14) {
+      clearDocLongPressTimer();
+    }
+  };
+
+  const onDocRowPointerEnd = () => {
+    clearDocLongPressTimer();
+  };
+
+  const onDocRowClick = (e: React.MouseEvent, d: HealthDocRow) => {
+    if (docLongPressRef.current.fired) {
+      docLongPressRef.current.fired = false;
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    void openDocumentWithSession(d);
+  };
+
+  const openDocRowContextMenu = (e: React.MouseEvent, d: HealthDocRow) => {
+    e.preventDefault();
+    setDocActionMenu({ doc: d, phase: "actions" });
+  };
+
+  const runDocTranslation = useCallback(async (d: HealthDocRow, targetLang: DocTranslateLang) => {
+    setDocActionMenu(null);
+    setDocTranslation({
+      docId: d.id,
+      title: d.title,
+      targetLang,
+      langLabel: DOC_TRANSLATE_LANG_LABEL[targetLang],
+      text: "",
+      loading: true,
+      error: null,
+    });
+    try {
+      const res = await fetch(`/api/documents/${encodeURIComponent(d.id)}/translate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ targetLang }),
+      });
+      const j = (await res.json()) as { error?: string; text?: string };
+      if (!res.ok) {
+        setDocTranslation((prev) =>
+          prev ? { ...prev, loading: false, error: j.error || `Ошибка ${res.status}` } : null,
+        );
+        return;
+      }
+      setDocTranslation((prev) =>
+        prev
+          ? {
+              ...prev,
+              loading: false,
+              text: String(j.text ?? ""),
+              error: null,
+            }
+          : null,
+      );
+    } catch {
+      setDocTranslation((prev) =>
+        prev ? { ...prev, loading: false, error: "Ошибка сети" } : null,
+      );
+    }
+  }, []);
+
+  const shareDocTranslation = useCallback(async () => {
+    if (!docTranslation?.text) return;
+    const title = `${docTranslation.title} (${docTranslation.langLabel})`;
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        await navigator.share({ title, text: docTranslation.text });
+        setShareToast(null);
+      } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(docTranslation.text);
+        setShareToast("Текст скопирован в буфер");
+        window.setTimeout(() => setShareToast(null), 2500);
+      }
+    } catch {
+      setShareToast("Не удалось поделиться");
+      window.setTimeout(() => setShareToast(null), 2500);
+    }
+  }, [docTranslation]);
+
+  useEffect(() => {
+    if (!docActionMenu && !docTranslation) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (docTranslation) setDocTranslation(null);
+      else setDocActionMenu(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [docActionMenu, docTranslation]);
+
   return (
     <section
       className={cn(
@@ -862,183 +1016,36 @@ export function AnalysesPreview({
                     compact ? "px-2.5 py-2 text-xs" : "px-4 py-3 text-sm",
                   )}
                 >
-                  <div className="flex items-stretch gap-2">
-                    <button
-                      type="button"
-                      className="flex min-h-[3rem] min-w-0 flex-1 items-start gap-3 text-left"
-                      onClick={() => void openDocumentWithSession(d)}
-                      disabled={openDocBusyId === d.id}
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-health-primary">
-                        {openDocBusyId === d.id ? (
-                          <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-                        ) : (
-                          <FileText className="h-5 w-5" aria-hidden />
-                        )}
+                  <button
+                    type="button"
+                    className="flex w-full min-h-[3rem] touch-manipulation select-none items-start gap-3 text-left [-webkit-touch-callout:none]"
+                    onPointerDown={(e) => onDocRowPointerDown(e, d)}
+                    onPointerMove={onDocRowPointerMove}
+                    onPointerUp={onDocRowPointerEnd}
+                    onPointerCancel={onDocRowPointerEnd}
+                    onClick={(e) => onDocRowClick(e, d)}
+                    onContextMenu={(e) => openDocRowContextMenu(e, d)}
+                    disabled={openDocBusyId === d.id}
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-health-primary">
+                      {openDocBusyId === d.id ? (
+                        <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+                      ) : (
+                        <FileText className="h-5 w-5" aria-hidden />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold text-health-text">{d.title}</span>
+                      <span className="mt-1 block text-xs text-health-text-secondary">
+                        {primary}
+                        {hint ? (
+                          <span className="mt-0.5 block text-[11px] text-health-text-secondary/85">
+                            {hint}
+                          </span>
+                        ) : null}
                       </span>
-                      <span className="min-w-0">
-                        <span className="block text-[10px] font-semibold uppercase tracking-wide text-health-text-secondary">
-                          {ARCHIVE_CATEGORY_RU[d.category] ?? d.category}
-                        </span>
-                        <span className="font-semibold text-health-text">{d.title}</span>
-                        <span className="mt-1 block text-xs text-health-text-secondary">
-                          {primary}
-                          {hint ? (
-                            <span className="mt-0.5 block text-[11px] text-health-text-secondary/85">
-                              {hint}
-                            </span>
-                          ) : null}
-                        </span>
-                      </span>
-                    </button>
-                    <div className="flex shrink-0 flex-col gap-1.5">
-                      <button
-                        type="button"
-                        className="inline-flex items-center justify-center gap-1 rounded-lg bg-gradient-to-br from-[#004253] to-[#005b71] px-2 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:opacity-90"
-                        title="ИИ-разбор документа"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          closeDocumentPreview();
-                          setAiDocModal({ id: d.id, title: d.title });
-                        }}
-                      >
-                        <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                        <span className="hidden sm:inline">Разбор ИИ</span>
-                      </button>
-                      {activeProfileCanWrite ? (
-                        <>
-                          <button
-                            type="button"
-                            disabled={editDocBusy && editingDoc?.id === d.id}
-                            className="rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200 transition-colors hover:bg-slate-100 disabled:opacity-50"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              startEditDoc(d);
-                            }}
-                          >
-                            Изменить
-                          </button>
-                          <button
-                            type="button"
-                            disabled={deleteDocBusyId === d.id}
-                            title={t(lang, "analyses.delete")}
-                            aria-label={t(lang, "analyses.delete")}
-                            className={cn(
-                              "flex min-w-[3.25rem] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl bg-red-50/90 px-2 py-1.5 text-red-800 ring-1 ring-red-200/80 shadow-sm transition-colors hover:bg-red-100/90 disabled:opacity-50 sm:min-w-[4.5rem] sm:flex-row sm:gap-1 sm:px-2.5",
-                              compact && "min-w-10 px-1.5 py-1",
-                            )}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (!window.confirm(t(lang, "analyses.deleteDocConfirm"))) return;
-                              setDeleteDocBusyId(d.id);
-                              void deleteHealthDocument(d.id)
-                                .then((r) => {
-                                  if (!r.ok) {
-                                    setError(r.error);
-                                    return;
-                                  }
-                                  void mutateDocs((prev) => {
-                                    if (!prev) return prev;
-                                    return prev.map((page) => ({
-                                      ...page,
-                                      documents: page.documents.filter((x) => x.id !== d.id),
-                                    }));
-                                  }, false);
-                                })
-                                .finally(() => setDeleteDocBusyId(null));
-                            }}
-                          >
-                            {deleteDocBusyId === d.id ? (
-                              <Loader2 className={cn("animate-spin", compact ? "h-3.5 w-3.5" : "h-4 w-4")} />
-                            ) : (
-                              <Trash2 className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
-                            )}
-                          </button>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-                  {editingDoc?.id === d.id ? (
-                    <form
-                      className="mt-2 grid gap-2 rounded-xl bg-slate-50 p-2 ring-1 ring-slate-200"
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (!editingDoc) return;
-                        setEditDocBusy(true);
-                        setEditDocError(null);
-                        void updateHealthDocumentMeta({
-                          id: editingDoc.id,
-                          title: editingDoc.title,
-                          category: editingDoc.category,
-                          documentDate: editingDoc.documentDate || null,
-                        })
-                          .then((r) => {
-                            if (!r.ok) {
-                              setEditDocError(r.error);
-                              return;
-                            }
-                            applyDocEditPatch(editingDoc.id, (row) => ({
-                              ...row,
-                              title: editingDoc.title.trim(),
-                              category: editingDoc.category,
-                              documentDate: editingDoc.documentDate || null,
-                            }));
-                            setEditingDoc(null);
-                          })
-                          .finally(() => setEditDocBusy(false));
-                      }}
-                    >
-                      <input
-                        value={editingDoc.title}
-                        onChange={(e) =>
-                          setEditingDoc((prev) => (prev ? { ...prev, title: e.target.value } : prev))
-                        }
-                        placeholder="Название документа"
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
-                      />
-                      <div className="grid grid-cols-2 gap-2">
-                        <select
-                          value={editingDoc.category}
-                          onChange={(e) =>
-                            setEditingDoc((prev) => (prev ? { ...prev, category: e.target.value } : prev))
-                          }
-                          className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
-                        >
-                          {Object.entries(ARCHIVE_CATEGORY_RU).map(([value, label]) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          type="date"
-                          value={editingDoc.documentDate}
-                          onChange={(e) =>
-                            setEditingDoc((prev) => (prev ? { ...prev, documentDate: e.target.value } : prev))
-                          }
-                          className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs"
-                        />
-                      </div>
-                      {editDocError ? <p className="text-[11px] text-red-700">{editDocError}</p> : null}
-                      <div className="flex gap-2">
-                        <button
-                          type="submit"
-                          disabled={editDocBusy}
-                          className="rounded-lg bg-health-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                        >
-                          {editDocBusy ? "Сохранение..." : "Сохранить"}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={editDocBusy}
-                          onClick={() => setEditingDoc(null)}
-                          className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
-                        >
-                          Отмена
-                        </button>
-                      </div>
-                    </form>
-                  ) : null}
+                    </span>
+                  </button>
                 </motion.li>
               );
             }
@@ -1532,6 +1539,269 @@ export function AnalysesPreview({
               />
             )}
           </div>
+        </div>
+      ) : null}
+
+      {editingDoc ? (
+        <div
+          className="fixed inset-0 z-[200] flex items-end justify-center p-3 sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Редактирование документа"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            disabled={editDocBusy}
+            aria-label="Закрыть"
+            onClick={() => {
+              if (!editDocBusy) setEditingDoc(null);
+            }}
+          />
+          <form
+            className="relative z-10 w-full max-w-md rounded-2xl bg-white p-4 shadow-xl"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!editingDoc) return;
+              setEditDocBusy(true);
+              setEditDocError(null);
+              void updateHealthDocumentMeta({
+                id: editingDoc.id,
+                title: editingDoc.title,
+                category: editingDoc.category,
+                documentDate: editingDoc.documentDate || null,
+              })
+                .then((r) => {
+                  if (!r.ok) {
+                    setEditDocError(r.error);
+                    return;
+                  }
+                  applyDocEditPatch(editingDoc.id, (row) => ({
+                    ...row,
+                    title: editingDoc.title.trim(),
+                    category: editingDoc.category,
+                    documentDate: editingDoc.documentDate || null,
+                  }));
+                  setEditingDoc(null);
+                })
+                .finally(() => setEditDocBusy(false));
+            }}
+          >
+            <p className="mb-3 text-sm font-semibold text-health-text">Изменить документ</p>
+            <input
+              value={editingDoc.title}
+              onChange={(e) =>
+                setEditingDoc((prev) => (prev ? { ...prev, title: e.target.value } : prev))
+              }
+              placeholder="Название документа"
+              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm"
+            />
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <select
+                value={editingDoc.category}
+                onChange={(e) =>
+                  setEditingDoc((prev) => (prev ? { ...prev, category: e.target.value } : prev))
+                }
+                className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"
+              >
+                {Object.entries(ARCHIVE_CATEGORY_RU).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={editingDoc.documentDate}
+                onChange={(e) =>
+                  setEditingDoc((prev) => (prev ? { ...prev, documentDate: e.target.value } : prev))
+                }
+                className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs"
+              />
+            </div>
+            {editDocError ? <p className="mt-2 text-xs text-red-700">{editDocError}</p> : null}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="submit"
+                disabled={editDocBusy}
+                className="rounded-lg bg-health-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {editDocBusy ? "Сохранение..." : "Сохранить"}
+              </button>
+              <button
+                type="button"
+                disabled={editDocBusy}
+                onClick={() => setEditingDoc(null)}
+                className="rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-600 ring-1 ring-slate-200"
+              >
+                Отмена
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {docActionMenu ? (
+        <div
+          className="fixed inset-0 z-[202] flex items-end justify-center sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Действия с документом"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/45"
+            aria-label="Закрыть"
+            onClick={() => setDocActionMenu(null)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-t-2xl bg-white p-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-2">
+            {docActionMenu.phase === "actions" ? (
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  className="min-h-12 w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-health-text hover:bg-slate-50"
+                  onClick={() => {
+                    const doc = docActionMenu.doc;
+                    setDocActionMenu(null);
+                    closeDocumentPreview();
+                    setAiDocModal({ id: doc.id, title: doc.title });
+                  }}
+                >
+                  ИИ расшифровка
+                </button>
+                <button
+                  type="button"
+                  className="flex min-h-12 w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-health-text hover:bg-slate-50"
+                  onClick={() => setDocActionMenu((m) => (m ? { ...m, phase: "language" } : null))}
+                >
+                  Язык
+                  <span className="text-slate-400" aria-hidden>
+                    ›
+                  </span>
+                </button>
+                {activeProfileCanWrite ? (
+                  <>
+                    <button
+                      type="button"
+                      className="min-h-12 w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-health-text hover:bg-slate-50"
+                      onClick={() => {
+                        startEditDoc(docActionMenu.doc);
+                        setDocActionMenu(null);
+                      }}
+                    >
+                      Изменить
+                    </button>
+                    <button
+                      type="button"
+                      className="min-h-12 w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-red-700 hover:bg-red-50"
+                      disabled={deleteDocBusyId === docActionMenu.doc.id}
+                      onClick={() => {
+                        if (!window.confirm(t(lang, "analyses.deleteDocConfirm"))) return;
+                        const delId = docActionMenu.doc.id;
+                        setDocActionMenu(null);
+                        setDeleteDocBusyId(delId);
+                        void deleteHealthDocument(delId)
+                          .then((r) => {
+                            if (!r.ok) {
+                              setError(r.error);
+                              return;
+                            }
+                            void mutateDocs((prev) => {
+                              if (!prev) return prev;
+                              return prev.map((page) => ({
+                                ...page,
+                                documents: page.documents.filter((x) => x.id !== delId),
+                              }));
+                            }, false);
+                          })
+                          .finally(() => setDeleteDocBusyId(null));
+                      }}
+                    >
+                      {deleteDocBusyId === docActionMenu.doc.id ? "Удаление…" : "Удалить"}
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  className="min-h-11 w-full rounded-xl px-4 py-2 text-left text-sm font-medium text-slate-600 hover:bg-slate-50"
+                  onClick={() => setDocActionMenu((m) => (m ? { ...m, phase: "actions" } : null))}
+                >
+                  ‹ Назад
+                </button>
+                {(["ru", "en", "hi"] as const).map((lng) => (
+                  <button
+                    key={lng}
+                    type="button"
+                    className="min-h-12 w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-health-text hover:bg-slate-50"
+                    onClick={() => void runDocTranslation(docActionMenu.doc, lng)}
+                  >
+                    {DOC_TRANSLATE_LANG_LABEL[lng]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {docTranslation ? (
+        <div
+          className="fixed inset-0 z-[204] flex flex-col bg-[#0f1419]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Перевод документа"
+        >
+          <header className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-[#004253] px-3 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/25"
+              onClick={() => setDocTranslation(null)}
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+              Назад
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{docTranslation.title}</p>
+              <p className="truncate text-[11px] text-white/75">{docTranslation.langLabel}</p>
+            </div>
+            <button
+              type="button"
+              disabled={docTranslation.loading || !docTranslation.text}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold hover:bg-white/25 disabled:opacity-40"
+              onClick={() => void shareDocTranslation()}
+            >
+              <Share2 className="h-4 w-4 shrink-0" aria-hidden />
+              Поделиться
+            </button>
+          </header>
+          <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {docTranslation.loading ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-16 text-health-text-secondary">
+                <Loader2 className="h-8 w-8 animate-spin text-health-primary" aria-hidden />
+                <p className="text-sm">Переводим документ…</p>
+              </div>
+            ) : docTranslation.error ? (
+              <p className="rounded-xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">{docTranslation.error}</p>
+            ) : (
+              <article className="mx-auto max-w-3xl rounded-lg bg-white p-4 shadow-md ring-1 ring-slate-200/80 sm:p-6">
+                <p className="mb-3 text-[11px] text-slate-500">
+                  Текст извлечён из файла; перевод сохраняет абзацы. Для сканов возможны неточности OCR.
+                </p>
+                <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-slate-900">
+                  {docTranslation.text}
+                </pre>
+              </article>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {shareToast ? (
+        <div className="fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[210] -translate-x-1/2 rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white shadow-lg">
+          {shareToast}
         </div>
       ) : null}
 

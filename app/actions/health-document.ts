@@ -6,10 +6,18 @@ import { createHealthDocumentForProfile } from "@/lib/health-document-create";
 import { inferHealthDocumentFields } from "@/lib/health-document-infer";
 import { isHealthDocumentTextExtractable } from "@/lib/health-document-text-extract";
 import { normalizeUploadedFilename } from "@/lib/filename-encoding";
-import { healthDocDiskPath, parseHealthDocumentCategory } from "@/lib/health-documents-storage";
+import {
+  healthDocDiskPath,
+  parseHealthDocumentCategory,
+  readHealthDocumentFromDisk,
+} from "@/lib/health-documents-storage";
 import { checkProfileAccess } from "@/lib/profile-access-control";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import {
+  analyzeMedicalDocumentBuffer,
+  type MedicalDocumentAnalysis,
+} from "@/lib/services/analyze-medical-document";
 
 export async function uploadHealthDocument(formData: FormData) {
   const session = await getSession();
@@ -188,4 +196,89 @@ export async function updateHealthDocumentMeta(input: {
   revalidatePath("/");
   revalidatePath("/tests");
   return { ok: true as const };
+}
+
+async function loadHealthDocumentBuffer(
+  doc: { id: string; mimeType: string | null; fileUrl: string; fileData: Buffer | null },
+): Promise<Buffer | null> {
+  if (doc.fileData && doc.fileData.byteLength > 0) {
+    return Buffer.from(doc.fileData);
+  }
+  if (doc.fileUrl.startsWith("http://") || doc.fileUrl.startsWith("https://")) {
+    try {
+      const res = await fetch(doc.fileUrl, { cache: "no-store" });
+      if (!res.ok) return null;
+      const ab = await res.arrayBuffer();
+      return Buffer.from(ab);
+    } catch {
+      return null;
+    }
+  }
+  if (!doc.mimeType) return null;
+  return readHealthDocumentFromDisk(doc.id, doc.mimeType);
+}
+
+export type AnalyzeHealthDocumentActionResult =
+  | {
+      ok: true;
+      analysis: MedicalDocumentAnalysis;
+      modelId: string;
+      disclaimer: string;
+    }
+  | { ok: false; error: string };
+
+/**
+ * ИИ-разбор уже загруженного HealthDocument: PDF/изображение → структурированный
+ * JSON (тип документа, краткое содержание, диагнозы, назначения, рекомендации,
+ * к каким врачам идти, что спросить). Bedrock Nova Pro с fallback на OpenRouter.
+ */
+export async function analyzeHealthDocumentAi(
+  documentId: string,
+): Promise<AnalyzeHealthDocumentActionResult> {
+  const session = await getSession();
+  if (!session) {
+    return { ok: false, error: "Требуется вход." };
+  }
+
+  const id = String(documentId ?? "").trim();
+  if (!id) {
+    return { ok: false, error: "Некорректный id документа." };
+  }
+
+  const doc = await prisma.healthDocument.findFirst({
+    where: { id },
+    select: {
+      id: true,
+      profileId: true,
+      mimeType: true,
+      fileUrl: true,
+      fileData: true,
+      title: true,
+    },
+  });
+  if (!doc || !doc.mimeType) {
+    return { ok: false, error: "Документ не найден." };
+  }
+
+  const access = await checkProfileAccess(session, doc.profileId);
+  if (!access.ok) {
+    return { ok: false, error: "Нет доступа к этому документу." };
+  }
+
+  const buf = await loadHealthDocumentBuffer(doc);
+  if (!buf) {
+    return { ok: false, error: "Файл документа недоступен на сервере." };
+  }
+
+  const result = await analyzeMedicalDocumentBuffer(buf, doc.mimeType);
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  return {
+    ok: true,
+    analysis: result.analysis,
+    modelId: result.modelId,
+    disclaimer: result.disclaimer,
+  };
 }
