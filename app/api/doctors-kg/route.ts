@@ -58,7 +58,7 @@ export async function GET(req: Request) {
       totalPages,
       doctors: merged,
     });
-  } catch (_e: unknown) {
+  } catch {
     const { searchParams } = new URL(req.url);
     const perPage = Math.min(100, Math.max(1, Number(searchParams.get("perPage") ?? "24")));
     return NextResponse.json(

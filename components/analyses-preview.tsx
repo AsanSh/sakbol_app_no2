@@ -13,7 +13,6 @@ import {
   PlusCircle,
   RefreshCw,
   Share2,
-  Sparkles,
   Stethoscope,
   Trash2,
 } from "lucide-react";
@@ -479,8 +478,6 @@ export function AnalysesPreview({
     return compact ? items.slice(0, 2) : items;
   }, [filteredRows, docRows, isTrends, compact]);
 
-  if (!activeProfileId) return null;
-
   /** Полный скелетон только при первом получении данных, не при фоновом обновлении после загрузки файла. */
   const showBlockingSkeleton = (rows === null && loading) || (!isTrends && docRows === null && docsLoading);
 
@@ -723,6 +720,8 @@ export function AnalysesPreview({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [docActionMenu, docTranslation]);
+
+  if (!activeProfileId) return null;
 
   return (
     <section
