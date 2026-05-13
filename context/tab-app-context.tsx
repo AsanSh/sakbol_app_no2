@@ -67,7 +67,7 @@ function parseUrlTabState(searchParams: URLSearchParams, pathname: string): {
   if (raw && VALID_TABS.has(raw)) {
     return { tab: raw as MainTab, insightsView: "trends" };
   }
-  return { tab: "home", insightsView: "trends" };
+  return { tab: "analyses", insightsView: "trends" };
 }
 
 function TabAppProviderInner({ children }: { children: ReactNode }) {
