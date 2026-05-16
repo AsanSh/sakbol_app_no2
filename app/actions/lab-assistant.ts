@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkProfileAccess } from "@/lib/profile-access-control";
 import { resolveLabAnalysisPayload } from "@/lib/resolve-lab-payload";
 import { getSession, type SessionPayload } from "@/lib/session";
-import { deepseekChatText, deepseekEnabled } from "@/lib/deepseek";
+import { askGroqLabAssistant } from "@/lib/groq-ai-service";
 import type { ParsedBiomarker } from "@/types/biomarker";
 
 const DISCLAIMER =
@@ -73,7 +73,7 @@ function fallbackWithoutContext(question: string, block: string | null, reason: 
 }
 
 /**
- * Ответ вкладки «ИИ» («Что это значит»): только DeepSeek (`deepseek-v4-pro`).
+ * Ответ вкладки «ИИ»: через Groq Llama 3.3 с контекстом последнего анализа.
  */
 export async function askLabAssistantFromBook(
   question: string,
@@ -105,7 +105,18 @@ export async function askLabAssistantFromBook(
     ? `Вопрос пользователя:\n${q}\n\n---\nКонтекст последнего лабораторного анализа (выбранный профиль семьи):\n${block}\n\nОтветь на вопрос с учётом этих данных.`
     : `Вопрос пользователя:\n${q}\n\nКонтекст конкретного анализа не передан. Дай общий просветительский ответ на русском без привязки к чужим цифрам.`;
 
-  if (!deepseekEnabled()) {
+  const groq = await askGroqLabAssistant(LAB_ASSISTANT_SYSTEM, userPrompt);
+
+  if (groq.ok) {
+    return {
+      ok: true,
+      hasBook: false,
+      usedLastLab,
+      answer: `${DISCLAIMER}${groq.text}`,
+    };
+  }
+
+  if (groq.userMessage === "NO_KEY") {
     return {
       ok: true,
       hasBook: false,
@@ -113,29 +124,8 @@ export async function askLabAssistantFromBook(
       answer: `${DISCLAIMER}${fallbackWithoutContext(
         q,
         block,
-        "Развёрнутые ответы недоступны: на сервере не задан DEEPSEEK_API_KEY.",
+        "Развёрнутые ответы ИИ недоступны: на сервере не задан GROQ_API_KEY. Добавьте ключ в переменные окружения.",
       )}`,
-    };
-  }
-
-  const llm = await deepseekChatText(LAB_ASSISTANT_SYSTEM, userPrompt);
-
-  if (llm.ok) {
-    return {
-      ok: true,
-      hasBook: false,
-      usedLastLab,
-      answer: `${DISCLAIMER}${llm.text}`,
-    };
-  }
-
-  const errMsg = llm.userMessage;
-  if (errMsg === "NO_KEY" || /NO_KEY/i.test(errMsg)) {
-    return {
-      ok: true,
-      hasBook: false,
-      usedLastLab,
-      answer: `${DISCLAIMER}${fallbackWithoutContext(q, block, "Развёрнутые ответы недоступны: не задан DEEPSEEK_API_KEY.")}`,
     };
   }
 
@@ -143,6 +133,6 @@ export async function askLabAssistantFromBook(
     ok: true,
     hasBook: false,
     usedLastLab,
-    answer: `${DISCLAIMER}${fallbackWithoutContext(q, block, errMsg)}`,
+    answer: `${DISCLAIMER}${fallbackWithoutContext(q, block, groq.userMessage)}`,
   };
 }

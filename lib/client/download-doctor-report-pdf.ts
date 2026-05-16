@@ -3,27 +3,29 @@
 import { saveBlobWithPickerOrDownload } from "@/lib/client/save-blob-as";
 import { formatClinicalAnonymId } from "@/lib/clinical-anonym-id";
 
-function triggerDoctorReportAnchor(profileId: string) {
+function looksLikeTelegramMiniApp(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean((window as unknown as { Telegram?: { WebApp?: unknown } }).Telegram?.WebApp);
+}
+
+function triggerDoctorReportAnchor(profileId: string, filename: string) {
   const a = document.createElement("a");
   a.href = `/api/profile/${encodeURIComponent(profileId)}/doctor-report/pdf`;
-  a.download = `sakbol-vrachu-${formatClinicalAnonymId(profileId)}.pdf`;
+  a.download = filename;
   a.rel = "noopener";
   document.body.appendChild(a);
   a.click();
   a.remove();
 }
 
-function looksLikeTelegramMiniApp(): boolean {
-  if (typeof window === "undefined") return false;
-  return Boolean((window as unknown as { Telegram?: { WebApp?: unknown } }).Telegram?.WebApp);
-}
-
 export async function downloadDoctorReportPdf(
   profileId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  /** В WebView Telegram fetch→blob часто «висит»; нативный GET по ссылке с cookie обычно срабатывает. */
+  const filename = `sakbol-vrachu-${formatClinicalAnonymId(profileId)}.pdf`;
+
+  // В WebView Telegram fetch→blob часто «висит»; нативный GET по ссылке с cookie срабатывает.
   if (looksLikeTelegramMiniApp()) {
-    triggerDoctorReportAnchor(profileId);
+    triggerDoctorReportAnchor(profileId, filename);
     return { ok: true };
   }
 
@@ -46,7 +48,7 @@ export async function downloadDoctorReportPdf(
         ? e.name === "AbortError" || e.name === "TimeoutError"
         : e instanceof Error && /abort|timeout/i.test(e.name);
     if (isAbort) {
-      triggerDoctorReportAnchor(profileId);
+      triggerDoctorReportAnchor(profileId, filename);
       return { ok: true };
     }
     return { ok: false, error: e instanceof Error ? e.message : "Сеть недоступна." };
@@ -88,7 +90,7 @@ export async function downloadDoctorReportPdf(
 
   const buf = await res.arrayBuffer();
   const blob = new Blob([buf], { type: "application/pdf" });
-  await saveBlobWithPickerOrDownload(blob, `sakbol-vrachu-${formatClinicalAnonymId(profileId)}.pdf`);
+  await saveBlobWithPickerOrDownload(blob, filename);
 
   return { ok: true };
 }
