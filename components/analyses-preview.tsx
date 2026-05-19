@@ -260,6 +260,7 @@ export function AnalysesPreview({
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingDeleteDocId, setPendingDeleteDocId] = useState<string | null>(null);
+  const [docSearch, setDocSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | MedicalStatus>("all");
   const [trendsRangeDays, setTrendsRangeDays] = useState<number | null>(null);
   const [trendsFocusKey, setTrendsFocusKey] = useState<string | null>(null);
@@ -540,21 +541,26 @@ export function AnalysesPreview({
     if (isTrends) return null;
     const labs = filteredRows ?? [];
     const docs = docRows ?? [];
+    const q = docSearch.trim().toLowerCase();
     const items: UnifiedItem[] = [
-      ...labs.map((lab) => ({
-        kind: "lab" as const,
-        sortMs: effectiveAnalysisTimeMs(lab),
-        lab,
-      })),
-      ...docs.map((doc) => ({
-        kind: "doc" as const,
-        sortMs: doc.documentDate ? Date.parse(doc.documentDate) : Date.parse(doc.createdAt),
-        doc,
-      })),
+      ...labs
+        .filter((lab) => !q || (lab.title ?? "").toLowerCase().includes(q))
+        .map((lab) => ({
+          kind: "lab" as const,
+          sortMs: effectiveAnalysisTimeMs(lab),
+          lab,
+        })),
+      ...docs
+        .filter((doc) => !q || doc.title.toLowerCase().includes(q))
+        .map((doc) => ({
+          kind: "doc" as const,
+          sortMs: doc.documentDate ? Date.parse(doc.documentDate) : Date.parse(doc.createdAt),
+          doc,
+        })),
     ];
     items.sort((a, b) => b.sortMs - a.sortMs);
     return compact ? items.slice(0, 2) : items;
-  }, [filteredRows, docRows, isTrends, compact]);
+  }, [filteredRows, docRows, isTrends, compact, docSearch]);
 
   /** Полный скелетон только при первом получении данных, не при фоновом обновлении после загрузки файла. */
   const showBlockingSkeleton = (rows === null && loading) || (!isTrends && docRows === null && docsLoading);
@@ -917,6 +923,18 @@ export function AnalysesPreview({
         <p className="mt-1 rounded-lg bg-slate-50 px-2 py-1.5 text-[10px] text-health-text-secondary ring-1 ring-slate-200/80">
           {t(lang, "analyses.readOnlyArchive")}
         </p>
+      ) : null}
+
+      {!isTrends && !compact ? (
+        <div className="mt-2">
+          <input
+            type="search"
+            value={docSearch}
+            onChange={(e) => setDocSearch(e.target.value)}
+            placeholder={lang === "ru" ? "Поиск по названию документа…" : "Документтин аты боюнча издөө…"}
+            className="w-full rounded-xl border border-health-border bg-white px-3 py-2 text-sm text-health-text outline-none placeholder:text-health-text-secondary/70 focus:ring-2 focus:ring-health-primary/30"
+          />
+        </div>
       ) : null}
 
       {isTrends && !compact ? (

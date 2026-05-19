@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   BookMarked,
   LayoutDashboard,
   Pill,
@@ -20,10 +21,10 @@ type Dock = "fixed" | "embedded";
 
 type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 
-/** Порядок: Медкарта (главная) → Дашборд → Аптека → Врачи → Профиль. Вкладка «Пациенты» — опционально в конце (врачам). */
+/** Порядок: Медкарта → Динамика → Дашборд → Аптека → Врачи → Профиль. Вкладка «Пациенты» — опционально в конце (врачам). */
 const BASE_NAV_ITEMS: NavItem[] = [
   { id: "analyses", labelKey: "nav.medcard", Icon: BookMarked },
-  { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
+  { id: "insights", labelKey: "nav.trends", Icon: Activity },
   { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
   { id: "doctors", labelKey: "nav.doctors", Icon: Stethoscope },
   { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },

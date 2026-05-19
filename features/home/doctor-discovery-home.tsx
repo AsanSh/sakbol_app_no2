@@ -558,9 +558,9 @@ export function DoctorDiscoveryHome({
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={lang === "ru" ? "Найти направление…" : "Багыт табуу…"}
+                placeholder={t(lang, "home.search.placeholder")}
                 className="border-0 bg-slate-50 py-2.5 pl-11 pr-4 text-body shadow-inner ring-1 ring-slate-200/60"
-                aria-label={lang === "ru" ? "Поиск направления" : "Багыт издөө"}
+                aria-label={t(lang, "home.search.placeholder")}
               />
             </div>
           </div>

@@ -147,7 +147,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
                 key={`${b.biomarker}-${b.value}`}
                 className="flex justify-between gap-2 py-2 text-sm"
               >
-                <span className="min-w-0 truncate font-medium text-health-text">{b.biomarker}</span>
+                <span className="min-w-0 break-words font-medium text-health-text">{b.biomarker}</span>
                 <span className="shrink-0 font-mono text-health-primary">
                   {b.value} {b.unit}
                 </span>
