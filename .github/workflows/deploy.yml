@@ -18,6 +18,7 @@ jobs:
           port: 22
           timeout: 600s
           command_timeout: 600s
+          host_key_checking: false
           script: |
             set -e
             cd /opt/sakbol
@@ -25,7 +26,7 @@ jobs:
             git pull origin main
             echo "=== docker build + restart ==="
             docker compose -f docker-compose.selfhosted.yml up -d --build --remove-orphans
-            echo "=== waiting for container ==="
-            sleep 10
+            echo "=== waiting for healthy ==="
+            sleep 15
             docker compose -f docker-compose.selfhosted.yml ps
             echo "=== deploy done ==="
