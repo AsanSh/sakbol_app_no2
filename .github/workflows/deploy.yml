@@ -9,24 +9,31 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Write deploy script
+        run: |
+          cat > /tmp/deploy.sh << 'EOF'
+          set -e
+          cd /opt/sakbol
+          echo "=== git pull ==="
+          git pull origin main
+          echo "=== docker build + restart ==="
+          docker compose -f docker-compose.selfhosted.yml up -d --build --remove-orphans
+          echo "=== waiting for healthy ==="
+          sleep 15
+          docker compose -f docker-compose.selfhosted.yml ps
+          echo "=== deploy done ==="
+          EOF
+
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: 22
-          timeout: 600s
-          command_timeout: 600s
-          host_key_checking: false
-          script: |
-            set -e
-            cd /opt/sakbol
-            echo "=== git pull ==="
-            git pull origin main
-            echo "=== docker build + restart ==="
-            docker compose -f docker-compose.selfhosted.yml up -d --build --remove-orphans
-            echo "=== waiting for healthy ==="
-            sleep 15
-            docker compose -f docker-compose.selfhosted.yml ps
-            echo "=== deploy done ==="
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -p 22 \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "bash -s" < /tmp/deploy.sh
