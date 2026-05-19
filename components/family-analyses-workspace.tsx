@@ -168,8 +168,7 @@ export function FamilyAnalysesWorkspace({
       {hideFamilySwitcher ? null : (
         <FamilySwitcher
           profiles={family.profiles}
-          canAddMember={!!admin}
-          onAddMember={admin ? () => setAddOpen(true) : undefined}
+          canAddMember={false}
           joinFamilyHref="/join-family"
         />
       )}

@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   Activity,
   BookMarked,
-  FileStack,
   LayoutDashboard,
   Stethoscope,
   UsersRound,
@@ -24,6 +23,7 @@ type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 
 const BASE_NAV_ITEMS: NavItem[] = [
   { id: "analyses", labelKey: "nav.medcard", Icon: BookMarked },
+  { id: "insights", labelKey: "nav.trends", Icon: Activity },
   { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
   { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
   { id: "doctors", labelKey: "nav.doctors", Icon: Stethoscope },
@@ -97,36 +97,6 @@ export function SakbolDesktopSidebar({ showPatientsTab = false }: SidebarProps) 
           );
         })}
       </nav>
-
-      <div className="mt-auto space-y-1 border-t border-health-border/60 px-3 pb-4 pt-3">
-        <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          Хранилище
-        </p>
-        <Link
-          href="/?tab=analyses"
-          className={cn(
-            "flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-3 text-body font-medium transition-colors",
-            tab === "analyses"
-              ? "bg-teal-50 text-health-primary ring-1 ring-teal-100"
-              : "text-health-text-secondary hover:bg-slate-50 hover:text-health-text",
-          )}
-        >
-          <FileStack className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
-          {t(lang, "nav.archiveShort")}
-        </Link>
-        <Link
-          href="/?tab=insights&insights=trends"
-          className={cn(
-            "flex min-h-[44px] items-center gap-3 rounded-xl px-3 py-3 text-body font-medium transition-colors",
-            tab === "insights"
-              ? "bg-teal-50 text-health-primary ring-1 ring-teal-100"
-              : "text-health-text-secondary hover:bg-slate-50 hover:text-health-text",
-          )}
-        >
-          <Activity className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
-          {t(lang, "nav.trends")}
-        </Link>
-      </div>
 
       <div className="h-2 shrink-0" aria-hidden />
     </aside>

@@ -86,12 +86,11 @@ type DocumentsPage = {
   nextCursor?: string | null;
 };
 
-type DocTranslateLang = "ru" | "en" | "hi";
+type DocTranslateLang = "ru" | "en";
 
 const DOC_TRANSLATE_LANG_LABEL: Record<DocTranslateLang, string> = {
   ru: "Русский",
   en: "English",
-  hi: "हिन्दी (Hindi)",
 };
 
 const documentsFetcher = async (url: string): Promise<DocumentsPage> => {
@@ -894,7 +893,8 @@ export function AnalysesPreview({
                 void (async () => {
                   setDoctorReportBusy(true);
                   try {
-                    await downloadDoctorReportPdf(activeProfileId);
+                    const r = await downloadDoctorReportPdf(activeProfileId);
+                    if (!r.ok) setError(r.error);
                   } finally {
                     setDoctorReportBusy(false);
                   }
@@ -1621,16 +1621,18 @@ export function AnalysesPreview({
                 />
               </div>
             ) : (
-              <iframe
-                title={documentPreview.title}
-                src={documentPreview.blobUrl}
-                className="box-border border-0 bg-white"
-                style={
-                  docPreviewMagnified
-                    ? { width: "160%", height: "160%", minHeight: "100%" }
-                    : { width: "100%", height: "100%", minHeight: "100%" }
-                }
-              />
+              <div className="absolute inset-0 overflow-hidden">
+                <iframe
+                  title={documentPreview.title}
+                  src={documentPreview.blobUrl}
+                  className="border-0 bg-white"
+                  style={
+                    docPreviewMagnified
+                      ? { width: "160%", height: "160%" }
+                      : { width: "100%", height: "100%" }
+                  }
+                />
+              </div>
             )}
           </div>
         </div>
@@ -1828,7 +1830,7 @@ export function AnalysesPreview({
                 >
                   ‹ Назад
                 </button>
-                {(["ru", "en", "hi"] as const).map((lng) => (
+                {(["ru", "en"] as const).map((lng) => (
                   <button
                     key={lng}
                     type="button"

@@ -89,8 +89,7 @@ export function HomeTab({ family, reloadFamily }: Props) {
       <FamilySwitcher
         variant="header"
         profiles={family.profiles}
-        canAddMember={!!admin}
-        onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+        canAddMember={false}
         joinFamilyHref="/join-family"
       />
     ) : null;

@@ -66,8 +66,7 @@ export function AiTab({ family, reloadFamily }: Props) {
       <FamilySwitcher
         variant="header"
         profiles={family.profiles}
-        canAddMember={!!admin}
-        onAddMember={admin ? () => setAddMemberOpen(true) : undefined}
+        canAddMember={false}
         joinFamilyHref="/join-family"
       />
     ) : null;
@@ -213,7 +212,7 @@ export function AiTab({ family, reloadFamily }: Props) {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#004253] opacity-40" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#004253]" />
               </span>
-              {lang}
+              {LANG_OPTIONS.find((o) => o.value === lang)?.label ?? lang}
               <span className="text-[8px] opacity-60">▾</span>
             </button>
             {showLangMenu && (
