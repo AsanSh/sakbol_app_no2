@@ -1330,10 +1330,16 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                     {age != null ? `${age} лет` : "Возраст не указан"} · Бишкек
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">
+                    <span
+                      className="cursor-help rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold"
+                      title="Индекс массы тела = вес (кг) / рост² (м). Норма: 18.5–24.9"
+                    >
                       BMI {bmiFromProfile ?? "—"}
                     </span>
-                    <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">
+                    <span
+                      className="cursor-help rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold"
+                      title="Индекс здоровья SakBol, рассчитывается на основе загруженных анализов. Максимум — 100."
+                    >
                       Score 78
                     </span>
                     {editTarget?.medCardIsDoctor ? (
@@ -1407,7 +1413,7 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                   {seg === "settings"
                     ? t(lang, "profile.segment.settings")
                     : seg === "b2c"
-                      ? t(lang, "profile.segment.b2c")
+                      ? (lang === "ru" ? "Партнёры" : "Өнөктөр")
                       : t(lang, "profile.segment.familyTab")}
                 </button>
               ))}
@@ -1469,6 +1475,24 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
                     </div>
                   ))}
                 </div>
+
+                {(() => {
+                  const bmiNum = bmiFromProfile ? parseFloat(bmiFromProfile) : null;
+                  if (bmiNum == null || (bmiNum >= 17.5 && bmiNum <= 35)) return null;
+                  return (
+                    <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                      <span className="mt-0.5 text-amber-500">⚠</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12px] font-semibold text-amber-900">
+                          Ваш BMI {bmiFromProfile} выходит за пределы нормы
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-snug text-amber-800">
+                          Рекомендуем проконсультироваться с врачом.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <section
                   id="profile-language-section"
@@ -1563,6 +1587,16 @@ export function ProfileTabSakbol({ family, loading, reload }: Props) {
 
             {profileSegment === "b2c" ? (
               <div className="space-y-4">
+                <div className="rounded-2xl bg-gradient-to-br from-teal-50 to-[#f0f9ff] p-4 ring-1 ring-teal-100">
+                  <p className="text-sm font-bold text-[#004253]">
+                    {lang === "ru" ? "Для партнёров SakBol" : "SakBol өнөктөштөрү үчүн"}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-snug text-[#004253]/80">
+                    {lang === "ru"
+                      ? "Вы можете быть одновременно пациентом и партнёром SakBol. Подключите свою аптеку или врачебную практику — и управляйте ими из одного аккаунта."
+                      : "Сиз бир эле учурда пациент жана SakBol өнөктөшү боло аласыз. Аптекаңызды же дарыгердик практикаңызды кошуп, бир аккаунттан башкарыңыз."}
+                  </p>
+                </div>
                 <section className="rounded-2xl border border-[#e7e8e9] bg-white p-4 shadow-sm">
                   <div className="flex items-start gap-2">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-[#004253] ring-1 ring-teal-100">

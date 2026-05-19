@@ -117,8 +117,39 @@ export function AnalysisComparePanel({ analyses, activeDob, refreshKey = 0 }: Pr
 
   if (sorted.length < 2) {
     return (
-      <DsCard variant="muted" className="p-4">
-        <p className="text-body text-health-text-secondary">{t(lang, "analyses.compareNeedTwo")}</p>
+      <DsCard variant="muted" className="overflow-hidden p-0">
+        {/* Placeholder preview */}
+        <div className="relative px-4 py-6 text-center">
+          <svg
+            viewBox="0 0 320 100"
+            className="mx-auto mb-4 w-full max-w-[280px] select-none opacity-25"
+            aria-hidden
+          >
+            <polyline
+              points="0,80 40,60 80,70 120,40 160,50 200,20 240,35 280,15 320,25"
+              fill="none"
+              stroke="#004253"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <polyline
+              points="0,90 40,75 80,80 120,60 160,70 200,45 240,55 280,40 320,50"
+              fill="none"
+              stroke="#009688"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray="6 4"
+            />
+          </svg>
+          <p className="text-sm font-semibold text-health-text">{t(lang, "analyses.compareNeedTwo")}</p>
+          <p className="mt-1 text-[11px] text-health-text-secondary">
+            {lang === "ru"
+              ? "После загрузки второго анализа здесь появится ваша динамика показателей."
+              : "Экинчи анализ жүктөлгөндөн кийин бул жерде динамика пайда болот."}
+          </p>
+        </div>
       </DsCard>
     );
   }

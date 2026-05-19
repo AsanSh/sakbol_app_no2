@@ -235,8 +235,13 @@ export function FamilySwitcher({
                       isHeader ? "text-[10px]" : "text-[11px]",
                       active ? "text-health-text" : "text-health-text-secondary",
                     )}
+                    title={p.displayName}
                   >
-                    {p.displayName}
+                    {(() => {
+                      const parts = p.displayName.trim().split(/\s+/);
+                      if (parts.length <= 1) return p.displayName;
+                      return `${parts[0]} ${parts[1]![0]}.`;
+                    })()}
                   </span>
                   <span
                     className={cn(

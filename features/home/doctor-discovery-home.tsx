@@ -942,11 +942,14 @@ export function DoctorDiscoveryHome({
               isDesktop && "xl:grid-cols-2",
             )}
           >
-            {clinicsFiltered.map((c) => (
+            {clinicsFiltered.map((c) => {
+              const clinicTitle = c.name?.trim() || (lang === "ru" ? "Медицинский центр" : "Медициналык борбор");
+              const subtitle = [c.address?.trim(), c.city?.trim()].filter(Boolean).join(", ");
+              return (
               <Card key={c.id} className="flex h-full flex-col gap-3 p-4">
-                <h3 className="text-h4 font-semibold text-health-text">{c.name}</h3>
+                <h3 className="text-h4 font-semibold text-health-text">{clinicTitle}</h3>
                 <p className="text-small text-health-text-secondary">
-                  {c.city} · {lang === "ru" ? "врачей:" : "дарыер:"} {c.doctorCount}
+                  {subtitle || c.city} · {lang === "ru" ? "врачей:" : "дарыер:"} {c.doctorCount}
                 </p>
                 <div className="space-y-1">
                   {c.phones.map((p) => {
@@ -973,7 +976,8 @@ export function DoctorDiscoveryHome({
                   {t(lang, "home.card.more")}
                 </Button>
               </Card>
-            ))}
+              );
+            })}
           </div>
           {clinicsFiltered.length === 0 ? (
             <EmptyState

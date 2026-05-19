@@ -174,51 +174,39 @@ export function FamilyAnalysesWorkspace({
       )}
 
       {activeProfileId ? (
-        <button
-          type="button"
-          disabled={doctorReportBusy}
-          onClick={() => {
-            if (doctorReportBusy || !activeProfileId) return;
-            setDoctorReportBusy(true);
-            void downloadDoctorReportPdf(activeProfileId)
-              .then((r) => {
-                if (!r.ok) window.alert(r.error);
-              })
-              .catch(() => window.alert("Сеть или сервер недоступны."))
-              .finally(() => setDoctorReportBusy(false));
-          }}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-health-border bg-white px-4 py-3 text-caption font-semibold text-health-text shadow-sm ring-1 ring-health-border/70 disabled:opacity-50"
-        >
-          {doctorReportBusy ? (
-            <Loader2 className="h-4 w-4 animate-spin text-health-primary" aria-hidden />
-          ) : (
-            <FileDown className="h-4 w-4 text-health-primary" aria-hidden />
-          )}
-          {lang === "ru" ? "Медицинский отчёт для врача (PDF)" : "Дарыер үчүн PDF отчет"}
-        </button>
-      ) : null}
-
-      {/* Подсказка + кнопка «Добавить члена» (компактная) */}
-      {activeProfileId ? (
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {admin ? (
-              <button
-                type="button"
-                onClick={() => setAddOpen(true)}
-                className="shrink-0 rounded-xl bg-health-surface px-3 py-2 text-caption font-semibold text-health-primary shadow-sm ring-1 ring-health-border/80 transition-all duration-300 hover:shadow-md"
-              >
-                {t(lang, "profile.addMember")}
-              </button>
-            ) : null}
-          </div>
-          {!isTrends ? (
-            <p className="text-[11px] text-health-text-secondary">
-              {lang === "ru"
-                ? "Загрузка файлов доступна через кнопку + внизу экрана."
-                : "Файл жүктөө төмөнкү + баскычы аркылуу жеткиликтүү."}
-            </p>
+        <div className="flex gap-2">
+          {activeProfileCanWrite ? (
+            <button
+              type="button"
+              onClick={() => setUploadOpen(true)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-health-border bg-[#004253] px-4 py-3 text-caption font-semibold text-white shadow-sm disabled:opacity-50"
+            >
+              <span className="text-base leading-none">+</span>
+              {lang === "ru" ? "Загрузить документ" : "Документ жүктөө"}
+            </button>
           ) : null}
+          <button
+            type="button"
+            disabled={doctorReportBusy}
+            onClick={() => {
+              if (doctorReportBusy || !activeProfileId) return;
+              setDoctorReportBusy(true);
+              void downloadDoctorReportPdf(activeProfileId)
+                .then((r) => {
+                  if (!r.ok) window.alert(r.error);
+                })
+                .catch(() => window.alert("Сеть или сервер недоступны."))
+                .finally(() => setDoctorReportBusy(false));
+            }}
+            className={`flex items-center justify-center gap-2 rounded-2xl border border-health-border bg-white px-4 py-3 text-caption font-semibold text-health-text shadow-sm ring-1 ring-health-border/70 disabled:opacity-50 ${activeProfileCanWrite ? "" : "w-full"}`}
+          >
+            {doctorReportBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin text-health-primary" aria-hidden />
+            ) : (
+              <FileDown className="h-4 w-4 text-health-primary" aria-hidden />
+            )}
+            {lang === "ru" ? "PDF отчёт врача" : "PDF отчет"}
+          </button>
         </div>
       ) : null}
 

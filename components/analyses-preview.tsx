@@ -258,6 +258,8 @@ export function AnalysesPreview({
   const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<{ id: string; msg: string } | null>(null);
   const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingDeleteDocId, setPendingDeleteDocId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | MedicalStatus>("all");
   const [trendsRangeDays, setTrendsRangeDays] = useState<number | null>(null);
   const [trendsFocusKey, setTrendsFocusKey] = useState<string | null>(null);
@@ -1232,19 +1234,7 @@ export function AnalysesPreview({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      if (!window.confirm(t(lang, "analyses.deleteConfirm"))) return;
-                      setDeleteBusyId(a.id);
-                      void deleteLabAnalysis(a.id)
-                        .then((r) => {
-                          if (!r.ok) {
-                            setError(r.error);
-                            return;
-                          }
-                          setRows((prev) => prev?.filter((x) => x.id !== a.id) ?? null);
-                          setExpandedId((ex) => (ex === a.id ? null : ex));
-                          setActiveShare((s) => (s?.recordId === a.id ? null : s));
-                        })
-                        .finally(() => setDeleteBusyId(null));
+                      setPendingDeleteId(a.id);
                     }}
                   >
                     {deleteBusyId === a.id ? (
@@ -1262,6 +1252,39 @@ export function AnalysesPreview({
                     </span>
                   </button>
                 </div>
+                {pendingDeleteId === a.id ? (
+                  <div className="mt-2 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+                    <p className="flex-1 text-[11px] text-red-900">
+                      {t(lang, "analyses.deleteConfirm")}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setPendingDeleteId(null)}
+                      className="rounded-lg px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deleteBusyId === a.id}
+                      onClick={() => {
+                        setPendingDeleteId(null);
+                        setDeleteBusyId(a.id);
+                        void deleteLabAnalysis(a.id)
+                          .then((r) => {
+                            if (!r.ok) { setError(r.error); return; }
+                            setRows((prev) => prev?.filter((x) => x.id !== a.id) ?? null);
+                            setExpandedId((ex) => (ex === a.id ? null : ex));
+                            setActiveShare((s) => (s?.recordId === a.id ? null : s));
+                          })
+                          .finally(() => setDeleteBusyId(null));
+                      }}
+                      className="rounded-lg bg-red-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                ) : null}
 
                 {open ? (
                   <div className="mt-2 border-t border-health-border/60 pt-3">
@@ -1795,25 +1818,8 @@ export function AnalysesPreview({
                       className="min-h-12 w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-red-700 hover:bg-red-50"
                       disabled={deleteDocBusyId === docActionMenu.doc.id}
                       onClick={() => {
-                        if (!window.confirm(t(lang, "analyses.deleteDocConfirm"))) return;
-                        const delId = docActionMenu.doc.id;
+                        setPendingDeleteDocId(docActionMenu.doc.id);
                         setDocActionMenu(null);
-                        setDeleteDocBusyId(delId);
-                        void deleteHealthDocument(delId)
-                          .then((r) => {
-                            if (!r.ok) {
-                              setError(r.error);
-                              return;
-                            }
-                            void mutateDocs((prev) => {
-                              if (!prev) return prev;
-                              return prev.map((page) => ({
-                                ...page,
-                                documents: page.documents.filter((x) => x.id !== delId),
-                              }));
-                            }, false);
-                          })
-                          .finally(() => setDeleteDocBusyId(null));
                       }}
                     >
                       {deleteDocBusyId === docActionMenu.doc.id ? "Удаление…" : "Удалить"}
@@ -1912,6 +1918,63 @@ export function AnalysesPreview({
         documentId={aiDocModal?.id ?? null}
         documentTitle={aiDocModal?.title}
       />
+
+      {/* Document delete confirmation modal */}
+      {pendingDeleteDocId ? (
+        <div
+          className="fixed inset-0 z-[220] flex items-end justify-center p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setPendingDeleteDocId(null)}
+            aria-label="Закрыть"
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <p className="text-sm font-semibold text-slate-900">
+              {t(lang, "analyses.deleteDocConfirm")}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-500">
+              {lang === "ru" ? "Это действие нельзя отменить." : "Бул аракетти жокко кылуу мүмкүн эмес."}
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDeleteDocId(null)}
+                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                {lang === "ru" ? "Отмена" : "Жокко чыгаруу"}
+              </button>
+              <button
+                type="button"
+                disabled={deleteDocBusyId === pendingDeleteDocId}
+                onClick={() => {
+                  const delId = pendingDeleteDocId;
+                  setPendingDeleteDocId(null);
+                  setDeleteDocBusyId(delId);
+                  void deleteHealthDocument(delId)
+                    .then((r) => {
+                      if (!r.ok) { setError(r.error); return; }
+                      void mutateDocs((prev) => {
+                        if (!prev) return prev;
+                        return prev.map((page) => ({
+                          ...page,
+                          documents: page.documents.filter((x) => x.id !== delId),
+                        }));
+                      }, false);
+                    })
+                    .finally(() => setDeleteDocBusyId(null));
+                }}
+                className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {lang === "ru" ? "Удалить" : "Өчүрүү"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

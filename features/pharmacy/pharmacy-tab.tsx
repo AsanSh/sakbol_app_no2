@@ -386,9 +386,16 @@ export function PharmacyTab() {
 
         {segment === "search" ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-            {t(lang, "pharmacy.searchLead").trim() ? (
-              <p className="text-caption text-health-text-secondary">{t(lang, "pharmacy.searchLead")}</p>
-            ) : null}
+            <details className="rounded-2xl border border-[#d4e6e9] bg-[#f0f9ff]">
+              <summary className="cursor-pointer select-none px-4 py-3 text-[12px] font-semibold text-[#004253]">
+                {lang === "ru" ? "Как работает Фармпоиск?" : "Фармиздоо кантип иштейт?"}
+              </summary>
+              <div className="space-y-1.5 px-4 pb-4 pt-1 text-[11px] leading-snug text-[#004253]/80">
+                <p>1. {lang === "ru" ? "Введите название лекарства ниже." : "Ылдыда дарынын атын киргизиңиз."}</p>
+                <p>2. {lang === "ru" ? "Наш специалист проверяет наличие в аптеках города." : "Биздин адис шаардагы аптекалардан издеп берет."}</p>
+                <p>3. {lang === "ru" ? "Ответ появится во вкладке «Мои запросы» в течение нескольких часов." : "Жооп «Менин суроолорум» кошумча барагында бир нече саат ичинде пайда болот."}</p>
+              </div>
+            </details>
             <input
               value={medName}
               onChange={(e) => setMedName(e.target.value)}
@@ -438,7 +445,24 @@ export function PharmacyTab() {
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             {userReqs.length === 0 ? (
-              <p className="text-caption text-health-text-secondary">{t(lang, "pharmacy.noMine")}</p>
+              <div className="rounded-2xl border border-health-border bg-health-surface px-4 py-6 text-center">
+                <Pill className="mx-auto mb-2 h-8 w-8 text-health-text-secondary/50" strokeWidth={1.5} aria-hidden />
+                <p className="text-sm font-medium text-health-text">
+                  {lang === "ru" ? "Нет запросов" : "Суроолор жок"}
+                </p>
+                <p className="mt-1 text-[11px] text-health-text-secondary">
+                  {lang === "ru"
+                    ? "Введите название лекарства на вкладке «Поиск» →"
+                    : "«Издөө» кошумча барагына кирип дарынын атын жазыңыз →"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSegment("search")}
+                  className="mt-3 rounded-xl bg-health-primary px-4 py-2 text-[11px] font-semibold text-white"
+                >
+                  {lang === "ru" ? "Найти лекарство" : "Дары издөө"}
+                </button>
+              </div>
             ) : (
               userReqs.map((req) => (
                 <div key={req.id} className="rounded-2xl border border-health-border bg-white p-3 shadow-sm">
