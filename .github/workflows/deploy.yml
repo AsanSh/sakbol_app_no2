@@ -9,37 +9,53 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
-
       - name: Show runner IP (for firewall debugging)
         run: curl -s https://api.ipify.org && echo ""
 
+      - name: Setup SSH key
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if ! ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null 2>&1; then
+            echo "::error::SSH_PRIVATE_KEY secret is missing or invalid (paste full ed25519 private key including BEGIN/END lines)"
+            exit 1
+          fi
+
       - name: Test SSH connectivity
         env:
-          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
-          echo "Attempting SSH to ${{ secrets.SSH_HOST }} as ${{ secrets.SSH_USER }}"
-          sshpass -e ssh -v \
+          PORT="${SSH_PORT:-22}"
+          echo "Attempting SSH to ${SSH_USER}@${SSH_HOST}:${PORT}"
+          ssh -v -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
+            -o PreferredAuthentications=publickey \
+            -o PubkeyAuthentication=yes \
             -o ConnectTimeout=30 \
-            -p 22 \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            -p "${PORT}" \
+            "${SSH_USER}@${SSH_HOST}" \
             "echo '✅ SSH connection successful'"
 
       - name: Deploy
         env:
-          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
         run: |
-          sshpass -e ssh \
+          PORT="${SSH_PORT:-22}"
+          ssh -i ~/.ssh/deploy_key \
             -o StrictHostKeyChecking=no \
             -o UserKnownHostsFile=/dev/null \
-            -o ConnectTimeout=60 \
-            -p 22 \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'ENDSSH'
+            -o ConnectTimeout=120 \
+            -p "${PORT}" \
+            "${SSH_USER}@${SSH_HOST}" << 'ENDSSH'
           set -e
           cd /opt/sakbol
+          test -f .env.production && ln -sf .env.production .env || true
           echo "=== git pull ==="
           git pull origin main
           echo "=== docker build + restart ==="

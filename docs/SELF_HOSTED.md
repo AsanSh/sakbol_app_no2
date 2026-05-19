@@ -178,11 +178,15 @@ sudo crontab -e
 
 ## 9. Обновление приложения
 
+**Автоматически:** push в `main` → GitHub Actions [Deploy to VPS](https://github.com/AsanSh/sakbol_app_no2/actions/workflows/deploy.yml). Секреты и SSH-ключ: [`docs/CI_DEPLOY.md`](CI_DEPLOY.md).
+
+**Вручную на сервере:**
+
 ```bash
 cd /opt/sakbol
-git pull
+git pull origin main
 ln -sf .env.production .env
-docker compose -f docker-compose.selfhosted.yml up -d --build
+docker compose -f docker-compose.selfhosted.yml up -d --build --remove-orphans
 ```
 
 ## 10. Не передавайте пароли в чатах
