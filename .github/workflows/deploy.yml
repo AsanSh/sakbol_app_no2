@@ -12,9 +12,32 @@ jobs:
       - name: Install sshpass
         run: sudo apt-get install -y sshpass
 
-      - name: Write deploy script
+      - name: Show runner IP (for firewall debugging)
+        run: curl -s https://api.ipify.org && echo ""
+
+      - name: Test SSH connectivity
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          cat > /tmp/deploy.sh << 'EOF'
+          echo "Attempting SSH to ${{ secrets.SSH_HOST }} as ${{ secrets.SSH_USER }}"
+          sshpass -e ssh -v \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=30 \
+            -p 22 \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "echo '✅ SSH connection successful'"
+
+      - name: Deploy
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          sshpass -e ssh \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=60 \
+            -p 22 \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" << 'ENDSSH'
           set -e
           cd /opt/sakbol
           echo "=== git pull ==="
@@ -25,15 +48,4 @@ jobs:
           sleep 15
           docker compose -f docker-compose.selfhosted.yml ps
           echo "=== deploy done ==="
-          EOF
-
-      - name: Deploy via SSH
-        env:
-          SSHPASS: ${{ secrets.SSH_PASSWORD }}
-        run: |
-          sshpass -e ssh \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            -p 22 \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "bash -s" < /tmp/deploy.sh
+          ENDSSH
