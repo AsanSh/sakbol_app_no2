@@ -1,7 +1,6 @@
-import { TestsPageClient } from "@/components/tests-page-client";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default function TestsPage() {
-  return <TestsPageClient />;
+/** Legacy URL: анализы во вкладке «Медкарта». */
+export default function LegacyTestsPage() {
+  redirect("/?tab=analyses");
 }

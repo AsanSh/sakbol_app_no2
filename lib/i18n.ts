@@ -111,7 +111,7 @@ const ru: Dict = {
   "dashboard.authRequired": "Требуется вход. Откройте приложение через Telegram.",
   "dashboard.authTitle": "Вход через Telegram Mini App",
   "dashboard.authBody":
-    "Сервер не завершил вход. В Vercel проверьте TELEGRAM_BOT_TOKEN (тот же бот, что открыл Mini App), SESSION_SECRET (≥16 символов) и DATABASE_URL. В обычном браузере для демо: ALLOW_DEV_LOGIN и NEXT_PUBLIC_ALLOW_DEV_LOGIN.",
+    "Сервер не завершил вход. Проверьте TELEGRAM_BOT_TOKEN (тот же бот, что открыл Mini App), SESSION_SECRET (≥16 символов) и DATABASE_URL. В обычном браузере для демо: ALLOW_DEV_LOGIN и NEXT_PUBLIC_ALLOW_DEV_LOGIN.",
   "dashboard.authBodyNoTg":
     "Вы в обычном браузере: данных Telegram нет. Включён демо-вход — обновите страницу; либо откройте приложение в Telegram.",
   "dashboard.authTelegramRetry":
@@ -544,7 +544,7 @@ const kg: Dict = {
   "dashboard.authRequired": "Кирүү керек. Telegram аркылуу ачыңыз.",
   "dashboard.authTitle": "Кирүү: Telegram Mini App",
   "dashboard.authBody":
-    "Сервер кирүүнү аяктаган жок. Vercelде TELEGRAM_BOT_TOKEN, SESSION_SECRET (≥16) жана DATABASE_URL текшериңиз. Браузер демосу үчүн: ALLOW_DEV_LOGIN жана NEXT_PUBLIC_ALLOW_DEV_LOGIN.",
+    "Сервер кирүүнү аяктаган жок. TELEGRAM_BOT_TOKEN, SESSION_SECRET (≥16) жана DATABASE_URL текшериңиз. Браузер демосу үчүн: ALLOW_DEV_LOGIN жана NEXT_PUBLIC_ALLOW_DEV_LOGIN.",
   "dashboard.authBodyNoTg":
     "Браузер: Telegram маалыматы жок. Демо-кирүү күйгүзүлгөн болсо, бетти жаңылаңыз же Telegramдан ачыңыз.",
   "dashboard.authTelegramRetry":

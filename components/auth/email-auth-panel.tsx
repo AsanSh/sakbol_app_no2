@@ -4,8 +4,14 @@ import { SubjectIdCountry } from "@prisma/client";
 import { useCallback, useState } from "react";
 import { SubjectIdCountrySelect, SubjectIdNumberInput } from "@/components/subject-id-inputs";
 import { isSubjectIdLengthSatisfied } from "@/lib/subject-id-country";
+import { safePostLoginPath } from "@/lib/safe-redirect";
 
-export function EmailAuthPanel() {
+type Props = {
+  redirectTo?: string;
+};
+
+export function EmailAuthPanel({ redirectTo = "/" }: Props) {
+  const afterLogin = safePostLoginPath(redirectTo);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,11 +36,11 @@ export function EmailAuthPanel() {
         setErr(j.error ?? `Ошибка ${res.status}`);
         return;
       }
-      window.location.assign("/");
+      window.location.assign(afterLogin);
     } finally {
       setBusy(false);
     }
-  }, [email, password]);
+  }, [email, password, afterLogin]);
 
   const submitRegister = useCallback(async () => {
     setErr(null);
@@ -57,11 +63,11 @@ export function EmailAuthPanel() {
         setErr(j.error ?? `Ошибка ${res.status}`);
         return;
       }
-      window.location.assign("/");
+      window.location.assign(afterLogin);
     } finally {
       setBusy(false);
     }
-  }, [displayName, email, password, pin, subjectCountry]);
+  }, [displayName, email, password, pin, subjectCountry, afterLogin]);
 
   return (
     <div className="space-y-4">
@@ -161,7 +167,8 @@ export function EmailAuthPanel() {
         {busy ? "Подождите…" : mode === "login" ? "Войти" : "Создать аккаунт"}
       </button>
       <p className="text-center text-[10px] leading-relaxed text-slate-500">
-        После регистрации можно привязать Telegram в профиле: код и команда /start у бота.
+        Вошли через Telegram? Привяжите email в приложении (всплывающее окно или профиль) — тот же
+        пароль подойдёт здесь.
       </p>
     </div>
   );

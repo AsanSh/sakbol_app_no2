@@ -25,6 +25,7 @@ type NavItem = { id: MainTab; labelKey: string; Icon: LucideIcon };
 const BASE_NAV_ITEMS: NavItem[] = [
   { id: "analyses", labelKey: "nav.medcard", Icon: BookMarked },
   { id: "insights", labelKey: "nav.trends", Icon: Activity },
+  { id: "home", labelKey: "nav.dashboard", Icon: LayoutDashboard },
   { id: "pharmacy", labelKey: "nav.pharmacy", Icon: Pill },
   { id: "doctors", labelKey: "nav.doctors", Icon: Stethoscope },
   { id: "profile", labelKey: "nav.familyTab", Icon: UserCircle },

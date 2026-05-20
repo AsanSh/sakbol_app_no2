@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ensureFamilySubscription } from "@/lib/premium";
 import { applyPendingProfileAccessForTelegramUser } from "@/lib/profile-access-accept";
+import { normalizeEmail } from "@/lib/auth-email";
 import { verifyPassword } from "@/lib/password";
 import {
   createSessionToken,
@@ -10,10 +11,6 @@ import {
 } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
-
-function normalizeEmail(raw: string): string {
-  return raw.trim().toLowerCase();
-}
 
 export async function POST(req: NextRequest) {
   let body: { email?: string; password?: string };

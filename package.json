@@ -11,6 +11,8 @@
     "telegram:set-webhook": "tsx scripts/set-telegram-webhook.ts",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -28,7 +30,6 @@
     "@prisma/client": "^5.22.0",
     "@twa-dev/sdk": "^8.0.2",
     "@types/bcryptjs": "^2.4.6",
-    "@vercel/blob": "^0.27.3",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
@@ -36,7 +37,7 @@
     "jsqr": "^1.4.0",
     "katex": "^0.16.21",
     "lucide-react": "^1.8.0",
-    "next": "15.5.15",
+    "next": "15.5.18",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "qrcode.react": "^4.2.0",
@@ -55,11 +56,12 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.27",
     "eslint": "^9",
-    "eslint-config-next": "15.5.15",
+    "eslint-config-next": "15.5.18",
     "postcss": "^8",
     "prisma": "5.22.0",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

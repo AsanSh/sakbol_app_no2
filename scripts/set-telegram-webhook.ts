@@ -4,7 +4,6 @@
  * Usage:
  *   WEBHOOK_BASE_URL=https://adventory.store TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=... npx tsx scripts/set-telegram-webhook.ts
  *
- * Или на Vercel (Preview): подставьте URL превью в WEBHOOK_BASE_URL.
  */
 const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
 const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
@@ -12,8 +11,8 @@ const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
 function baseUrl(): string | null {
   const explicit = process.env.WEBHOOK_BASE_URL?.trim().replace(/\/$/, "");
   if (explicit) return explicit;
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel}`;
+  const app = process.env.NEXT_PUBLIC_APP_URL?.trim() || process.env.APP_URL?.trim();
+  if (app) return app.replace(/\/$/, "");
   return null;
 }
 
@@ -24,7 +23,7 @@ async function main() {
   }
   const base = baseUrl();
   if (!base) {
-    console.error("Set WEBHOOK_BASE_URL (e.g. https://adventory.store) or deploy on Vercel (VERCEL_URL)");
+    console.error("Set WEBHOOK_BASE_URL or NEXT_PUBLIC_APP_URL (e.g. https://adventory.store)");
     process.exit(1);
   }
   const url = `${base}/api/telegram/webhook`;

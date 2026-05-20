@@ -5,14 +5,14 @@ import { createHash, createHmac } from "crypto";
 /**
  * Проверка подписи Telegram Mini App initData — только на сервере (API route).
  * Клиент передаёт сырую строку initData; TELEGRAM_BOT_TOKEN здесь или во втором аргументе.
- * При ошибке пишет в console.error — видно в логах Vercel.
+ * При ошибке пишет в console.error — видно в логах сервера.
  * @see https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
  */
 export function verifyTelegramInitData(initData: string, botToken?: string): boolean {
   const token = (botToken ?? process.env.TELEGRAM_BOT_TOKEN ?? "").trim();
   if (!token) {
     console.error(
-      "[telegram] initData validation: TELEGRAM_BOT_TOKEN пустой (проверьте Vercel: среда деплоя и Redeploy после изменения env).",
+      "[telegram] initData validation: TELEGRAM_BOT_TOKEN пустой (проверьте env и перезапуск приложения).",
     );
     return false;
   }

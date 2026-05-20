@@ -28,8 +28,7 @@ function checkAutomationAuth(req: Request): NextResponse | null {
 
   const insecureLocal =
     process.env.ALLOW_INSECURE_AUTOMATED_UPLOAD === "true" &&
-    process.env.NODE_ENV === "development" &&
-    !process.env.VERCEL;
+    process.env.NODE_ENV === "development";
 
   if (insecureLocal) {
     console.warn(

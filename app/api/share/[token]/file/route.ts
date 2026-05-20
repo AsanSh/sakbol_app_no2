@@ -42,7 +42,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ token: str
     return NextResponse.json(
       {
         error:
-          "Файл недоступен на этом сервере (часто на Vercel без BLOB_READ_WRITE_TOKEN при загрузке). Добавьте токен Blob в env и загрузите анализ заново.",
+          "Файл недоступен на этом сервере. Загрузите анализ заново или проверьте SAKBOL_DATA_DIR на VPS.",
       },
       { status: 404 },
     );

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTelegramSession } from "@/context/telegram-session-context";
+import { safePostLoginPath } from "@/lib/safe-redirect";
 
 function AuthBlockingShell() {
   return (
@@ -22,20 +23,22 @@ function AuthBlockingShell() {
 export function WebAuthGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { authReady, isAuthenticated, state } = useTelegramSession();
 
   const isPublic =
     pathname === "/login" ||
     pathname === "/" ||
+    pathname === "/join-family" ||
     pathname.startsWith("/share/") ||
     pathname.startsWith("/share-profile/");
 
   useEffect(() => {
     if (!authReady || !isAuthenticated) return;
     if (pathname === "/login") {
-      router.replace("/");
+      router.replace(safePostLoginPath(searchParams.get("next")));
     }
-  }, [authReady, isAuthenticated, pathname, router]);
+  }, [authReady, isAuthenticated, pathname, router, searchParams]);
 
   useEffect(() => {
     if (!authReady || isPublic) return;

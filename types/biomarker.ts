@@ -20,6 +20,6 @@ export type HealthRecordAnalysisPayload = {
   documentDate?: string;
   /** Название лаборатории / клиники, если извлечено */
   labName?: string;
-  /** Публичный URL в Vercel Blob (если загрузка шла с BLOB_READ_WRITE_TOKEN) — шаринг файла работает на serverless. */
+  /** Внешний URL файла (legacy), если загрузка шла на внешнее хранилище. */
   sourceBlobUrl?: string;
 };

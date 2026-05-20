@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ensureFamilySubscription } from "@/lib/premium";
 import { pinAnchorFromUserInput } from "@/lib/pin-subject-anchor";
 import { parseSubjectIdCountryParam } from "@/lib/subject-id-country";
+import { EMAIL_RE, normalizeEmail } from "@/lib/auth-email";
 import { hashPassword } from "@/lib/password";
 import {
   createSessionToken,
@@ -12,12 +13,6 @@ import {
 } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
-
-function normalizeEmail(raw: string): string {
-  return raw.trim().toLowerCase();
-}
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
   let body: { email?: string; password?: string; displayName?: string; pin?: string; subjectIdCountry?: string };

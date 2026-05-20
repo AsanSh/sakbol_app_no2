@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
     console.error(
-      "[auth/telegram] TELEGRAM_BOT_TOKEN отсутствует в runtime. Проверьте Vercel env (All Environments) и сделайте Redeploy.",
+      "[auth/telegram] TELEGRAM_BOT_TOKEN отсутствует в runtime. Проверьте env на сервере и перезапустите контейнер.",
     );
     return NextResponse.json(
       { error: "TELEGRAM_BOT_TOKEN is not configured on the server." },

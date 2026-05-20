@@ -1,6 +1,6 @@
 # SakBol (`sakbol_app_no2`)
 
-Next.js 14 + Prisma + Telegram Mini App. Обработчик бота находится **в этом репозитории**: `app/api/telegram/webhook/route.ts` (отдельного проекта «бот» нет).
+Next.js 15 + Prisma + Telegram Mini App. Обработчик бота находится **в этом репозитории**: `app/api/telegram/webhook/route.ts` (отдельного проекта «бот» нет).
 
 **Руководство пользователя** (пациент, семья, врач по шарингу, аптека): [docs/USER_GUIDE.md](./docs/USER_GUIDE.md).
 
@@ -23,22 +23,16 @@ npm run dev
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` — опционально (без `@`). Если не задан, QR «совместного доступа» запрашивает username через `GET /api/public/telegram-bot-username`.
 - `DATABASE_URL`, `SESSION_SECRET` — см. `.env.example`.
 
-## Webhook после деплоя (пункт 2)
+## Вход: Telegram, email, телефон
 
-Целевой URL: `https://adventory.store/api/telegram/webhook`.
+- **Mini App / Telegram:** вход по `initData`; после входа можно привязать **email + пароль** или **номер** для входа на сайте (модальное окно или раздел в профиле).
+- **Сайт `/login`:** код из Telegram (по @username, id или сохранённому номеру) или **email + пароль**, если они привязаны к профилю.
 
-**Вариант A — уже задеплоено на Vercel** (токены в Project Settings → Environment Variables): один POST с сервера не нужен локально. Вызовите защищённый эндпоинт (в Vercel должны быть `BOT_INTERNAL_SECRET`, `TELEGRAM_BOT_TOKEN`, при необходимости `TELEGRAM_WEBHOOK_SECRET`, `NEXT_PUBLIC_APP_URL` или `VERCEL_URL`):
+## Webhook после деплоя
 
-```bash
-curl -sS -X POST "https://adventory.store/api/internal/telegram-set-webhook" \
-  -H "Authorization: Bearer <BOT_INTERNAL_SECRET>" \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
+Целевой URL: `https://adventory.store/api/telegram/webhook` (см. [docs/SELF_HOSTED.md](./docs/SELF_HOSTED.md)).
 
-При неверном origin укажите явно: `-d '{"baseUrl":"https://adventory.store"}'`.
-
-**Вариант B — локально из репозитория:**
+**На сервере:**
 
 ```bash
 export WEBHOOK_BASE_URL="https://adventory.store"
@@ -47,11 +41,24 @@ export TELEGRAM_WEBHOOK_SECRET="..."
 npm run telegram:set-webhook
 ```
 
-**Вариант C — GitHub Actions:** в репозитории → *Settings → Secrets* добавьте `TELEGRAM_BOT_TOKEN` (и по желанию `TELEGRAM_WEBHOOK_SECRET`). Запустите workflow **Set Telegram webhook**, введите публичный `base_url`.
+**Или внутренний API** (нужны `BOT_INTERNAL_SECRET`, токены бота):
+
+```bash
+curl -sS -X POST "https://adventory.store/api/internal/telegram-set-webhook" \
+  -H "Authorization: Bearer <BOT_INTERNAL_SECRET>" \
+  -H "Content-Type: application/json" \
+  -d '{"baseUrl":"https://adventory.store"}'
+```
+
+**GitHub Actions:** workflow **Set Telegram webhook** + секрет `TELEGRAM_BOT_TOKEN`.
 
 ## Сборка
 
 `npm run build` запускает `prisma generate`, затем `prisma migrate deploy`, затем `next build`. Если на сборке нет БД, задайте `SKIP_PRISMA_MIGRATE_ON_BUILD=1` и выполняйте миграции отдельно.
+
+## Продакшен (VPS)
+
+См. [docs/SELF_HOSTED.md](./docs/SELF_HOSTED.md): `docker compose -f docker-compose.selfhosted.yml up -d --build`.
 
 ## Совместный доступ (QR)
 

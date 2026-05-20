@@ -15,6 +15,9 @@ export async function POST(req: Request) {
 
   try {
     const result = await commitConfirmedLabUpload(form);
+    if (!result.ok && result.error === "Unauthorized.") {
+      return NextResponse.json({ ok: false, error: result.error }, { status: 401 });
+    }
     return NextResponse.json(result);
   } catch (e) {
     console.error("[lab-ocr-commit]", e);

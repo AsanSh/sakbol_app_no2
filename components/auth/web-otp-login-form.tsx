@@ -2,8 +2,9 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Lock, Mail, Send } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
+import { safePostLoginPath } from "@/lib/safe-redirect";
 import { EmailAuthPanel } from "@/components/auth/email-auth-panel";
 import { SakbolMark } from "@/components/sakbol/sakbol-mark";
 import { APP_NAME } from "@/constants";
@@ -84,8 +85,10 @@ function ChoiceScreen({
 
 function TelegramOtpForm({
   onBack,
+  redirectTo,
 }: {
   onBack: () => void;
+  redirectTo: string;
 }) {
   const [telegram, setTelegram] = useState("");
   const [phone, setPhone] = useState("");
@@ -127,11 +130,11 @@ function TelegramOtpForm({
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) { setErr(j.error ?? `Ошибка ${res.status}`); return; }
-      window.location.assign("/");
+      window.location.assign(redirectTo);
     } finally {
       setBusy(null);
     }
-  }, [challengeId, code]);
+  }, [challengeId, code, redirectTo]);
 
   return (
     <motion.div
@@ -250,7 +253,7 @@ function TelegramOtpForm({
 
 // ── Форма входа по Email ───────────────────────────────────────────────────
 
-function EmailLoginForm({ onBack }: { onBack: () => void }) {
+function EmailLoginForm({ onBack, redirectTo }: { onBack: () => void; redirectTo: string }) {
   return (
     <motion.div
       key="email"
@@ -278,14 +281,14 @@ function EmailLoginForm({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      <EmailAuthPanel />
+      <EmailAuthPanel redirectTo={redirectTo} />
     </motion.div>
   );
 }
 
 // ── Dev-login ─────────────────────────────────────────────────────────────
 
-function DevLoginButton() {
+function DevLoginButton({ redirectTo }: { redirectTo: string }) {
   const router = useRouter();
   const { refresh } = useTelegramSession();
   const [busy, setBusy] = useState(false);
@@ -299,11 +302,11 @@ function DevLoginButton() {
       const j = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) { setErr(j.error ?? `Ошибка ${res.status}`); return; }
       refresh();
-      router.replace("/");
+      router.replace(redirectTo);
     } finally {
       setBusy(false);
     }
-  }, [refresh, router]);
+  }, [refresh, router, redirectTo]);
 
   return (
     <div className="border-t border-slate-100 pt-4">
@@ -325,6 +328,8 @@ function DevLoginButton() {
 type Method = "choice" | "telegram" | "email";
 
 export function WebOtpLoginForm({ urlBannerError }: Props) {
+  const searchParams = useSearchParams();
+  const redirectTo = safePostLoginPath(searchParams.get("next"));
   const showDevLogin = process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true";
   const [method, setMethod] = useState<Method>("choice");
 
@@ -358,18 +363,20 @@ export function WebOtpLoginForm({ urlBannerError }: Props) {
             <TelegramOtpForm
               key="telegram"
               onBack={() => setMethod("choice")}
+              redirectTo={redirectTo}
             />
           )}
           {method === "email" && (
             <EmailLoginForm
               key="email"
               onBack={() => setMethod("choice")}
+              redirectTo={redirectTo}
             />
           )}
         </AnimatePresence>
 
         {/* Dev-логин — только в режиме разработки */}
-        {showDevLogin && method === "choice" ? <DevLoginButton /> : null}
+        {showDevLogin && method === "choice" ? <DevLoginButton redirectTo={redirectTo} /> : null}
 
         {/* Иконка замка + подпись */}
         {method === "choice" && (

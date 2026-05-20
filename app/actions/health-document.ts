@@ -124,10 +124,7 @@ export async function deleteHealthDocument(id: string) {
     return { ok: false as const, error: "Нет прав удалять этот документ." };
   }
 
-  if (doc.fileUrl.startsWith("http://") || doc.fileUrl.startsWith("https://")) {
-    const { del } = await import("@vercel/blob");
-    await del(doc.fileUrl).catch(() => {});
-  } else if (doc.mimeType) {
+  if (doc.mimeType && !doc.fileUrl.startsWith("http://") && !doc.fileUrl.startsWith("https://")) {
     await unlink(healthDocDiskPath(doc.id, doc.mimeType)).catch(() => {});
   }
 

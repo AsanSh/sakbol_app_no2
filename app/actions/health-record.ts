@@ -8,7 +8,7 @@ import { FREE_MAX_ANALYSES, getFamilyTier } from "@/lib/premium";
 import { checkProfileAccess } from "@/lib/profile-access-control";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
-import { extForLabMime, LAB_UPLOAD_ROOT, labUploadDiskPath } from "@/lib/sakbol-lab-upload-path";
+import { LAB_UPLOAD_ROOT, labUploadDiskPath } from "@/lib/sakbol-lab-upload-path";
 import { extractMetricsWithAI } from "@/lib/extract-metrics-with-ai";
 import { executePreviewLabOcr } from "@/lib/lab-ocr-preview-execute";
 import {
@@ -199,26 +199,8 @@ async function persistLabAnalysisUpload(args: {
   await mkdir(LAB_UPLOAD_ROOT, { recursive: true });
   const diskPath = labUploadDiskPath(fileId, mime);
 
-  async function tryBlobPut(): Promise<string | undefined> {
-    if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) return undefined;
-    try {
-      const { put } = await import("@vercel/blob");
-      const ext = extForLabMime(mime);
-      const blob = await put(`lab-analysis/${fileId}.${ext}`, buf, {
-        access: "public",
-        contentType: mime,
-      });
-      return blob.url;
-    } catch (e) {
-      console.error("[persistLabAnalysisUpload] blob put failed, keeping disk only", e);
-      return undefined;
-    }
-  }
-
-  let sourceBlobUrl: string | undefined;
   try {
-    const [, blobUrl] = await Promise.all([writeFile(diskPath, buf), tryBlobPut()]);
-    sourceBlobUrl = blobUrl;
+    await writeFile(diskPath, buf);
   } catch (e) {
     await unlink(diskPath).catch(() => {});
     return {
@@ -250,7 +232,6 @@ async function persistLabAnalysisUpload(args: {
     anonymizedAt: now,
     parsedAt: now,
     parser,
-    ...(sourceBlobUrl ? { sourceBlobUrl } : {}),
     ...(prepared.analysisDate ? { analysisDate: prepared.analysisDate } : {}),
     ...(prepared.labName ? { labName: prepared.labName } : {}),
   };
@@ -286,10 +267,6 @@ async function persistLabAnalysisUpload(args: {
     return { ok: true, recordId: record.id, biomarkerCount: prepared.biomarkers.length };
   } catch (e) {
     await unlink(diskPath).catch(() => {});
-    if (sourceBlobUrl?.startsWith("https://")) {
-      const { del } = await import("@vercel/blob");
-      await del(sourceBlobUrl).catch(() => {});
-    }
     return {
       ok: false,
       error: e instanceof Error ? e.message : "Не удалось создать запись.",
@@ -387,10 +364,7 @@ export async function deleteLabAnalysis(recordId: string) {
   const meta = record.data as LabMeta;
   const sourceFileId = typeof meta?.sourceFileId === "string" ? meta.sourceFileId.trim() : "";
   const mimeType = typeof meta?.mimeType === "string" ? meta.mimeType : "";
-  if (meta?.sourceBlobUrl?.startsWith("https://")) {
-    const { del } = await import("@vercel/blob");
-    await del(meta.sourceBlobUrl).catch(() => {});
-  } else if (
+  if (
     sourceFileId &&
     !["demo-local", "seed"].includes(sourceFileId) &&
     ALLOWED.has(mimeType)

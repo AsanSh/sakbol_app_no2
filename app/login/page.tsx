@@ -1,9 +1,10 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { WebOtpLoginForm } from "@/components/auth/web-otp-login-form";
 import { useTelegramSession } from "@/context/telegram-session-context";
+import { safePostLoginPath } from "@/lib/safe-redirect";
 
 /**
  * Один экран входа: Telegram (код) + email/пароль. Mini App пусть ведёт на «/» — там
@@ -23,13 +24,25 @@ function loginErrorMessage(code: string | null): string | null {
 }
 
 function LoginPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { authReady, isAuthenticated } = useTelegramSession();
   const urlErr = searchParams.get("err");
   const bannerErr = loginErrorMessage(urlErr);
+  const redirectTo = safePostLoginPath(searchParams.get("next"));
+
+  useEffect(() => {
+    if (authReady && isAuthenticated) {
+      router.replace(redirectTo);
+    }
+  }, [authReady, isAuthenticated, redirectTo, router]);
 
   if (authReady && isAuthenticated) {
-    return null;
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-slate-100 via-white to-slate-100">
+        <p className="text-sm text-slate-500">Перенаправление…</p>
+      </main>
+    );
   }
 
   return <WebOtpLoginForm urlBannerError={bannerErr} />;
